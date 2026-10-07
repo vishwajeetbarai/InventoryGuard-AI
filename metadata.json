@@ -1,0 +1,6 @@
+{
+  "name": "Multi-Source Supply Chain & Inventory Stock-Out Forecaster",
+  "description": "Executive supply chain control tower with ML demand forecasting, Monte Carlo joint demand-supplier risk simulation, dynamic safety stock, and automated procurement reordering.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
