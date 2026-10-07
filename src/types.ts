@@ -78,3 +78,42 @@ export interface PurchaseOrder {
   expectedDeliveryDate: string;
   priority: "URGENT" | "NORMAL";
 }
+
+export interface InterTransferRecommendation {
+  id: string;
+  skuId: string;
+  skuName: string;
+  category: string;
+  destWarehouseId: string;
+  destWarehouseName: string;
+  destStock: number;
+  destRop: number;
+  originWarehouseId: string;
+  originWarehouseName: string;
+  originStock: number;
+  originRop: number;
+  originSurplusUnits: number;
+  recommendedTransferQty: number;
+  transitHours: number;
+  transitCostInr: number;
+  stockoutLossPreventedInr: number;
+  status: "PENDING" | "APPROVED" | "IN_TRANSIT";
+}
+
+export interface DispatchedPoRecord {
+  dispatchId: string;
+  poBatchNumber: string;
+  warehouseId: string;
+  warehouseName: string;
+  timestamp: string;
+  itemCount: number;
+  totalUnits: number;
+  totalValueInr: number;
+  erpSystem: string;
+  endpointUrl: string;
+  httpStatus: number;
+  latencyMs: number;
+  payloadHash: string;
+  skuList: string[];
+}
+

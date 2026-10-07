@@ -6,6 +6,8 @@ import {
   SkuMetadata,
   SkuSimulationState,
   Warehouse,
+  InterTransferRecommendation,
+  DispatchedPoRecord,
 } from "../types";
 
 export const WAREHOUSES: Warehouse[] = [
@@ -493,3 +495,199 @@ export function exportPurchaseOrdersToCsv(pos: PurchaseOrder[]): string {
 
   return [headers.join(","), ...rows.map((r) => r.join(","))].join("\n");
 }
+
+/**
+ * Multi-Echelon Dark Store Inter-Transfer Engine
+ * When an SKU hits "CRITICAL REORDER NOW" status at one dark store,
+ * check if another nearby dark store has surplus stock (Current Stock > ROP + 14 days supply).
+ * If surplus exists, suggest an "Inter-Warehouse Stock Transfer" instead of placing a new supplier PO.
+ */
+export function evaluateInterWarehouseTransfers(
+  allRecords: DailyRecord[],
+  currentWarehouseId: string,
+  criticalStates: SkuSimulationState[]
+): InterTransferRecommendation[] {
+  const recommendations: InterTransferRecommendation[] = [];
+  const destWarehouse = WAREHOUSES.find((w) => w.id === currentWarehouseId);
+  if (!destWarehouse) return recommendations;
+
+  const otherWarehouses = WAREHOUSES.filter((w) => w.id !== currentWarehouseId);
+
+  for (const critState of criticalStates) {
+    if (critState.mcResult.urgency !== "CRITICAL REORDER NOW") continue;
+
+    const skuId = critState.sku.id;
+    const destDailyDemand = critState.sku.baseDemand * destWarehouse.demandFactor;
+    const destDeficit = Math.max(
+      15,
+      critState.mcResult.dynamicRop + Math.round(destDailyDemand * 7) - critState.currentStock
+    );
+
+    // Scan other warehouses for surplus stock
+    for (const originWh of otherWarehouses) {
+      const originRecords = allRecords
+        .filter((r) => r.warehouseId === originWh.id && r.skuId === skuId)
+        .sort((a, b) => a.date.localeCompare(b.date));
+
+      if (originRecords.length === 0) continue;
+
+      const originCurrentStock = originRecords[originRecords.length - 1].currentStockLevel;
+      const originDailyDemand = critState.sku.baseDemand * originWh.demandFactor;
+      const originEstRop = Math.round(
+        originDailyDemand * critState.sku.leadTimeMean + critState.mcResult.dynamicSafetyStock * 0.9
+      );
+      const surplusThreshold = originEstRop + Math.round(originDailyDemand * 14);
+
+      // Check surplus condition: Current Stock > ROP + 14 days supply
+      if (originCurrentStock > surplusThreshold) {
+        const availableSurplus = originCurrentStock - surplusThreshold;
+        const transferQty = Math.min(availableSurplus, destDeficit);
+
+        if (transferQty >= 10) {
+          const transitHours = originWh.city === destWarehouse.city ? 3 : 6;
+          const transitCostInr = 150 + transferQty * 1.5;
+          const stockoutLossPreventedInr = Math.round(
+            transferQty * (critState.sku.stockoutPenalty + critState.sku.basePrice * 0.25)
+          );
+
+          recommendations.push({
+            id: `XFER-${Date.now().toString().slice(-4)}-${skuId}-${originWh.id.slice(-2)}`,
+            skuId,
+            skuName: critState.sku.name,
+            category: critState.sku.category,
+            destWarehouseId: destWarehouse.id,
+            destWarehouseName: destWarehouse.name,
+            destStock: critState.currentStock,
+            destRop: critState.mcResult.dynamicRop,
+            originWarehouseId: originWh.id,
+            originWarehouseName: originWh.name,
+            originStock: originCurrentStock,
+            originRop: originEstRop,
+            originSurplusUnits: availableSurplus,
+            recommendedTransferQty: transferQty,
+            transitHours,
+            transitCostInr: Math.round(transitCostInr),
+            stockoutLossPreventedInr,
+            status: "PENDING",
+          });
+          break; // found optimal origin donor
+        }
+      }
+    }
+  }
+
+  return recommendations;
+}
+
+/**
+ * Generates an initial seed ledger of dispatched POs for enterprise audit tracking
+ */
+export function getInitialDispatchedLedger(): DispatchedPoRecord[] {
+  const now = new Date();
+  const t1 = new Date(now.getTime() - 1000 * 60 * 42).toISOString();
+  const t2 = new Date(now.getTime() - 1000 * 60 * 180).toISOString();
+
+  return [
+    {
+      dispatchId: "DSP-20261007-0091",
+      poBatchNumber: "PO-20261007-WH-BOM-01",
+      warehouseId: "WH-BOM-01",
+      warehouseName: "Mumbai Central Dark Store",
+      timestamp: t1,
+      itemCount: 2,
+      totalUnits: 460,
+      totalValueInr: 96540,
+      erpSystem: "SAP S/4HANA Cloud (EDI 850)",
+      endpointUrl: "https://api.erp.retail-logistics.io/v2/orders/inbound",
+      httpStatus: 200,
+      latencyMs: 142,
+      payloadHash: "sha256:7f9a2b8e3d0c41ab82ef10",
+      skuList: ["SKU-001 (Organic Milk)", "SKU-002 (Avocado Hass)"],
+    },
+    {
+      dispatchId: "DSP-20261007-0088",
+      poBatchNumber: "PO-20261007-WH-BLR-02",
+      warehouseId: "WH-BLR-02",
+      warehouseName: "Bengaluru Indiranagar Hub",
+      timestamp: t2,
+      itemCount: 3,
+      totalUnits: 620,
+      totalValueInr: 145200,
+      erpSystem: "Oracle NetSuite WMS Webhook",
+      endpointUrl: "https://netsuite.quickcommerce-ops.internal/webhook/po-ingress",
+      httpStatus: 200,
+      latencyMs: 198,
+      payloadHash: "sha256:1a84f3c9e67d9834ba90ef",
+      skuList: ["SKU-003 (Protein Granola)", "SKU-004 (Cold Brew)", "SKU-005 (Greek Yogurt)"],
+    },
+  ];
+}
+
+/**
+ * Creates a new dispatched PO record for the audit ledger
+ */
+export function createDispatchedPoRecord(
+  pos: PurchaseOrder[],
+  warehouse: Warehouse,
+  erpSystem: string = "SAP S/4HANA Cloud (EDI 850)"
+): DispatchedPoRecord {
+  const now = new Date();
+  const dispatchNum = Math.floor(1000 + Math.random() * 9000);
+  const totalUnits = pos.reduce((acc, p) => acc + p.recommendedOrderQty, 0);
+  const totalVal = pos.reduce((acc, p) => acc + p.totalPoValueInr, 0);
+  const hashHex = Array.from({ length: 16 }, () => Math.floor(Math.random() * 16).toString(16)).join("");
+
+  return {
+    dispatchId: `DSP-${now.toISOString().slice(0, 10).replace(/-/g, "")}-${dispatchNum}`,
+    poBatchNumber: pos[0]?.poNumber ? pos[0].poNumber.split("-").slice(0, 4).join("-") : `PO-${warehouse.id}`,
+    warehouseId: warehouse.id,
+    warehouseName: warehouse.name,
+    timestamp: now.toISOString(),
+    itemCount: pos.length,
+    totalUnits,
+    totalValueInr: totalVal,
+    erpSystem,
+    endpointUrl: "https://api.erp.retail-logistics.io/v2/orders/inbound",
+    httpStatus: 200,
+    latencyMs: Math.floor(110 + Math.random() * 90),
+    payloadHash: `sha256:${hashHex}`,
+    skuList: pos.map((p) => `${p.skuId} (${p.skuName})`),
+  };
+}
+
+/**
+ * Export dispatched ledger to CSV
+ */
+export function exportDispatchedLedgerToCsv(records: DispatchedPoRecord[]): string {
+  if (records.length === 0) return "";
+  const headers = [
+    "Dispatch_ID",
+    "PO_Batch_Number",
+    "Warehouse_ID",
+    "Warehouse_Name",
+    "Timestamp",
+    "Item_Count",
+    "Total_Units",
+    "Total_Value_INR",
+    "ERP_System",
+    "HTTP_Status",
+    "Latency_MS",
+    "Payload_Hash",
+  ];
+  const rows = records.map((r) => [
+    r.dispatchId,
+    r.poBatchNumber,
+    r.warehouseId,
+    `"${r.warehouseName}"`,
+    r.timestamp,
+    r.itemCount,
+    r.totalUnits,
+    r.totalValueInr,
+    `"${r.erpSystem}"`,
+    r.httpStatus,
+    r.latencyMs,
+    r.payloadHash,
+  ]);
+  return [headers.join(","), ...rows.map((row) => row.join(","))].join("\n");
+}
+

@@ -1,12 +1,13 @@
 import React, { useState } from "react";
 import { SkuSimulationState } from "../types";
-import { TrendingUp, AlertCircle, Sparkles, BarChart2, Activity } from "lucide-react";
+import { TrendingUp, Sparkles, BarChart2, Activity } from "lucide-react";
 
 interface VisualAnalyticsProps {
   simulationStates: SkuSimulationState[];
   selectedSkuId: string;
   onSelectSkuId: (id: string) => void;
   monteCarloIterations: number;
+  theme?: "dark" | "light";
 }
 
 export const VisualAnalytics: React.FC<VisualAnalyticsProps> = ({
@@ -14,9 +15,9 @@ export const VisualAnalytics: React.FC<VisualAnalyticsProps> = ({
   selectedSkuId,
   onSelectSkuId,
   monteCarloIterations,
+  theme = "dark",
 }) => {
-  const [hoverIndexChart1, setHoverIndexChart1] = useState<number | null>(null);
-  const [hoverIndexChart2, setHoverIndexChart2] = useState<number | null>(null);
+  const isDark = theme === "dark";
 
   const activeState =
     simulationStates.find((s) => s.sku.id === selectedSkuId) ||
@@ -32,7 +33,6 @@ export const VisualAnalytics: React.FC<VisualAnalyticsProps> = ({
     rmse,
     mae,
     mcResult,
-    effectiveLeadTimeMean,
   } = activeState;
 
   // Chart 1: Historical Sales (last 30 days) + Forecast (horizon)
@@ -63,9 +63,10 @@ export const VisualAnalytics: React.FC<VisualAnalyticsProps> = ({
   const innerW1 = c1Width - c1Padding.left - c1Padding.right;
   const innerH1 = c1Height - c1Padding.top - c1Padding.bottom;
 
-  const maxVal1 = Math.max(
-    ...allChart1Points.map((p) => Math.max(p.actual ?? 0, p.upper ?? p.pred ?? 0))
-  ) * 1.15 || 100;
+  const maxVal1 =
+    Math.max(
+      ...allChart1Points.map((p) => Math.max(p.actual ?? 0, p.upper ?? p.pred ?? 0))
+    ) * 1.15 || 100;
 
   const getX1 = (idx: number) =>
     c1Padding.left + (idx / Math.max(1, allChart1Points.length - 1)) * innerW1;
@@ -76,16 +77,19 @@ export const VisualAnalytics: React.FC<VisualAnalyticsProps> = ({
   const histPoints = allChart1Points
     .map((p, idx) => ({ ...p, idx }))
     .filter((p) => p.actual !== null);
-  const histPath = histPoints.length > 0
-    ? histPoints
-        .map((p, i) => `${i === 0 ? "M" : "L"} ${getX1(p.idx)} ${getY1(p.actual!)}`)
-        .join(" ")
-    : "";
+  const histPath =
+    histPoints.length > 0
+      ? histPoints
+          .map((p, i) => `${i === 0 ? "M" : "L"} ${getX1(p.idx)} ${getY1(p.actual!)}`)
+          .join(" ")
+      : "";
 
   // Forecast path and confidence band
   const foreIdxOffset = recentHist.length;
   const forePath = forecastPoints
-    .map((p, i) => `${i === 0 ? "M" : "L"} ${getX1(foreIdxOffset + i)} ${getY1(p.demand)}`)
+    .map(
+      (p, i) => `${i === 0 ? "M" : "L"} ${getX1(foreIdxOffset + i)} ${getY1(p.demand)}`
+    )
     .join(" ");
 
   const confidenceBandPath =
@@ -112,7 +116,6 @@ export const VisualAnalytics: React.FC<VisualAnalyticsProps> = ({
       : "";
 
   // Chart 2: Inventory Depletion vs ROP
-  // Depletion timeline
   let runningStock = currentStock;
   const depletionData = forecastPoints.map((f, i) => {
     runningStock = Math.max(0, runningStock - f.demand);
@@ -184,10 +187,19 @@ export const VisualAnalytics: React.FC<VisualAnalyticsProps> = ({
   const getX3 = (val: number) =>
     c3Padding.left + ((val - minDdlt) / Math.max(1, maxDdlt - minDdlt)) * innerW3;
 
+  const cardCls = isDark
+    ? "bg-slate-900/80 border-slate-800 text-slate-100"
+    : "bg-white border-slate-200 text-slate-900 shadow-sm";
+
+  const gridLineColor = isDark ? "rgba(255,255,255,0.06)" : "rgba(0,0,0,0.07)";
+  const tickTextColor = isDark ? "#64748B" : "#94A3B8";
+
   return (
     <div className="space-y-6">
       {/* Active SKU Selector Bar */}
-      <div className="bg-slate-900/80 border border-slate-800 rounded-xl p-4 flex flex-col md:flex-row md:items-center justify-between gap-4">
+      <div
+        className={`border rounded-xl p-4 flex flex-col md:flex-row md:items-center justify-between gap-4 transition-colors ${cardCls}`}
+      >
         <div className="flex items-center gap-3">
           <div className="p-2 rounded-lg bg-indigo-500/10 text-indigo-400">
             <Activity className="w-5 h-5" />
@@ -197,10 +209,20 @@ export const VisualAnalytics: React.FC<VisualAnalyticsProps> = ({
               Selected SKU Deep-Dive
             </span>
             <div className="flex items-center gap-2 mt-0.5">
-              <h3 className="text-base font-bold text-white">
+              <h3
+                className={`text-base font-bold ${
+                  isDark ? "text-white" : "text-slate-900"
+                }`}
+              >
                 {sku.name} ({sku.id})
               </h3>
-              <span className="text-xs px-2 py-0.5 rounded bg-slate-800 text-slate-300 border border-slate-700">
+              <span
+                className={`text-xs px-2 py-0.5 rounded border ${
+                  isDark
+                    ? "bg-slate-800 text-slate-300 border-slate-700"
+                    : "bg-slate-100 text-slate-700 border-slate-300"
+                }`}
+              >
                 {sku.category}
               </span>
             </div>
@@ -218,13 +240,15 @@ export const VisualAnalytics: React.FC<VisualAnalyticsProps> = ({
                 onClick={() => onSelectSkuId(s.sku.id)}
                 className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer flex items-center gap-1.5 ${
                   isSelected
-                    ? "bg-indigo-600 text-white shadow-md shadow-indigo-600/30"
-                    : "bg-slate-800/80 hover:bg-slate-800 text-slate-300 border border-slate-700/60"
+                    ? "bg-indigo-600 text-white shadow-sm shadow-indigo-600/30"
+                    : isDark
+                    ? "bg-slate-800/80 hover:bg-slate-800 text-slate-300 border border-slate-700/60"
+                    : "bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-300"
                 }`}
               >
                 <span>{s.sku.name.split(" ")[0]}</span>
                 {isCrit && (
-                  <span className="w-2 h-2 rounded-full bg-red-400 animate-pulse" />
+                  <span className="w-2 h-2 rounded-full bg-red-500 animate-pulse" />
                 )}
               </button>
             );
@@ -235,10 +259,14 @@ export const VisualAnalytics: React.FC<VisualAnalyticsProps> = ({
       {/* Grid of Two Core Charts */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* CHART 1: Historical Sales vs Predicted Demand Curve */}
-        <div className="bg-slate-900/80 border border-slate-800 rounded-xl p-5 shadow-lg">
+        <div className={`border rounded-xl p-5 shadow-sm transition-colors ${cardCls}`}>
           <div className="flex items-center justify-between mb-3">
             <div>
-              <h4 className="text-sm font-bold text-white flex items-center gap-2">
+              <h4
+                className={`text-sm font-bold flex items-center gap-2 ${
+                  isDark ? "text-white" : "text-slate-900"
+                }`}
+              >
                 <TrendingUp className="w-4 h-4 text-indigo-400" />
                 Historical Sales vs. ML Demand Forecast
               </h4>
@@ -247,7 +275,7 @@ export const VisualAnalytics: React.FC<VisualAnalyticsProps> = ({
               </p>
             </div>
             <div className="text-right">
-              <span className="text-xs font-semibold px-2 py-0.5 rounded bg-indigo-500/10 text-indigo-300 border border-indigo-500/20">
+              <span className="text-xs font-semibold px-2 py-0.5 rounded bg-indigo-500/10 text-indigo-400 border border-indigo-500/20">
                 RMSE: {rmse.toFixed(1)} | MAE: {mae.toFixed(1)}
               </span>
             </div>
@@ -270,13 +298,13 @@ export const VisualAnalytics: React.FC<VisualAnalyticsProps> = ({
                       y1={y}
                       x2={c1Width - c1Padding.right}
                       y2={y}
-                      stroke="rgba(255,255,255,0.06)"
+                      stroke={gridLineColor}
                       strokeDasharray="3 3"
                     />
                     <text
                       x={c1Padding.left - 8}
                       y={y + 4}
-                      fill="#64748B"
+                      fill={tickTextColor}
                       fontSize="10"
                       textAnchor="end"
                       fontFamily="sans-serif"
@@ -291,7 +319,7 @@ export const VisualAnalytics: React.FC<VisualAnalyticsProps> = ({
               {confidenceBandPath && (
                 <path
                   d={confidenceBandPath}
-                  fill="rgba(99, 102, 241, 0.15)"
+                  fill="rgba(99, 102, 241, 0.16)"
                 />
               )}
 
@@ -300,7 +328,7 @@ export const VisualAnalytics: React.FC<VisualAnalyticsProps> = ({
                 <path
                   d={histPath}
                   fill="none"
-                  stroke="#94A3B8"
+                  stroke={isDark ? "#94A3B8" : "#64748B"}
                   strokeWidth="1.8"
                 />
               )}
@@ -329,7 +357,7 @@ export const VisualAnalytics: React.FC<VisualAnalyticsProps> = ({
               <text
                 x={getX1(foreIdxOffset - 1) + 4}
                 y={c1Padding.top + 12}
-                fill="#818CF8"
+                fill="#6366F1"
                 fontSize="9"
                 fontWeight="bold"
               >
@@ -338,7 +366,13 @@ export const VisualAnalytics: React.FC<VisualAnalyticsProps> = ({
             </svg>
           </div>
 
-          <div className="flex items-center justify-between text-xs text-slate-400 mt-2 border-t border-slate-800/80 pt-2">
+          <div
+            className={`flex items-center justify-between text-xs mt-2 border-t pt-2 ${
+              isDark
+                ? "text-slate-400 border-slate-800/80"
+                : "text-slate-500 border-slate-200"
+            }`}
+          >
             <div className="flex items-center gap-4">
               <span className="flex items-center gap-1.5">
                 <span className="w-3 h-0.5 bg-slate-400 rounded-full" /> Historical
@@ -350,15 +384,19 @@ export const VisualAnalytics: React.FC<VisualAnalyticsProps> = ({
                 <span className="w-3 h-2 bg-indigo-500/20 rounded" /> 80% Conf. Interval
               </span>
             </div>
-            <span className="text-slate-400 font-medium">Daily Units Sold</span>
+            <span className="font-medium">Daily Units Sold</span>
           </div>
         </div>
 
         {/* CHART 2: Forward Inventory Depletion vs Dynamic ROP */}
-        <div className="bg-slate-900/80 border border-slate-800 rounded-xl p-5 shadow-lg">
+        <div className={`border rounded-xl p-5 shadow-sm transition-colors ${cardCls}`}>
           <div className="flex items-center justify-between mb-3">
             <div>
-              <h4 className="text-sm font-bold text-white flex items-center gap-2">
+              <h4
+                className={`text-sm font-bold flex items-center gap-2 ${
+                  isDark ? "text-white" : "text-slate-900"
+                }`}
+              >
                 <BarChart2 className="w-4 h-4 text-sky-400" />
                 Forward Stock Depletion vs. Dynamic ROP
               </h4>
@@ -367,11 +405,13 @@ export const VisualAnalytics: React.FC<VisualAnalyticsProps> = ({
               </p>
             </div>
             <div className="text-right">
-              <span className={`text-xs font-semibold px-2 py-0.5 rounded ${
-                currentStock <= mcResult.dynamicRop
-                  ? "bg-red-500/10 text-red-400 border border-red-500/20"
-                  : "bg-emerald-500/10 text-emerald-400 border border-emerald-500/20"
-              }`}>
+              <span
+                className={`text-xs font-semibold px-2 py-0.5 rounded border ${
+                  currentStock <= mcResult.dynamicRop
+                    ? "bg-red-500/10 text-red-500 border-red-500/20"
+                    : "bg-emerald-500/10 text-emerald-500 border-emerald-500/20"
+                }`}
+              >
                 Stock: {currentStock} | ROP: {mcResult.dynamicRop}
               </span>
             </div>
@@ -394,13 +434,13 @@ export const VisualAnalytics: React.FC<VisualAnalyticsProps> = ({
                       y1={y}
                       x2={c2Width - c2Padding.right}
                       y2={y}
-                      stroke="rgba(255,255,255,0.06)"
+                      stroke={gridLineColor}
                       strokeDasharray="3 3"
                     />
                     <text
                       x={c2Padding.left - 8}
                       y={y + 4}
-                      fill="#64748B"
+                      fill={tickTextColor}
                       fontSize="10"
                       textAnchor="end"
                     >
@@ -423,7 +463,7 @@ export const VisualAnalytics: React.FC<VisualAnalyticsProps> = ({
               <text
                 x={c2Width - c2Padding.right - 4}
                 y={getY2(mcResult.dynamicRop) - 6}
-                fill="#F87171"
+                fill="#EF4444"
                 fontSize="10"
                 fontWeight="bold"
                 textAnchor="end"
@@ -444,7 +484,7 @@ export const VisualAnalytics: React.FC<VisualAnalyticsProps> = ({
               <text
                 x={c2Width - c2Padding.right - 4}
                 y={getY2(mcResult.dynamicSafetyStock) - 6}
-                fill="#FBBF24"
+                fill="#F59E0B"
                 fontSize="9"
                 fontWeight="600"
                 textAnchor="end"
@@ -453,7 +493,7 @@ export const VisualAnalytics: React.FC<VisualAnalyticsProps> = ({
               </text>
 
               {/* Depletion Area */}
-              <path d={depletionArea} fill="rgba(56, 189, 248, 0.08)" />
+              <path d={depletionArea} fill="rgba(56, 189, 248, 0.1)" />
 
               {/* Depletion Line */}
               <path
@@ -477,7 +517,13 @@ export const VisualAnalytics: React.FC<VisualAnalyticsProps> = ({
             </svg>
           </div>
 
-          <div className="flex items-center justify-between text-xs text-slate-400 mt-2 border-t border-slate-800/80 pt-2">
+          <div
+            className={`flex items-center justify-between text-xs mt-2 border-t pt-2 ${
+              isDark
+                ? "text-slate-400 border-slate-800/80"
+                : "text-slate-500 border-slate-200"
+            }`}
+          >
             <div className="flex items-center gap-4">
               <span className="flex items-center gap-1.5">
                 <span className="w-3 h-0.5 bg-sky-400 rounded-full" /> Projected Stock
@@ -489,34 +535,46 @@ export const VisualAnalytics: React.FC<VisualAnalyticsProps> = ({
                 <span className="w-3 h-0.5 bg-amber-400 rounded-full" /> Safety Stock
               </span>
             </div>
-            <span className="text-slate-400 font-medium">Forward Days</span>
+            <span className="font-medium">Forward Days</span>
           </div>
         </div>
       </div>
 
       {/* CHART 3: Monte Carlo Lead-Time Demand Distribution Histogram */}
-      <div className="bg-slate-900/80 border border-slate-800 rounded-xl p-5 shadow-lg">
+      <div className={`border rounded-xl p-5 shadow-sm transition-colors ${cardCls}`}>
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-3">
           <div>
-            <h4 className="text-sm font-bold text-white flex items-center gap-2">
+            <h4
+              className={`text-sm font-bold flex items-center gap-2 ${
+                isDark ? "text-white" : "text-slate-900"
+              }`}
+            >
               <Sparkles className="w-4 h-4 text-violet-400" />
               Monte Carlo Joint Lead-Time Risk Distribution ({monteCarloIterations.toLocaleString()} Iterations)
             </h4>
             <p className="text-xs text-slate-400 mt-0.5">
-              Stochastic simulation coupling demand variance ($\sigma_d$) with supplier lead-time fluctuations ($\sigma_L = \pm{activeState.effectiveLeadTimeStd}d$)
+              Stochastic simulation coupling demand variance with supplier lead-time fluctuations
             </p>
           </div>
           <div className="flex items-center gap-2">
-            <span className={`text-xs font-bold px-2.5 py-1 rounded-md border ${
-              mcResult.stockoutProbabilityPct > 20
-                ? "bg-red-500/10 text-red-400 border-red-500/30"
-                : mcResult.stockoutProbabilityPct > 8
-                ? "bg-amber-500/10 text-amber-400 border-amber-500/30"
-                : "bg-emerald-500/10 text-emerald-400 border-emerald-500/30"
-            }`}>
+            <span
+              className={`text-xs font-bold px-2.5 py-1 rounded-md border ${
+                mcResult.stockoutProbabilityPct > 20
+                  ? "bg-red-500/10 text-red-500 border-red-500/30"
+                  : mcResult.stockoutProbabilityPct > 8
+                  ? "bg-amber-500/10 text-amber-500 border-amber-500/30"
+                  : "bg-emerald-500/10 text-emerald-500 border-emerald-500/30"
+              }`}
+            >
               Stock-Out Risk: {mcResult.stockoutProbabilityPct.toFixed(1)}%
             </span>
-            <span className="text-xs px-2 py-1 rounded bg-slate-800 text-slate-300 border border-slate-700">
+            <span
+              className={`text-xs px-2 py-1 rounded border ${
+                isDark
+                  ? "bg-slate-800 text-slate-300 border-slate-700"
+                  : "bg-slate-100 text-slate-700 border-slate-300"
+              }`}
+            >
               P95 Demand: {mcResult.p95LeadTimeDemand} units
             </span>
           </div>
@@ -538,7 +596,7 @@ export const VisualAnalytics: React.FC<VisualAnalyticsProps> = ({
                   y1={y}
                   x2={c3Width - c3Padding.right}
                   y2={y}
-                  stroke="rgba(255,255,255,0.05)"
+                  stroke={gridLineColor}
                   strokeDasharray="3 3"
                 />
               );
@@ -552,7 +610,6 @@ export const VisualAnalytics: React.FC<VisualAnalyticsProps> = ({
               const barH = (bin.count / maxBinCount) * innerH3;
               const y = c3Padding.top + innerH3 - barH;
 
-              // Color: If this bin's demand exceeds currentStock, mark in rose/red
               const isStockoutBin = bin.binEnd > currentStock;
 
               return (
@@ -562,9 +619,8 @@ export const VisualAnalytics: React.FC<VisualAnalyticsProps> = ({
                   y={y}
                   width={barW}
                   height={barH}
-                  fill={isStockoutBin ? "rgba(244, 63, 94, 0.75)" : "rgba(99, 102, 241, 0.75)"}
+                  fill={isStockoutBin ? "rgba(244, 63, 94, 0.8)" : "rgba(99, 102, 241, 0.75)"}
                   rx="2"
-                  className="transition-all hover:opacity-100"
                 />
               );
             })}
@@ -641,7 +697,7 @@ export const VisualAnalytics: React.FC<VisualAnalyticsProps> = ({
                 key={idx}
                 x={getX3(val)}
                 y={c3Padding.top + innerH3 + 20}
-                fill="#64748B"
+                fill={tickTextColor}
                 fontSize="10"
                 textAnchor="middle"
               >
@@ -651,8 +707,14 @@ export const VisualAnalytics: React.FC<VisualAnalyticsProps> = ({
           </svg>
         </div>
 
-        {/* Legend and Simulation summary */}
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs text-slate-400 mt-2 border-t border-slate-800/80 pt-3">
+        {/* Legend */}
+        <div
+          className={`flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs mt-2 border-t pt-3 ${
+            isDark
+              ? "text-slate-400 border-slate-800/80"
+              : "text-slate-500 border-slate-200"
+          }`}
+        >
           <div className="flex items-center gap-4">
             <span className="flex items-center gap-1.5">
               <span className="w-3 h-3 bg-indigo-500 rounded-sm" /> Safe Fulfillment Area
@@ -661,9 +723,9 @@ export const VisualAnalytics: React.FC<VisualAnalyticsProps> = ({
               <span className="w-3 h-3 bg-rose-500 rounded-sm" /> Stock-Out Breach Area (Deficit)
             </span>
           </div>
-          <div className="text-slate-300">
-            Expected Lead Time Demand: <strong className="text-white">{mcResult.expectedLeadTimeDemand} units</strong> |
-            Safety Stock: <strong className="text-indigo-400">{mcResult.dynamicSafetyStock} units</strong>
+          <div className={isDark ? "text-slate-300" : "text-slate-700"}>
+            Expected Lead Time Demand: <strong>{mcResult.expectedLeadTimeDemand} units</strong> |
+            Safety Stock: <strong className="text-indigo-500">{mcResult.dynamicSafetyStock} units</strong>
           </div>
         </div>
       </div>

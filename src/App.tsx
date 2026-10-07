@@ -5,6 +5,8 @@ import {
   generateSyntheticHistoricalData,
   executeSupplyChainEngine,
   generatePurchaseOrders,
+  evaluateInterWarehouseTransfers,
+  getInitialDispatchedLedger,
 } from "./engine/supplyChainEngine";
 import { Header } from "./components/Header";
 import { SidebarControls } from "./components/SidebarControls";
@@ -12,14 +14,16 @@ import { KpiMetrics } from "./components/KpiMetrics";
 import { VisualAnalytics } from "./components/VisualAnalytics";
 import { RiskTable } from "./components/RiskTable";
 import { PoGenerator } from "./components/PoGenerator";
+import { InterTransferView } from "./components/InterTransferView";
 import { SourceCodeViewer } from "./components/SourceCodeViewer";
+import { DispatchedPoRecord, InterTransferRecommendation } from "./types";
 import {
   TrendingUp,
   Table,
   FileCheck2,
   Code2,
+  ArrowRightLeft,
   ShieldCheck,
-  Zap,
 } from "lucide-react";
 
 const SERVICE_LEVELS = [
@@ -30,21 +34,21 @@ const SERVICE_LEVELS = [
   { label: "99.5% - Flawless", z: 2.576, desc: "Max inventory protection" },
 ];
 
-// Embedded copies of deliverables for interactive review & download in browser
 const REQUIREMENTS_TXT = `streamlit>=1.35.0
 pandas>=2.0.0
 numpy>=1.24.0
 scikit-learn>=1.3.0
 plotly>=5.18.0
 scipy>=1.11.0
+requests>=2.31.0
 `;
 
 const README_MD = `# 📦 Multi-Source Supply Chain & Inventory Stock-Out Forecaster
-### *Production-Grade Predictive Inventory Optimization & Monte Carlo Risk Analytics Engine*
+### *Production-Grade Predictive Inventory Optimization, Monte Carlo Risk & Inter-Transfer Control Tower*
 
 ## 🚀 Problem Statement & Architecture
 Quick-commerce platforms (Zepto, Blinkit, Instamart) face severe revenue leakage due to inventory stock-outs.
-Static rules (e.g., "7 days of forward supply") fail because they ignore demand variance, promotional velocity, and supplier delivery delays.
+Static heuristics fail because they ignore demand variance, promotional velocity, and supplier delivery delays.
 
 This platform bridges:
 1. **LightGBM / Scikit-Learn GradientBoostingRegressor** for multi-step daily demand forecasting.
@@ -53,8 +57,11 @@ This platform bridges:
 3. **Joint Bivariate Monte Carlo Simulation**:
    - 1,000+ stochastic iterations sampling demand and supplier lead-time distributions concurrently.
    - Calculates empirical Stock-Out Probability (%) and worst-case tail demand (P95/P99).
-4. **Automated Procurement Execution**:
-   - Generates automated Purchase Orders (POs) formatted with target replenishment quantities.
+4. **Multi-Echelon Dark Store Inter-Transfer Engine**:
+   - Discovers surplus inventory across neighboring dark store nodes (Current Stock > ROP + 14 days supply).
+   - Rebalances inventory intra-city within 3–6 hours instead of triggering expensive 2–5 day supplier lead-time POs.
+5. **Interactive ERP Webhook & Dispatched Ledger**:
+   - Logs dispatched orders into an in-memory audit table \`dispatched_po_ledger\`.
 
 ## ⚡ Quickstart
 \`\`\`bash
@@ -64,40 +71,45 @@ streamlit run app.py
 `;
 
 export default function App() {
-  // 1. Core State
+  // Theme State: 'dark' (Pitch-Black OLED Dark Mode) or 'light' (Sleek Clean Light Mode)
+  const [theme, setTheme] = useState<"dark" | "light">("dark");
+
+  // Core Simulation Parameters
   const [selectedWarehouseId, setSelectedWarehouseId] = useState<string>("WH-BOM-01");
   const [selectedSkuIds, setSelectedSkuIds] = useState<string[]>(SKUS.map((s) => s.id));
   const [activeSkuId, setActiveSkuId] = useState<string>("SKU-001");
-  const [selectedServiceZ, setSelectedServiceZ] = useState<number>(2.326); // 99%
+  const [selectedServiceZ, setSelectedServiceZ] = useState<number>(2.326); // 99% Mission critical
   const [forecastHorizon, setForecastHorizon] = useState<number>(21);
   const [monteCarloRuns, setMonteCarloRuns] = useState<number>(1000);
   const [promoSurgePct, setPromoSurgePct] = useState<number>(0);
   const [supplierDelayDays, setSupplierDelayDays] = useState<number>(0);
 
-  // Tab State
-  const [activeTab, setActiveTab] = useState<"analytics" | "table" | "po" | "code">("analytics");
+  // Tabs & Ledger State
+  const [activeTab, setActiveTab] = useState<"analytics" | "table" | "transfer" | "po" | "code">("analytics");
   const [isSimulating, setIsSimulating] = useState<boolean>(false);
   const [pythonCode, setPythonCode] = useState<string>("");
+  const [dispatchedLedger, setDispatchedLedger] = useState<DispatchedPoRecord[]>(getInitialDispatchedLedger());
+  const [approvedTransferIds, setApprovedTransferIds] = useState<string[]>([]);
 
   // Fetch /app.py content for code viewer
   useEffect(() => {
     fetch("/app.py")
       .then((res) => {
         if (res.ok) return res.text();
-        return "// Streamlit app.py file available in repository root.";
+        return "// Streamlit app.py available in repository root.";
       })
       .then((text) => setPythonCode(text))
       .catch(() => {
-        setPythonCode("# Streamlit app.py is located in the root workspace directory.");
+        setPythonCode("# Streamlit app.py located in repository root.");
       });
   }, []);
 
-  // 2. Generate In-Memory Historical Records (365 days across 5 SKUs x 3 Warehouses)
+  // In-Memory Historical Records (365 days across 5 SKUs x 3 Warehouses)
   const allHistoricalRecords = useMemo(() => {
     return generateSyntheticHistoricalData();
   }, []);
 
-  // 3. Execute Supply Chain Analytics Engine
+  // Execute Supply Chain Engine
   const simulationStates = useMemo(() => {
     return executeSupplyChainEngine(
       allHistoricalRecords,
@@ -130,12 +142,29 @@ export default function App() {
     return SERVICE_LEVELS.find((l) => l.z === selectedServiceZ) || SERVICE_LEVELS[3];
   }, [selectedServiceZ]);
 
-  // 4. Generate Purchase Orders
+  // Purchase Orders
   const purchaseOrders = useMemo(() => {
     return generatePurchaseOrders(simulationStates, currentWarehouse);
   }, [simulationStates, currentWarehouse]);
 
-  // Handle re-simulate with brief loading state
+  // Multi-Echelon Dark Store Inter-Transfers
+  const interTransfers = useMemo(() => {
+    return evaluateInterWarehouseTransfers(
+      allHistoricalRecords,
+      selectedWarehouseId,
+      simulationStates
+    ).map((t) => ({
+      ...t,
+      status: approvedTransferIds.includes(t.id) ? "APPROVED" : t.status,
+    }));
+  }, [allHistoricalRecords, selectedWarehouseId, simulationStates, approvedTransferIds]);
+
+  // Toggle Theme handler
+  const handleToggleTheme = () => {
+    setTheme((prev) => (prev === "dark" ? "light" : "dark"));
+  };
+
+  // Re-simulate trigger
   const handleTriggerSimulation = () => {
     setIsSimulating(true);
     setTimeout(() => {
@@ -162,13 +191,29 @@ export default function App() {
     setActiveTab("analytics");
   };
 
+  const handleApproveTransfer = (id: string) => {
+    setApprovedTransferIds((prev) => [...prev, id]);
+  };
+
+  const handleDispatchPo = (record: DispatchedPoRecord) => {
+    setDispatchedLedger((prev) => [record, ...prev]);
+  };
+
+  const isDark = theme === "dark";
+
   return (
-    <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col font-sans">
-      {/* Top Header */}
+    <div
+      className={`min-h-screen flex flex-col font-sans transition-colors duration-200 ${
+        isDark ? "bg-[#0B0F19] text-slate-100" : "bg-slate-50 text-slate-900"
+      }`}
+    >
+      {/* Top Header with Clean Sun/Moon Icon-Only Toggle */}
       <Header
         currentWarehouse={currentWarehouse}
         onRefreshData={handleTriggerSimulation}
         isSimulating={isSimulating}
+        theme={theme}
+        onToggleTheme={handleToggleTheme}
       />
 
       {/* Main Content Layout */}
@@ -213,6 +258,7 @@ export default function App() {
           }}
           isSimulating={isSimulating}
           onTriggerSimulation={handleTriggerSimulation}
+          theme={theme}
         />
 
         {/* Right Dashboard Workspace */}
@@ -221,17 +267,24 @@ export default function App() {
           <KpiMetrics
             simulationStates={simulationStates}
             selectedCslLabel={currentServiceLevel.label.split(" - ")[0]}
+            theme={theme}
           />
 
           {/* Navigation Tabs */}
-          <div className="flex items-center justify-between border-b border-slate-800 pb-2">
-            <div className="flex items-center space-x-1 sm:space-x-2">
+          <div
+            className={`flex items-center justify-between border-b pb-2 ${
+              isDark ? "border-slate-800" : "border-slate-200"
+            }`}
+          >
+            <div className="flex flex-wrap items-center gap-1.5 sm:gap-2">
               <button
                 onClick={() => setActiveTab("analytics")}
-                className={`flex items-center gap-2 px-3.5 py-2 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                className={`flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-bold transition-all cursor-pointer ${
                   activeTab === "analytics"
-                    ? "bg-indigo-600 text-white shadow-md shadow-indigo-600/30"
-                    : "text-slate-400 hover:text-slate-200 hover:bg-slate-900"
+                    ? "bg-indigo-600 text-white shadow-sm shadow-indigo-600/30"
+                    : isDark
+                    ? "text-slate-400 hover:text-slate-200 hover:bg-slate-900"
+                    : "text-slate-600 hover:text-slate-900 hover:bg-slate-200"
                 }`}
               >
                 <TrendingUp className="w-3.5 h-3.5" />
@@ -240,10 +293,12 @@ export default function App() {
 
               <button
                 onClick={() => setActiveTab("table")}
-                className={`flex items-center gap-2 px-3.5 py-2 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                className={`flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-bold transition-all cursor-pointer ${
                   activeTab === "table"
-                    ? "bg-indigo-600 text-white shadow-md shadow-indigo-600/30"
-                    : "text-slate-400 hover:text-slate-200 hover:bg-slate-900"
+                    ? "bg-indigo-600 text-white shadow-sm shadow-indigo-600/30"
+                    : isDark
+                    ? "text-slate-400 hover:text-slate-200 hover:bg-slate-900"
+                    : "text-slate-600 hover:text-slate-900 hover:bg-slate-200"
                 }`}
               >
                 <Table className="w-3.5 h-3.5" />
@@ -251,17 +306,38 @@ export default function App() {
               </button>
 
               <button
+                onClick={() => setActiveTab("transfer")}
+                className={`flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                  activeTab === "transfer"
+                    ? "bg-indigo-600 text-white shadow-sm shadow-indigo-600/30"
+                    : isDark
+                    ? "text-slate-400 hover:text-slate-200 hover:bg-slate-900"
+                    : "text-slate-600 hover:text-slate-900 hover:bg-slate-200"
+                }`}
+              >
+                <ArrowRightLeft className="w-3.5 h-3.5" />
+                <span>Inter-Store Transfers</span>
+                {interTransfers.length > 0 && (
+                  <span className="px-1.5 py-0.2 rounded-full text-[10px] bg-amber-500/20 text-amber-500 font-extrabold">
+                    {interTransfers.length}
+                  </span>
+                )}
+              </button>
+
+              <button
                 onClick={() => setActiveTab("po")}
-                className={`flex items-center gap-2 px-3.5 py-2 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                className={`flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-bold transition-all cursor-pointer ${
                   activeTab === "po"
-                    ? "bg-indigo-600 text-white shadow-md shadow-indigo-600/30"
-                    : "text-slate-400 hover:text-slate-200 hover:bg-slate-900"
+                    ? "bg-indigo-600 text-white shadow-sm shadow-indigo-600/30"
+                    : isDark
+                    ? "text-slate-400 hover:text-slate-200 hover:bg-slate-900"
+                    : "text-slate-600 hover:text-slate-900 hover:bg-slate-200"
                 }`}
               >
                 <FileCheck2 className="w-3.5 h-3.5" />
                 <span>Automated PO Batch</span>
                 {purchaseOrders.length > 0 && (
-                  <span className="px-1.5 py-0.2 rounded-full text-[10px] bg-emerald-500/20 text-emerald-300 font-bold">
+                  <span className="px-1.5 py-0.2 rounded-full text-[10px] bg-emerald-500/20 text-emerald-500 font-extrabold">
                     {purchaseOrders.length}
                   </span>
                 )}
@@ -269,10 +345,12 @@ export default function App() {
 
               <button
                 onClick={() => setActiveTab("code")}
-                className={`flex items-center gap-2 px-3.5 py-2 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                className={`flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-bold transition-all cursor-pointer ${
                   activeTab === "code"
-                    ? "bg-indigo-600 text-white shadow-md shadow-indigo-600/30"
-                    : "text-slate-400 hover:text-slate-200 hover:bg-slate-900"
+                    ? "bg-indigo-600 text-white shadow-sm shadow-indigo-600/30"
+                    : isDark
+                    ? "text-slate-400 hover:text-slate-200 hover:bg-slate-900"
+                    : "text-slate-600 hover:text-slate-900 hover:bg-slate-200"
                 }`}
               >
                 <Code2 className="w-3.5 h-3.5" />
@@ -280,9 +358,9 @@ export default function App() {
               </button>
             </div>
 
-            <div className="hidden sm:flex items-center gap-2 text-xs text-slate-400">
+            <div className="hidden xl:flex items-center gap-2 text-xs text-slate-400">
               <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
-              <span>Simulated Monte Carlo Engine Active</span>
+              <span>Monte Carlo Engine Active</span>
             </div>
           </div>
 
@@ -293,6 +371,7 @@ export default function App() {
               selectedSkuId={activeSkuId}
               onSelectSkuId={setActiveSkuId}
               monteCarloIterations={monteCarloRuns}
+              theme={theme}
             />
           )}
 
@@ -300,13 +379,25 @@ export default function App() {
             <RiskTable
               simulationStates={simulationStates}
               onSelectSku={handleSelectSkuDeepDive}
+              theme={theme}
+            />
+          )}
+
+          {activeTab === "transfer" && (
+            <InterTransferView
+              recommendations={interTransfers}
+              onApproveTransfer={handleApproveTransfer}
+              theme={theme}
             />
           )}
 
           {activeTab === "po" && (
             <PoGenerator
               purchaseOrders={purchaseOrders}
-              warehouseName={currentWarehouse.name}
+              warehouse={currentWarehouse}
+              dispatchedLedger={dispatchedLedger}
+              onDispatchPo={handleDispatchPo}
+              theme={theme}
             />
           )}
 
@@ -321,19 +412,25 @@ export default function App() {
       </div>
 
       {/* Global Footer */}
-      <footer className="border-t border-slate-900 bg-slate-950/80 py-4 px-6 text-center text-xs text-slate-400">
+      <footer
+        className={`border-t py-4 px-6 text-center text-xs transition-colors ${
+          isDark
+            ? "border-slate-800 bg-[#0B0F19] text-slate-400"
+            : "border-slate-200 bg-white text-slate-500 shadow-inner"
+        }`}
+      >
         <div className="max-w-7xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-2">
           <span>
             Multi-Source Supply Chain &amp; Inventory Stock-Out Forecaster • Lead Analytics Engineer
           </span>
           <div className="flex items-center gap-3">
-            <span className="flex items-center gap-1 text-slate-400">
-              <ShieldCheck className="w-3 h-3 text-indigo-400" />
+            <span className="flex items-center gap-1">
+              <ShieldCheck className="w-3 h-3 text-indigo-500" />
               Z-Score Bivariate Variance Model
             </span>
             <span>•</span>
-            <span className="text-slate-400">
-              Single-File <code className="text-indigo-300">app.py</code> Executable
+            <span>
+              Single-File <code className="text-indigo-500 font-mono">app.py</code> Executable
             </span>
           </div>
         </div>

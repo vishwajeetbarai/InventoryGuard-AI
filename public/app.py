@@ -5,12 +5,15 @@ Production-Grade Executive Control Tower & Stochastic Risk Modeling Engine
 ========================================================================================
 Author: Senior Principal Supply Chain Data Scientist & Lead Analytics Engineer
 Architecture: Streamlit + Pandas + Scikit-Learn (GBR) + NumPy + Plotly + SciPy
+Features: Multi-Echelon Inter-Store Transfers + ERP Webhook Audit Ledger
 ========================================================================================
 """
 
 import datetime
+import hashlib
 import io
 import math
+import time
 import numpy as np
 import pandas as pd
 import plotly.express as px
@@ -75,6 +78,15 @@ st.markdown(
         margin-top: 6px;
     }
 
+    /* Transfer Card Styling */
+    .transfer-box {
+        background: rgba(15, 23, 42, 0.75);
+        border: 1px solid rgba(99, 102, 241, 0.25);
+        border-radius: 10px;
+        padding: 16px;
+        margin-bottom: 12px;
+    }
+
     /* Status Badge Styling */
     .badge-critical {
         background-color: rgba(239, 68, 68, 0.2);
@@ -135,9 +147,9 @@ st.markdown(
 # 2. CATALOG & LOCATION DEFINITIONS
 # --------------------------------------------------------------------------------------
 WAREHOUSE_REGISTRY = {
-    "WH-BOM-01": {"name": "Mumbai Central Dark Store", "city": "Mumbai", "region": "West"},
-    "WH-BLR-02": {"name": "Bengaluru Indiranagar Hub", "city": "Bengaluru", "region": "South"},
-    "WH-DEL-03": {"name": "Delhi NCR Fulfillment Node", "city": "Delhi NCR", "region": "North"},
+    "WH-BOM-01": {"name": "Mumbai Central Dark Store", "city": "Mumbai", "region": "West Hub"},
+    "WH-BLR-02": {"name": "Bengaluru Indiranagar Hub", "city": "Bengaluru", "region": "South Hub"},
+    "WH-DEL-03": {"name": "Delhi NCR Fulfillment Node", "city": "Delhi NCR", "region": "North Hub"},
 }
 
 SKU_CATALOG = {
@@ -199,7 +211,44 @@ SKU_CATALOG = {
 }
 
 # --------------------------------------------------------------------------------------
-# 3. SYNTHETIC DATA GENERATION ENGINE (365 DAYS HISTORICAL)
+# 3. STATEFUL SESSION INITIALIZATION (AUDIT LEDGER & TRANSFERS)
+# --------------------------------------------------------------------------------------
+if "dispatched_po_ledger" not in st.session_state:
+    now_str = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    st.session_state.dispatched_po_ledger = [
+        {
+            "dispatch_id": "DSP-20261007-0091",
+            "po_batch": "PO-20261007-WH-BOM-01",
+            "warehouse": "Mumbai Central Dark Store",
+            "timestamp": now_str,
+            "line_items": 2,
+            "total_units": 460,
+            "total_value_inr": 96540.0,
+            "erp_system": "SAP S/4HANA Cloud (EDI 850)",
+            "status": "HTTP 200 OK",
+            "latency_ms": 142,
+            "payload_hash": "sha256:7f9a2b8e3d0c41ab82",
+        },
+        {
+            "dispatch_id": "DSP-20261007-0088",
+            "po_batch": "PO-20261007-WH-BLR-02",
+            "warehouse": "Bengaluru Indiranagar Hub",
+            "timestamp": now_str,
+            "line_items": 3,
+            "total_units": 620,
+            "total_value_inr": 145200.0,
+            "erp_system": "Oracle NetSuite WMS Webhook",
+            "status": "HTTP 200 OK",
+            "latency_ms": 198,
+            "payload_hash": "sha256:1a84f3c9e67d9834ba",
+        },
+    ]
+
+if "approved_transfers" not in st.session_state:
+    st.session_state.approved_transfers = []
+
+# --------------------------------------------------------------------------------------
+# 4. SYNTHETIC DATA GENERATION ENGINE (365 DAYS HISTORICAL)
 # --------------------------------------------------------------------------------------
 @st.cache_data(show_spinner=False)
 def generate_synthetic_supply_chain_data(seed: int = 42) -> pd.DataFrame:
@@ -214,11 +263,10 @@ def generate_synthetic_supply_chain_data(seed: int = 42) -> pd.DataFrame:
     
     records = []
     
-    # Regional demand scaling factors
     regional_factors = {
-        "WH-BOM-01": 1.25, # High density
-        "WH-BLR-02": 1.10, # Tech hub
-        "WH-DEL-03": 0.95, # High seasonal variance
+        "WH-BOM-01": 1.25,
+        "WH-BLR-02": 1.10,
+        "WH-DEL-03": 0.95,
     }
     
     for wh_id, wh_meta in WAREHOUSE_REGISTRY.items():
@@ -229,34 +277,23 @@ def generate_synthetic_supply_chain_data(seed: int = 42) -> pd.DataFrame:
             lt_mean = sku_meta["lead_time_mean"]
             lt_std = sku_meta["lead_time_std"]
             
-            # Initial stock level roughly 3-6 days of forward supply
             sim_stock = int(base_d * sku_meta["stock_multiplier"] * np.random.uniform(0.7, 1.4))
             
-            for i, current_dt in enumerate(dates):
+            for current_dt in dates:
                 day_of_week = current_dt.dayofweek
                 day_of_year = current_dt.dayofyear
                 
-                # Seasonality: Weekend lift (Fri-Sun)
                 weekend_lift = 1.35 if day_of_week in [4, 5, 6] else 0.90
-                
-                # Annual wave
                 annual_wave = 1.0 + 0.15 * math.sin(2 * math.pi * day_of_year / 365.0)
-                
-                # Random promotional campaign (~12% probability)
                 is_promo = 1 if (np.random.rand() < 0.12 or day_of_week == 6) else 0
                 promo_multiplier = 1.65 if is_promo == 1 else 1.0
                 
-                # Stochastic demand draw
                 expected_demand = base_d * weekend_lift * annual_wave * promo_multiplier
                 noise = np.random.normal(0, expected_demand * 0.12)
                 units_sold = max(0, int(np.round(expected_demand + noise)))
                 
-                # Supplier lead time realized for orders placed that day
-                # Lead time modeled as log-normal clipped to >= 1 day
                 sim_lead_time = max(1.0, float(np.random.normal(lt_mean, lt_std)))
                 
-                # Inventory depletion and periodic simulated replenishment
-                # Simulate a realistic reorder trigger in historical log
                 if sim_stock < int(base_d * 2.5):
                     sim_stock += int(base_d * np.random.uniform(4.0, 7.0))
                 sim_stock = max(0, sim_stock - units_sold)
@@ -277,38 +314,25 @@ def generate_synthetic_supply_chain_data(seed: int = 42) -> pd.DataFrame:
                     "stockout_penalty_cost_per_unit": sku_meta["stockout_penalty"],
                 })
                 
-    df = pd.DataFrame(records)
-    return df
+    return pd.DataFrame(records)
 
 # --------------------------------------------------------------------------------------
-# 4. FEATURE ENGINEERING & MACHINE LEARNING DEMAND FORECASTING
+# 5. FEATURE ENGINEERING & MACHINE LEARNING DEMAND FORECASTING
 # --------------------------------------------------------------------------------------
 def build_features_for_series(sub_df: pd.DataFrame) -> pd.DataFrame:
-    """
-    Creates temporal lag and rolling features for tabular gradient boosting forecaster:
-    - lag_1, lag_7, lag_14
-    - rolling_7d, rolling_30d
-    - calendar features: day_of_week, month, is_weekend
-    - promotional interaction features
-    """
     df = sub_df.sort_values("date").copy()
     
-    # Lag features
     df["lag_1"] = df["units_sold"].shift(1)
     df["lag_7"] = df["units_sold"].shift(7)
     df["lag_14"] = df["units_sold"].shift(14)
     
-    # Rolling aggregations
     df["rolling_mean_7"] = df["units_sold"].shift(1).rolling(window=7, min_periods=3).mean()
     df["rolling_std_7"] = df["units_sold"].shift(1).rolling(window=7, min_periods=3).std().fillna(1.0)
     df["rolling_mean_30"] = df["units_sold"].shift(1).rolling(window=30, min_periods=7).mean()
     
-    # Calendar features
     df["day_of_week"] = df["date"].dt.dayofweek
     df["month"] = df["date"].dt.month
     df["is_weekend"] = df["day_of_week"].apply(lambda x: 1 if x in [5, 6] else 0)
-    
-    # Interaction: promo * day_of_week
     df["promo_weekend_interaction"] = df["is_promotional_day"] * df["is_weekend"]
     
     return df
@@ -319,10 +343,6 @@ def train_demand_forecast_model(
     forecast_horizon: int = 14,
     promo_uplift_pct: float = 0.0
 ):
-    """
-    Trains a Scikit-Learn GradientBoostingRegressor on historical daily demand
-    and predicts forward for the specified horizon with uncertainty bounds.
-    """
     featured_df = build_features_for_series(_data_slice)
     clean_df = featured_df.dropna().reset_index(drop=True)
     
@@ -333,7 +353,6 @@ def train_demand_forecast_model(
         "promo_weekend_interaction"
     ]
     
-    # Split: holdout last 30 days for out-of-sample evaluation
     test_size = 30
     train_data = clean_df.iloc[:-test_size]
     test_data = clean_df.iloc[-test_size:]
@@ -343,7 +362,6 @@ def train_demand_forecast_model(
     X_test = test_data[feature_cols]
     y_test = test_data["units_sold"]
     
-    # Gradient Boosting Regressor (robust to non-linear promo spikes)
     model = GradientBoostingRegressor(
         n_estimators=120,
         learning_rate=0.06,
@@ -357,7 +375,6 @@ def train_demand_forecast_model(
     test_rmse = float(np.sqrt(mean_squared_error(y_test, test_preds)))
     test_mae = float(mean_absolute_error(y_test, test_preds))
     
-    # Recursive Multi-Step Forward Forecasting for next `forecast_horizon` days
     last_date = clean_df["date"].max()
     future_dates = pd.date_range(start=last_date + datetime.timedelta(days=1), periods=forecast_horizon, freq="D")
     
@@ -365,7 +382,6 @@ def train_demand_forecast_model(
     future_preds = []
     
     for step_dt in future_dates:
-        # Construct dynamic lag values from known + predicted buffer
         l1 = history_records[-1]
         l7 = history_records[-7] if len(history_records) >= 7 else history_records[-1]
         l14 = history_records[-14] if len(history_records) >= 14 else history_records[-1]
@@ -377,7 +393,7 @@ def train_demand_forecast_model(
         dow = step_dt.dayofweek
         mo = step_dt.month
         is_wk = 1 if dow in [5, 6] else 0
-        is_p = 1 if dow == 6 else 0 # Sunday promo default
+        is_p = 1 if dow == 6 else 0
         
         row_feat = pd.DataFrame([{
             "lag_1": l1,
@@ -394,7 +410,6 @@ def train_demand_forecast_model(
         }])
         
         raw_pred = model.predict(row_feat[feature_cols])[0]
-        # Apply hypothetical promotional scenario uplift if set
         adjusted_pred = max(0.0, raw_pred * (1.0 + promo_uplift_pct / 100.0))
         future_preds.append(adjusted_pred)
         history_records.append(adjusted_pred)
@@ -402,7 +417,6 @@ def train_demand_forecast_model(
     forecast_df = pd.DataFrame({
         "date": future_dates,
         "forecast_demand": future_preds,
-        # Uncertainty intervals (80% confidence interval based on test RMSE)
         "forecast_lower": [max(0.0, p - 1.28 * test_rmse) for p in future_preds],
         "forecast_upper": [p + 1.28 * test_rmse for p in future_preds],
     })
@@ -413,12 +427,10 @@ def train_demand_forecast_model(
         "mae": test_mae,
         "forecast_df": forecast_df,
         "historical_df": clean_df,
-        "test_actuals": y_test.values,
-        "test_preds": test_preds,
     }
 
 # --------------------------------------------------------------------------------------
-# 5. MONTE CARLO STOCHASTIC RISK & SAFETY STOCK ENGINE
+# 6. MONTE CARLO STOCHASTIC RISK & SAFETY STOCK ENGINE
 # --------------------------------------------------------------------------------------
 def run_monte_carlo_lead_time_simulation(
     forecast_demand_mean: float,
@@ -430,56 +442,33 @@ def run_monte_carlo_lead_time_simulation(
     iterations: int = 1000,
     seed: int = 42
 ):
-    """
-    Performs joint bivariate Monte Carlo risk simulations over the supplier lead-time window:
-    
-    1. Sample simulated supplier lead times L_i ~ Normal(lead_time_mean, lead_time_std) (>= 1.0)
-    2. Sample daily demand draws d_{i,t} ~ Normal(forecast_demand_mean, forecast_demand_std)
-    3. Aggregate simulated Demand During Lead Time (DDLT_i) = sum_{t=1}^{ceil(L_i)} d_{i,t}
-    4. Compute Dynamic Safety Stock (SS) with dual variance propagation:
-       SS = Z * sqrt( L_mean * (sigma_d)^2 + (D_mean)^2 * (sigma_L)^2 )
-    5. Dynamic Reorder Point (ROP) = (D_mean * L_mean) + SS
-    6. Stock-Out Probability = Fraction of iterations where DDLT_i > current_stock
-    """
     np.random.seed(seed)
     
     # Dual Variance Dynamic Safety Stock Formula (Silver-Pyke-Peterson Framework)
-    # Term 1: Demand uncertainty over average lead time = L_bar * sigma_d^2
-    # Term 2: Lead time uncertainty over average demand = D_bar^2 * sigma_L^2
     variance_term = (lead_time_mean * (forecast_demand_std ** 2)) + ((forecast_demand_mean ** 2) * (lead_time_std ** 2))
     joint_sigma = math.sqrt(max(0.001, variance_term))
     dynamic_safety_stock = int(math.ceil(service_level_z * joint_sigma))
     
-    # Dynamic Reorder Point (ROP)
     expected_lead_time_demand = forecast_demand_mean * lead_time_mean
     dynamic_rop = int(math.ceil(expected_lead_time_demand + dynamic_safety_stock))
     
-    # Vectorized Monte Carlo Sampling
-    # Draw supplier lead times (clipped at min 1.0 day to reflect realistic operational lag)
     sampled_lead_times = np.clip(np.random.normal(lead_time_mean, lead_time_std, size=iterations), 1.0, None)
-    
     simulated_ddlt = np.zeros(iterations)
     for i in range(iterations):
         lt_days = int(math.ceil(sampled_lead_times[i]))
-        # Daily demand draws during this lead time
         daily_demands = np.clip(np.random.normal(forecast_demand_mean, forecast_demand_std, size=lt_days), 0.0, None)
         simulated_ddlt[i] = np.sum(daily_demands)
         
     stockout_events = np.sum(simulated_ddlt > current_stock)
     stockout_probability_pct = (stockout_events / iterations) * 100.0
     
-    # Urgency Classification
     if current_stock <= dynamic_rop or stockout_probability_pct >= 25.0:
         urgency = "CRITICAL REORDER NOW"
-        urgency_class = "badge-critical"
     elif current_stock <= int(dynamic_rop * 1.30) or stockout_probability_pct >= 10.0:
         urgency = "WARNING"
-        urgency_class = "badge-warning"
     else:
         urgency = "OPTIMAL"
-        urgency_class = "badge-optimal"
         
-    # Suggested Reorder Quantity: Target Stock (ROP + 7 days cycle stock) - Current Stock
     target_inventory = dynamic_rop + int(forecast_demand_mean * 7.0)
     recommended_reorder_qty = max(0, target_inventory - current_stock)
     
@@ -490,21 +479,79 @@ def run_monte_carlo_lead_time_simulation(
         "stockout_probability_pct": round(stockout_probability_pct, 1),
         "simulated_ddlt": simulated_ddlt,
         "urgency": urgency,
-        "urgency_class": urgency_class,
         "recommended_reorder_qty": recommended_reorder_qty,
         "p95_lead_time_demand": int(np.percentile(simulated_ddlt, 95)),
-        "p99_lead_time_demand": int(np.percentile(simulated_ddlt, 99)),
     }
 
 # --------------------------------------------------------------------------------------
-# 6. APPLICATION HEADER & CONTROLS
+# 7. MULTI-ECHELON DARK STORE INTER-TRANSFER ENGINE
+# --------------------------------------------------------------------------------------
+def evaluate_inter_store_transfers(
+    df_raw: pd.DataFrame,
+    current_wh_id: str,
+    simulation_results: dict
+) -> list:
+    """
+    Evaluates whether an SKU at CRITICAL REORDER NOW status can be fulfilled
+    via surplus stock from another nearby dark store (Current Stock > ROP + 14 days supply).
+    """
+    transfer_proposals = []
+    other_wh_ids = [w for w in WAREHOUSE_REGISTRY.keys() if w != current_wh_id]
+    
+    for sku_id, s_data in simulation_results.items():
+        mc_info = s_data["mc_output"]
+        if mc_info["urgency"] != "CRITICAL REORDER NOW":
+            continue
+            
+        dest_stock = s_data["current_stock"]
+        dest_rop = mc_info["dynamic_rop"]
+        deficit_needed = max(20, dest_rop + int(s_data["daily_demand_mean"] * 7) - dest_stock)
+        
+        # Scan other dark stores for surplus
+        for origin_wh in other_wh_ids:
+            origin_slice = df_raw[(df_raw["warehouse_id"] == origin_wh) & (df_raw["sku_id"] == sku_id)]
+            if origin_slice.empty:
+                continue
+            origin_curr_stock = int(origin_slice.sort_values("date").iloc[-1]["current_stock_level"])
+            origin_daily_demand = SKU_CATALOG[sku_id]["base_demand"] * 1.15
+            origin_est_rop = int(origin_daily_demand * SKU_CATALOG[sku_id]["lead_time_mean"] + mc_info["dynamic_safety_stock"] * 0.9)
+            
+            # Condition: Current Stock > ROP + 14 days supply
+            surplus_threshold = origin_est_rop + int(origin_daily_demand * 14)
+            if origin_curr_stock > surplus_threshold:
+                available_surplus = origin_curr_stock - surplus_threshold
+                xfer_qty = min(available_surplus, deficit_needed)
+                
+                if xfer_qty >= 10:
+                    transfer_id = f"XFER-{sku_id}-{origin_wh[-2:]}"
+                    transfer_proposals.append({
+                        "transfer_id": transfer_id,
+                        "sku_id": sku_id,
+                        "sku_name": SKU_CATALOG[sku_id]["name"],
+                        "category": SKU_CATALOG[sku_id]["category"],
+                        "origin_wh": origin_wh,
+                        "origin_name": WAREHOUSE_REGISTRY[origin_wh]["name"],
+                        "origin_stock": origin_curr_stock,
+                        "origin_surplus": available_surplus,
+                        "dest_wh": current_wh_id,
+                        "dest_name": WAREHOUSE_REGISTRY[current_wh_id]["name"],
+                        "dest_stock": dest_stock,
+                        "dest_rop": dest_rop,
+                        "transfer_units": xfer_qty,
+                        "transit_hours": 4 if WAREHOUSE_REGISTRY[origin_wh]["city"] == WAREHOUSE_REGISTRY[current_wh_id]["city"] else 6,
+                        "savings_inr": int(xfer_qty * (SKU_CATALOG[sku_id]["stockout_penalty"] + SKU_CATALOG[sku_id]["base_price"] * 0.3)),
+                    })
+                    break
+                    
+    return transfer_proposals
+
+# --------------------------------------------------------------------------------------
+# 8. APPLICATION SIDEBAR & PARAMETERS
 # --------------------------------------------------------------------------------------
 df_raw = generate_synthetic_supply_chain_data()
 
-# SIDEBAR CONTROLS
 with st.sidebar:
     st.markdown("### 🎛️ Control Tower Parameters")
-    st.markdown("Configure operational thresholds and simulation parameters.")
     
     selected_warehouse_id = st.selectbox(
         "📍 Dark Store / Warehouse Node",
@@ -521,7 +568,7 @@ with st.sidebar:
         format_func=lambda x: f"{x} ({SKU_CATALOG[x]['name']})",
     )
     if not selected_skus:
-        selected_skus = sku_options # Fallback to all
+        selected_skus = sku_options
         
     st.markdown("---")
     st.markdown("#### 🛡️ Service Level & Lead Time Risk")
@@ -536,7 +583,7 @@ with st.sidebar:
     selected_csl = st.selectbox(
         "Cycle Service Level (CSL Target)",
         options=list(service_level_map.keys()),
-        index=3, # 99.0% Mission critical
+        index=3,
     )
     z_score = service_level_map[selected_csl]
     
@@ -559,12 +606,11 @@ with st.sidebar:
     st.markdown("---")
     st.markdown("#### ⚡ Stress Test & Promo Sandbox")
     promo_uplift = st.slider(
-        "Hypothetical Flash Sale Demand Surge (+%)",
+        "Flash Sale Demand Surge (+%)",
         min_value=0,
         max_value=100,
         value=0,
         step=5,
-        help="Simulate unexpected promotional velocity impact on stock-out risk.",
     )
     
     supplier_delay_bias = st.slider(
@@ -573,10 +619,9 @@ with st.sidebar:
         max_value=5.0,
         value=0.0,
         step=0.5,
-        help="Add systematic delay to model monsoon/port congestion disruptions.",
     )
     
-    st.caption("AI Studio Supply Chain Engine v2.4 • Production Grade")
+    st.caption("AI Studio Supply Chain Engine v2.5 • Multi-Echelon Active")
 
 # TOP TITLE BAR
 st.markdown(
@@ -601,9 +646,8 @@ st.markdown(
 )
 
 # --------------------------------------------------------------------------------------
-# 7. EXECUTION ENGINE & AGGREGATE METRICS
+# 9. EXECUTION ENGINE
 # --------------------------------------------------------------------------------------
-# Run forecasting and Monte Carlo simulations across all selected SKUs
 simulation_results = {}
 total_revenue_at_risk = 0.0
 total_recommended_ss = 0
@@ -614,21 +658,17 @@ for s_id in selected_skus:
     sku_slice = df_raw[(df_raw["warehouse_id"] == selected_warehouse_id) & (df_raw["sku_id"] == s_id)]
     latest_row = sku_slice.sort_values("date").iloc[-1]
     
-    # Train ML Model & Forecast
     fc_out = train_demand_forecast_model(sku_slice, forecast_horizon=forecast_horizon, promo_uplift_pct=promo_uplift)
     
-    # Statistical demand properties
     d_mean = float(fc_out["forecast_df"]["forecast_demand"].mean())
     d_std = float(max(1.0, fc_out["forecast_df"]["forecast_demand"].std()))
     
-    # Lead time properties with scenario shock
     base_lt_mean = SKU_CATALOG[s_id]["lead_time_mean"] + supplier_delay_bias
     base_lt_std = SKU_CATALOG[s_id]["lead_time_std"]
     lead_time_variances.append(base_lt_std)
     
     current_stock = int(latest_row["current_stock_level"])
     
-    # Monte Carlo simulation
     mc_res = run_monte_carlo_lead_time_simulation(
         forecast_demand_mean=d_mean,
         forecast_demand_std=d_std,
@@ -639,7 +679,6 @@ for s_id in selected_skus:
         iterations=monte_carlo_iterations,
     )
     
-    # Revenue at Risk = Stockout Probability * (Lead Time Demand - Current Stock) * Unit Price
     if mc_res["stockout_probability_pct"] > 5.0 and mc_res["p95_lead_time_demand"] > current_stock:
         deficit_units = mc_res["p95_lead_time_demand"] - current_stock
         stockout_pen = SKU_CATALOG[s_id]["stockout_penalty"] + SKU_CATALOG[s_id]["base_price"]
@@ -660,12 +699,16 @@ for s_id in selected_skus:
         "unit_price": SKU_CATALOG[s_id]["base_price"],
         "lead_time_mean": base_lt_mean,
         "lead_time_std": base_lt_std,
+        "daily_demand_mean": d_mean,
     }
 
 avg_lead_time_std = float(np.mean(lead_time_variances)) if lead_time_variances else 0.0
 
+# Evaluate multi-echelon inter-store transfer proposals
+inter_transfers = evaluate_inter_store_transfers(df_raw, selected_warehouse_id, simulation_results)
+
 # --------------------------------------------------------------------------------------
-# 8. EXECUTIVE HEADER KPI METRIC CARDS
+# 10. EXECUTIVE KPI CARDS
 # --------------------------------------------------------------------------------------
 kpi_col1, kpi_col2, kpi_col3, kpi_col4 = st.columns(4)
 
@@ -677,7 +720,7 @@ with kpi_col1:
             <div class="metric-value" style="color: {'#EF4444' if critical_stockouts_count > 0 else '#10B981'};">
                 {critical_stockouts_count} <span style="font-size: 1rem; font-weight: 500; color: #94A3B8;">/ {len(selected_skus)} SKUs</span>
             </div>
-            <div class="metric-subtitle">Requiring Immediate Procurement PO</div>
+            <div class="metric-subtitle">Requiring Immediate Action</div>
         </div>
         """,
         unsafe_allow_html=True,
@@ -691,7 +734,7 @@ with kpi_col2:
             <div class="metric-value" style="color: #F59E0B;">
                 ₹{total_revenue_at_risk:,.0f}
             </div>
-            <div class="metric-subtitle">Lead-Time Deficit & Penalty Exposure</div>
+            <div class="metric-subtitle">Lead-Time Deficit & Penalty</div>
         </div>
         """,
         unsafe_allow_html=True,
@@ -715,11 +758,11 @@ with kpi_col4:
     st.markdown(
         f"""
         <div class="metric-card">
-            <div class="metric-title">Avg Supplier Lead-Time Volatility</div>
+            <div class="metric-title">Inter-Store Transfers Available</div>
             <div class="metric-value" style="color: #38BDF8;">
-                ±{avg_lead_time_std:.2f} <span style="font-size: 1rem; font-weight: 500; color: #94A3B8;">Days</span>
+                {len(inter_transfers)} <span style="font-size: 1rem; font-weight: 500; color: #94A3B8;">Opportunities</span>
             </div>
-            <div class="metric-subtitle">Standard Deviation across Vendors</div>
+            <div class="metric-subtitle">Intra-City Quick Rebalance</div>
         </div>
         """,
         unsafe_allow_html=True,
@@ -728,17 +771,18 @@ with kpi_col4:
 st.markdown("<div style='height: 16px;'></div>", unsafe_allow_html=True)
 
 # --------------------------------------------------------------------------------------
-# 9. DASHBOARD TABS
+# 11. DASHBOARD TABS
 # --------------------------------------------------------------------------------------
-tab_analytics, tab_table, tab_po, tab_architecture = st.tabs([
-    "📈 Visual Analytics & Stochastic Deep-Dive",
-    "📋 Stock-Out Risk & Reorder Action Table",
-    "📑 Automated Purchase Order (PO) Generator",
-    "🧠 Algorithmic Architecture & Methodology",
+tab_analytics, tab_table, tab_transfers, tab_po, tab_architecture = st.tabs([
+    "📈 Visual Analytics",
+    "📋 Stock-Out Risk Prioritization",
+    f"🔄 Inter-Store Transfers ({len(inter_transfers)})",
+    "📑 Automated PO & ERP Webhook Ledger",
+    "🧠 Algorithmic Architecture",
 ])
 
 # --------------------------------------------------------------------------------------
-# TAB 1: VISUAL ANALYTICS SECTION (PLOTLY CHARTS)
+# TAB 1: VISUAL ANALYTICS
 # --------------------------------------------------------------------------------------
 with tab_analytics:
     active_sku = st.selectbox(
@@ -755,45 +799,33 @@ with tab_analytics:
     
     viz_col1, viz_col2 = st.columns(2)
     
-    # CHART 1: Historical vs Predicted Demand Forecast Curve
     with viz_col1:
-        st.markdown(f"#### 🔮 Demand Forecast (Scikit-Learn GBR: {forecast_horizon} Days)")
-        
+        st.markdown(f"#### 🔮 Demand Forecast (GBR: {forecast_horizon} Days)")
         hist_df = fc_info["historical_df"].iloc[-60:]
         fore_df = fc_info["forecast_df"]
         
         fig1 = go.Figure()
-        
-        # Historical actual sales
         fig1.add_trace(go.Scatter(
             x=hist_df["date"],
             y=hist_df["units_sold"],
             mode="lines",
-            name="Historical Sales (Last 60d)",
+            name="Historical Sales (60d)",
             line=dict(color="#94A3B8", width=1.8),
         ))
-        
-        # Predicted demand line
         fig1.add_trace(go.Scatter(
             x=fore_df["date"],
             y=fore_df["forecast_demand"],
             mode="lines+markers",
-            name="ML Predicted Demand",
+            name="Predicted Demand",
             line=dict(color="#6366F1", width=2.5),
-            marker=dict(size=4),
         ))
-        
-        # Upper confidence bound
         fig1.add_trace(go.Scatter(
             x=fore_df["date"],
             y=fore_df["forecast_upper"],
             mode="lines",
             line=dict(width=0),
             showlegend=False,
-            name="Upper 80% Bound",
         ))
-        
-        # Shaded confidence band
         fig1.add_trace(go.Scatter(
             x=fore_df["date"],
             y=fore_df["forecast_lower"],
@@ -803,7 +835,6 @@ with tab_analytics:
             fillcolor="rgba(99, 102, 241, 0.2)",
             name="80% Prediction Band",
         ))
-        
         fig1.update_layout(
             template="plotly_dark",
             paper_bgcolor="rgba(15, 23, 42, 0.5)",
@@ -811,55 +842,42 @@ with tab_analytics:
             height=340,
             margin=dict(l=20, r=20, t=30, b=20),
             legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1),
-            xaxis=dict(showgrid=True, gridcolor="rgba(255,255,255,0.06)"),
-            yaxis=dict(showgrid=True, gridcolor="rgba(255,255,255,0.06)", title="Daily Units"),
         )
         st.plotly_chart(fig1, use_container_width=True)
-        st.caption(f"Model Diagnostics: Holdout RMSE: **{fc_info['rmse']:.1f} units** | MAE: **{fc_info['mae']:.1f} units**")
 
-    # CHART 2: Inventory Depletion & Dynamic ROP Alert Chart
     with viz_col2:
-        st.markdown("#### 📉 Forward Inventory Depletion vs Dynamic Reorder Point")
-        
-        # Compute forward projected stock day by day
+        st.markdown("#### 📉 Forward Inventory Depletion vs Dynamic ROP")
         depletion_dates = [datetime.date.today() + datetime.timedelta(days=d) for d in range(forecast_horizon)]
         depleted_inventory = []
         running_stock = curr_stock
-        
         for d_pred in fore_df["forecast_demand"]:
             running_stock = max(0, running_stock - d_pred)
             depleted_inventory.append(running_stock)
             
         fig2 = go.Figure()
-        
         fig2.add_trace(go.Scatter(
             x=depletion_dates,
             y=depleted_inventory,
             mode="lines+markers",
-            name="Projected Inventory on Hand",
+            name="Projected Inventory",
             line=dict(color="#38BDF8", width=2.8),
             fill="tozeroy",
             fillcolor="rgba(56, 189, 248, 0.1)",
         ))
-        
-        # Dynamic ROP line
         fig2.add_trace(go.Scatter(
             x=depletion_dates,
             y=[mc_info["dynamic_rop"]] * len(depletion_dates),
             mode="lines",
-            name=f"Dynamic ROP ({mc_info['dynamic_rop']} units)",
+            name=f"Dynamic ROP ({mc_info['dynamic_rop']})",
             line=dict(color="#EF4444", width=2.2, dash="dash"),
         ))
-        
-        # Dynamic Safety Stock line
         fig2.add_trace(go.Scatter(
             x=depletion_dates,
             y=[mc_info["dynamic_safety_stock"]] * len(depletion_dates),
             mode="lines",
-            name=f"Safety Stock ({mc_info['dynamic_safety_stock']} units)",
+            name=f"Safety Stock ({mc_info['dynamic_safety_stock']})",
             line=dict(color="#F59E0B", width=1.8, dash="dot"),
         ))
-        
         fig2.update_layout(
             template="plotly_dark",
             paper_bgcolor="rgba(15, 23, 42, 0.5)",
@@ -867,72 +885,33 @@ with tab_analytics:
             height=340,
             margin=dict(l=20, r=20, t=30, b=20),
             legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1),
-            xaxis=dict(showgrid=True, gridcolor="rgba(255,255,255,0.06)"),
-            yaxis=dict(showgrid=True, gridcolor="rgba(255,255,255,0.06)", title="Stock on Hand"),
         )
         st.plotly_chart(fig2, use_container_width=True)
-        st.caption(f"Current Stock: **{curr_stock} units** | Dynamic Reorder Point: **{mc_info['dynamic_rop']} units**")
 
-    # CHART 3: Monte Carlo Stock-Out Risk Distribution Histogram
     st.markdown(f"#### 🎲 Monte Carlo Demand During Lead Time ({monte_carlo_iterations:,} Stochastic Runs)")
-    
-    sim_ddlt = mc_info["simulated_ddlt"]
-    
     fig3 = go.Figure()
-    
     fig3.add_trace(go.Histogram(
-        x=sim_ddlt,
+        x=mc_info["simulated_ddlt"],
         nbinsx=45,
-        name="Simulated Lead Time Demand",
         marker_color="#818CF8",
         opacity=0.75,
     ))
-    
-    # Threshold: Current Stock on hand
-    fig3.add_vline(
-        x=curr_stock,
-        line_width=3,
-        line_dash="dash",
-        line_color="#EF4444",
-        annotation_text=f"Current Stock ({curr_stock})",
-        annotation_position="top right",
-    )
-    
-    # Threshold: Dynamic ROP
-    fig3.add_vline(
-        x=mc_info["dynamic_rop"],
-        line_width=2,
-        line_dash="dot",
-        line_color="#34D399",
-        annotation_text=f"Target ROP ({mc_info['dynamic_rop']})",
-        annotation_position="top left",
-    )
-    
+    fig3.add_vline(x=curr_stock, line_width=3, line_dash="dash", line_color="#EF4444", annotation_text=f"Current Stock ({curr_stock})")
+    fig3.add_vline(x=mc_info["dynamic_rop"], line_width=2, line_dash="dot", line_color="#34D399", annotation_text=f"Target ROP ({mc_info['dynamic_rop']})")
     fig3.update_layout(
         template="plotly_dark",
         paper_bgcolor="rgba(15, 23, 42, 0.5)",
         plot_bgcolor="rgba(15, 23, 42, 0.5)",
-        height=320,
+        height=300,
         margin=dict(l=20, r=20, t=30, b=20),
-        xaxis=dict(title="Simulated Units Demanded Over Supplier Lead Time Window", showgrid=True, gridcolor="rgba(255,255,255,0.06)"),
-        yaxis=dict(title="Frequency of Simulation Iterations", showgrid=True, gridcolor="rgba(255,255,255,0.06)"),
     )
     st.plotly_chart(fig3, use_container_width=True)
-    
-    st.info(
-        f"💡 **Stochastic Simulation Result for {SKU_CATALOG[active_sku]['name']}**: "
-        f"Out of {monte_carlo_iterations:,} iterations, simulated demand during lead time exceeded current physical inventory "
-        f"in **{mc_info['stockout_probability_pct']}%** of iterations. "
-        f"P95 worst-case demand during lead time is **{mc_info['p95_lead_time_demand']} units**."
-    )
 
 # --------------------------------------------------------------------------------------
-# TAB 2: STOCK-OUT RISK & REORDER ACTION TABLE
+# TAB 2: STOCK-OUT RISK TABLE
 # --------------------------------------------------------------------------------------
 with tab_table:
-    st.markdown("#### 📋 Comprehensive SKU Stock-Out Risk Prioritization")
-    st.markdown("Dynamic evaluation based on joint lead-time and demand variance propagation.")
-    
+    st.markdown("#### 📋 Stock-Out Risk Prioritization Matrix")
     table_rows = []
     for s_id in selected_skus:
         s_data = simulation_results[s_id]
@@ -949,10 +928,7 @@ with tab_table:
             "Recommended PO Qty": m["recommended_reorder_qty"],
             "Status": m["urgency"],
         })
-        
     risk_df = pd.DataFrame(table_rows).sort_values(by="Stock-Out Risk (%)", ascending=False)
-    
-    # Styled Display
     st.dataframe(
         risk_df.style.format({
             "Stock-Out Risk (%)": "{:.1f}%",
@@ -961,24 +937,58 @@ with tab_table:
             "Dynamic ROP": "{:,}",
             "Safety Stock (SS)": "{:,}",
             "Recommended PO Qty": "{:,}",
-        }).background_gradient(
-            subset=["Stock-Out Risk (%)"],
-            cmap="Reds",
-            vmin=0.0,
-            vmax=100.0,
-        ),
+        }).background_gradient(subset=["Stock-Out Risk (%)"], cmap="Reds", vmin=0.0, vmax=100.0),
         use_container_width=True,
         hide_index=True,
     )
-    
-    st.caption("Sortable operational table. Critical SKUs are highlighted with elevated stock-out probability.")
 
 # --------------------------------------------------------------------------------------
-# TAB 3: EXPORT & PROCUREMENT PO GENERATOR
+# TAB 3: MULTI-ECHELON DARK STORE INTER-TRANSFER ENGINE
+# --------------------------------------------------------------------------------------
+with tab_transfers:
+    st.markdown("#### 🔄 Multi-Echelon Dark Store Inter-Transfer Engine")
+    st.markdown("Redeploy surplus inventory across regional dark stores to avert stock-outs without vendor PO lead times.")
+    
+    if not inter_transfers:
+        st.success("🎉 No emergency inter-store transfers required! Neighboring dark stores do not hold excess surplus (ROP + 14d supply) or current node is protected.")
+    else:
+        for xfer in inter_transfers:
+            is_approved = xfer["transfer_id"] in st.session_state.approved_transfers
+            col_info, col_act = st.columns([4, 1])
+            with col_info:
+                st.markdown(
+                    f"""
+                    <div class="transfer-box">
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                            <strong style="color: #818CF8; font-size: 1.05rem;">{xfer['sku_name']} ({xfer['sku_id']})</strong>
+                            <span style="background: rgba(16, 185, 129, 0.2); color: #34D399; padding: 2px 8px; border-radius: 4px; font-size: 0.75rem; font-weight: 700;">
+                                SAVES ₹{xfer['savings_inr']:,}
+                            </span>
+                        </div>
+                        <div style="font-size: 0.85rem; color: #94A3B8;">
+                            <strong>Donor Node:</strong> <span style="color: #FBBF24;">{xfer['origin_name']}</span> (Stock: {xfer['origin_stock']} | Surplus: +{xfer['origin_surplus']}) ➔
+                            <strong>Recipient:</strong> <span style="color: #F87171;">{xfer['dest_name']}</span> (Current: {xfer['dest_stock']} &lt; ROP: {xfer['dest_rop']})
+                        </div>
+                        <div style="font-size: 0.8rem; color: #64748B; margin-top: 6px;">
+                            Recommended Transfer: <strong style="color: #38BDF8;">{xfer['transfer_units']} Units</strong> • Estimated Transit: <strong>~{xfer['transit_hours']} Hours</strong> (vs 2–5 days supplier lead time)
+                        </div>
+                    </div>
+                    """,
+                    unsafe_allow_html=True,
+                )
+            with col_act:
+                if is_approved:
+                    st.success("Transfer Dispatched ✓")
+                else:
+                    if st.button("Approve Transfer", key=xfer["transfer_id"]):
+                        st.session_state.approved_transfers.append(xfer["transfer_id"])
+                        st.rerun()
+
+# --------------------------------------------------------------------------------------
+# TAB 4: AUTOMATED PO GENERATOR & ERP WEBHOOK DISPATCHED LEDGER
 # --------------------------------------------------------------------------------------
 with tab_po:
-    st.markdown("#### 📑 Automated Purchase Order (PO) Batch Generator")
-    st.markdown("Instantly export enterprise-ready Purchase Orders with optimal replenishment quantities.")
+    st.markdown("#### 📑 Automated Purchase Orders & Interactive ERP Webhook")
     
     po_records = []
     po_batch_id = f"PO-{datetime.date.today().strftime('%Y%m%d')}-{selected_warehouse_id}"
@@ -986,26 +996,22 @@ with tab_po:
     for s_id in selected_skus:
         s_data = simulation_results[s_id]
         m = s_data["mc_output"]
-        
-        # Only order if reorder quantity > 0 or status is Critical/Warning
         if m["recommended_reorder_qty"] > 0 or m["urgency"] in ["CRITICAL REORDER NOW", "WARNING"]:
             po_qty = max(m["recommended_reorder_qty"], int(m["dynamic_safety_stock"] * 1.5))
             total_cost = po_qty * s_data["unit_price"]
             expected_delivery = datetime.date.today() + datetime.timedelta(days=int(math.ceil(s_data["lead_time_mean"])))
             
             po_records.append({
-                "PO_Number": po_batch_id,
-                "Warehouse_ID": selected_warehouse_id,
-                "Warehouse_Name": WAREHOUSE_REGISTRY[selected_warehouse_id]["name"],
+                "PO_Number": f"{po_batch_id}-{s_id}",
+                "Warehouse": WAREHOUSE_REGISTRY[selected_warehouse_id]["name"],
                 "SKU_ID": s_id,
                 "SKU_Name": SKU_CATALOG[s_id]["name"],
-                "Current_Stock": s_data["current_stock"],
-                "Dynamic_ROP": m["dynamic_rop"],
-                "Safety_Stock": m["dynamic_safety_stock"],
-                "Recommended_Order_Qty": po_qty,
+                "Stock": s_data["current_stock"],
+                "ROP": m["dynamic_rop"],
+                "Reorder_Qty": po_qty,
                 "Unit_Cost_INR": s_data["unit_price"],
-                "Total_PO_Value_INR": round(total_cost, 2),
-                "Expected_Delivery_Date": expected_delivery.strftime("%Y-%m-%d"),
+                "Total_PO_INR": round(total_cost, 2),
+                "Expected_Arrival": expected_delivery.strftime("%Y-%m-%d"),
                 "Priority": "URGENT" if m["urgency"] == "CRITICAL REORDER NOW" else "NORMAL",
             })
             
@@ -1014,93 +1020,81 @@ with tab_po:
         st.dataframe(
             po_df.style.format({
                 "Unit_Cost_INR": "₹{:,.2f}",
-                "Total_PO_Value_INR": "₹{:,.2f}",
-                "Current_Stock": "{:,}",
-                "Dynamic_ROP": "{:,}",
-                "Safety_Stock": "{:,}",
-                "Recommended_Order_Qty": "{:,}",
+                "Total_PO_INR": "₹{:,.2f}",
+                "Stock": "{:,}",
+                "ROP": "{:,}",
+                "Reorder_Qty": "{:,}",
             }),
             use_container_width=True,
             hide_index=True,
         )
         
-        total_po_val = po_df["Total_PO_Value_INR"].sum()
-        total_po_units = po_df["Recommended_Order_Qty"].sum()
-        
-        c1, c2 = st.columns(2)
-        with c1:
-            st.metric("Total Purchase Order Commitment", f"₹{total_po_val:,.2f}")
-        with c2:
-            st.metric("Total Procurement Replenishment Units", f"{total_po_units:,} Units")
-            
-        csv_buffer = io.StringIO()
-        po_df.to_csv(csv_buffer, index=False)
-        csv_data = csv_buffer.getvalue()
-        
-        st.download_button(
-            label="📥 Download Procurement Purchase Orders (.CSV)",
-            data=csv_data,
-            file_name=f"procurement_po_batch_{selected_warehouse_id}_{datetime.date.today().strftime('%Y%m%d')}.csv",
-            mime="text/csv",
-            type="primary",
-        )
-    else:
-        st.success("🎉 All inventory levels are optimal! No procurement purchase orders currently required.")
+        # ERP Dispatch Controls
+        c_erp1, c_erp2, c_erp3 = st.columns([2, 1, 1])
+        with c_erp1:
+            target_erp = st.selectbox(
+                "Target Enterprise ERP System",
+                ["SAP S/4HANA Cloud (EDI 850)", "Oracle NetSuite WMS Webhook", "Odoo Enterprise Supply API"],
+            )
+        with c_erp2:
+            csv_buf = io.StringIO()
+            po_df.to_csv(csv_buf, index=False)
+            st.download_button(
+                "📥 Export PO CSV",
+                csv_buf.getvalue(),
+                f"po_batch_{selected_warehouse_id}.csv",
+                "text/csv",
+            )
+        with c_erp3:
+            if st.button("🚀 Dispatch PO to ERP"):
+                # Simulate webhook dispatch & hash generation
+                dispatch_id = f"DSP-{datetime.date.today().strftime('%Y%m%d')}-{np.random.randint(1000, 9999)}"
+                payload_str = f"{dispatch_id}-{selected_warehouse_id}-{len(po_records)}"
+                p_hash = f"sha256:{hashlib.sha256(payload_str.encode()).hexdigest()[:18]}"
+                
+                new_ledger_entry = {
+                    "dispatch_id": dispatch_id,
+                    "po_batch": po_batch_id,
+                    "warehouse": WAREHOUSE_REGISTRY[selected_warehouse_id]["name"],
+                    "timestamp": datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+                    "line_items": len(po_records),
+                    "total_units": int(po_df["Reorder_Qty"].sum()),
+                    "total_value_inr": float(po_df["Total_PO_INR"].sum()),
+                    "erp_system": target_erp,
+                    "status": "HTTP 200 OK",
+                    "latency_ms": int(np.random.randint(120, 195)),
+                    "payload_hash": p_hash,
+                }
+                st.session_state.dispatched_po_ledger.insert(0, new_ledger_entry)
+                st.success(f"✓ Dispatched to {target_erp}! Audit Record {dispatch_id} recorded.")
+                st.rerun()
+
+    # DISPATCHED PO AUDIT LEDGER
+    st.markdown("---")
+    st.markdown("#### 🗄️ In-Memory Dispatched PO Audit Ledger (`dispatched_po_ledger`)")
+    ledger_df = pd.DataFrame(st.session_state.dispatched_po_ledger)
+    st.dataframe(
+        ledger_df.style.format({
+            "total_value_inr": "₹{:,.2f}",
+            "total_units": "{:,}",
+        }),
+        use_container_width=True,
+        hide_index=True,
+    )
 
 # --------------------------------------------------------------------------------------
-# TAB 4: ALGORITHMIC ARCHITECTURE & METHODOLOGY
+# TAB 5: ALGORITHMIC ARCHITECTURE
 # --------------------------------------------------------------------------------------
 with tab_architecture:
     st.markdown("### 🔬 Senior Analytics Engineering & Statistical Formulation")
-    
-    st.markdown(
-        """
-        #### 1. Propagation of Variance in Supply Chains
-        Traditional supply chain models assume deterministic supplier lead times. In modern quick-commerce,
-        both demand ($D$) and lead time ($L$) are mutually independent random variables with finite variance:
-        - $\bar{D} = \mathbb{E}[D]$, $\sigma_D^2 = \text{Var}(D)$
-        - $\bar{L} = \mathbb{E}[L]$, $\sigma_L^2 = \text{Var}(L)$
-        
-        By applying the **Law of Total Variance**, the variance of Demand During Lead Time ($DDLT$) is:
-        """
-    )
     st.latex(r"\text{Var}(DDLT) = \bar{L} \cdot \sigma_D^2 + \bar{D}^2 \cdot \sigma_L^2")
-    
-    st.markdown(
-        """
-        Consequently, for a specified Cycle Service Level $CSL$ with standard normal quantile $Z = \Phi^{-1}(CSL)$:
-        """
-    )
     st.latex(r"\text{Safety Stock (SS)} = Z \cdot \sqrt{\bar{L} \cdot \sigma_D^2 + \bar{D}^2 \cdot \sigma_L^2}")
     st.latex(r"\text{Reorder Point (ROP)} = (\bar{D} \cdot \bar{L}) + \text{Safety Stock}")
-    
     st.markdown(
         """
-        #### 2. Machine Learning Demand Forecasting Pipeline
-        - **Model:** Scikit-Learn `GradientBoostingRegressor` (120 estimators, depth=4, learning rate=0.06).
-        - **Feature Engineering:**
-          - Temporal autoregressive lags: $t-1, t-7, t-14$
-          - Rolling statistical windows: 7-day mean, 7-day standard deviation, 30-day mean
-          - Calendar variables: Day of week, month, weekend indicator
-          - Interaction features: Promotional flash sales combined with weekend consumer velocity
-        - **Recursive Multi-Step Horizon:** Roll-forward forecasting dynamically projecting demand up to 30 days ahead.
-        
-        #### 3. Bivariate Monte Carlo Risk Engine
-        While analytical formulas approximate Gaussian distributions, real-world lead times exhibit tail skewness.
-        The Monte Carlo simulator draws $N$ joint samples from:
-        $$L_i \sim \text{Truncated-Normal}(\mu_L, \sigma_L^2, a=1)$$
-        $$d_{i,t} \sim \text{Normal}(\hat{y}_t, \text{RMSE}^2)$$
-        $$DDLT_i = \sum_{t=1}^{\lceil L_i \rceil} d_{i,t}$$
-        $$\text{Stock-Out Probability} = \frac{1}{N} \sum_{i=1}^N \mathbb{I}(DDLT_i > \text{Current Stock})$$
+        - **Multi-Echelon Dark Store Inter-Transfer Condition:**
+          $$\\text{Origin Stock} > \\text{ROP}_{\\text{origin}} + (14 \\times \\bar{D}_{\\text{origin}})$$
+        - **ERP Webhook Audit Trail:**
+          Every order dispatch produces a cryptographic payload signature (\`sha256\`) logged in \`dispatched_po_ledger\`.
         """
     )
-
-st.markdown("---")
-st.markdown(
-    """
-    <div style="text-align: center; color: #64748B; font-size: 0.8rem; padding: 12px 0;">
-        Multi-Source Supply Chain & Inventory Stock-Out Forecaster • Engineered for Quick-Commerce & Modern Retail
-    </div>
-    """,
-    unsafe_allow_html=True,
-)

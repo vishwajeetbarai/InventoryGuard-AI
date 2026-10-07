@@ -1,16 +1,19 @@
 import React, { useState } from "react";
 import { SkuSimulationState } from "../types";
-import { Search, Filter, ArrowUpDown, AlertTriangle, CheckCircle2, ShieldAlert } from "lucide-react";
+import { Search, ArrowUpDown, AlertTriangle, CheckCircle2, ShieldAlert } from "lucide-react";
 
 interface RiskTableProps {
   simulationStates: SkuSimulationState[];
   onSelectSku: (skuId: string) => void;
+  theme?: "dark" | "light";
 }
 
 export const RiskTable: React.FC<RiskTableProps> = ({
   simulationStates,
   onSelectSku,
+  theme = "dark",
 }) => {
+  const isDark = theme === "dark";
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("ALL");
   const [sortField, setSortField] = useState<"risk" | "stock" | "revRisk">("risk");
@@ -46,21 +49,21 @@ export const RiskTable: React.FC<RiskTableProps> = ({
     switch (urgency) {
       case "CRITICAL REORDER NOW":
         return (
-          <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-bold bg-red-500/10 text-red-400 border border-red-500/30">
+          <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-bold bg-red-500/10 text-red-500 border border-red-500/30">
             <AlertTriangle className="w-3 h-3" />
             CRITICAL REORDER NOW
           </span>
         );
       case "WARNING":
         return (
-          <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-bold bg-amber-500/10 text-amber-400 border border-amber-500/30">
+          <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-bold bg-amber-500/10 text-amber-500 border border-amber-500/30">
             <ShieldAlert className="w-3 h-3" />
             WARNING
           </span>
         );
       default:
         return (
-          <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-bold bg-emerald-500/10 text-emerald-400 border border-emerald-500/30">
+          <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-bold bg-emerald-500/10 text-emerald-500 border border-emerald-500/30">
             <CheckCircle2 className="w-3 h-3" />
             OPTIMAL
           </span>
@@ -68,12 +71,24 @@ export const RiskTable: React.FC<RiskTableProps> = ({
     }
   };
 
+  const containerCls = isDark
+    ? "bg-slate-900/80 border-slate-800 text-slate-100"
+    : "bg-white border-slate-200 text-slate-900 shadow-sm";
+
   return (
-    <div className="bg-slate-900/80 border border-slate-800 rounded-xl overflow-hidden shadow-lg">
+    <div className={`border rounded-xl overflow-hidden shadow-sm transition-colors ${containerCls}`}>
       {/* Table Controls */}
-      <div className="p-4 border-b border-slate-800 flex flex-col md:flex-row md:items-center justify-between gap-3">
+      <div
+        className={`p-4 border-b flex flex-col md:flex-row md:items-center justify-between gap-3 ${
+          isDark ? "border-slate-800" : "border-slate-200"
+        }`}
+      >
         <div>
-          <h3 className="text-base font-bold text-white">
+          <h3
+            className={`text-base font-bold ${
+              isDark ? "text-white" : "text-slate-900"
+            }`}
+          >
             Stock-Out Risk &amp; Reorder Action Prioritization
           </h3>
           <p className="text-xs text-slate-400 mt-0.5">
@@ -90,12 +105,22 @@ export const RiskTable: React.FC<RiskTableProps> = ({
               placeholder="Filter SKU or category..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="pl-8 pr-3 py-1.5 bg-slate-800/80 border border-slate-700 rounded-lg text-xs text-slate-200 placeholder-slate-500 focus:outline-none focus:border-indigo-500 w-48 sm:w-56"
+              className={`pl-8 pr-3 py-1.5 rounded-lg text-xs placeholder-slate-400 focus:outline-none focus:border-indigo-500 w-48 sm:w-56 border ${
+                isDark
+                  ? "bg-slate-800/80 border-slate-700 text-slate-200"
+                  : "bg-slate-100 border-slate-300 text-slate-800"
+              }`}
             />
           </div>
 
           {/* Status Filter */}
-          <div className="flex items-center gap-1 bg-slate-800/80 border border-slate-700 rounded-lg p-1">
+          <div
+            className={`flex items-center gap-1 rounded-lg p-1 border ${
+              isDark
+                ? "bg-slate-800/80 border-slate-700"
+                : "bg-slate-100 border-slate-300"
+            }`}
+          >
             {["ALL", "CRITICAL REORDER NOW", "WARNING", "OPTIMAL"].map((st) => (
               <button
                 key={st}
@@ -103,7 +128,7 @@ export const RiskTable: React.FC<RiskTableProps> = ({
                 className={`px-2.5 py-1 rounded text-xs font-semibold transition-all cursor-pointer ${
                   statusFilter === st
                     ? "bg-indigo-600 text-white"
-                    : "text-slate-400 hover:text-white"
+                    : "text-slate-400 hover:text-slate-700 dark:hover:text-white"
                 }`}
               >
                 {st === "ALL"
@@ -123,10 +148,16 @@ export const RiskTable: React.FC<RiskTableProps> = ({
       <div className="overflow-x-auto">
         <table className="w-full text-left border-collapse text-xs">
           <thead>
-            <tr className="bg-slate-950/60 border-b border-slate-800 text-slate-400 uppercase tracking-wider font-semibold">
+            <tr
+              className={`border-b font-semibold uppercase tracking-wider ${
+                isDark
+                  ? "bg-slate-950/60 border-slate-800 text-slate-400"
+                  : "bg-slate-100 border-slate-200 text-slate-600"
+              }`}
+            >
               <th className="py-3 px-4">SKU / Catalog</th>
               <th
-                className="py-3 px-4 cursor-pointer hover:text-white"
+                className="py-3 px-4 cursor-pointer hover:text-indigo-400"
                 onClick={() => {
                   setSortField("stock");
                   setSortAsc(!sortAsc);
@@ -140,7 +171,7 @@ export const RiskTable: React.FC<RiskTableProps> = ({
               <th className="py-3 px-4">Dynamic ROP</th>
               <th className="py-3 px-4">Safety Stock</th>
               <th
-                className="py-3 px-4 cursor-pointer hover:text-white"
+                className="py-3 px-4 cursor-pointer hover:text-indigo-400"
                 onClick={() => {
                   setSortField("risk");
                   setSortAsc(!sortAsc);
@@ -152,7 +183,7 @@ export const RiskTable: React.FC<RiskTableProps> = ({
                 </div>
               </th>
               <th
-                className="py-3 px-4 cursor-pointer hover:text-white"
+                className="py-3 px-4 cursor-pointer hover:text-indigo-400"
                 onClick={() => {
                   setSortField("revRisk");
                   setSortAsc(!sortAsc);
@@ -168,10 +199,14 @@ export const RiskTable: React.FC<RiskTableProps> = ({
               <th className="py-3 px-4 text-right">Inspect</th>
             </tr>
           </thead>
-          <tbody className="divide-y divide-slate-800/60">
+          <tbody
+            className={`divide-y ${
+              isDark ? "divide-slate-800/60" : "divide-slate-200"
+            }`}
+          >
             {filtered.length === 0 ? (
               <tr>
-                <td colSpan={9} className="py-8 text-center text-slate-500">
+                <td colSpan={9} className="py-8 text-center text-slate-400">
                   No SKUs matched the current filters.
                 </td>
               </tr>
@@ -181,30 +216,42 @@ export const RiskTable: React.FC<RiskTableProps> = ({
                 return (
                   <tr
                     key={s.sku.id}
-                    className={`hover:bg-slate-800/40 transition-colors ${
-                      isCrit ? "bg-red-500/[0.02]" : ""
+                    className={`transition-colors ${
+                      isDark
+                        ? `hover:bg-slate-800/40 ${isCrit ? "bg-red-500/[0.04]" : ""}`
+                        : `hover:bg-slate-50 ${isCrit ? "bg-red-50/60" : ""}`
                     }`}
                   >
                     <td className="py-3 px-4">
-                      <div className="font-bold text-slate-100">{s.sku.name}</div>
+                      <div
+                        className={`font-bold ${
+                          isDark ? "text-slate-100" : "text-slate-900"
+                        }`}
+                      >
+                        {s.sku.name}
+                      </div>
                       <div className="text-[11px] text-slate-400 font-mono flex items-center gap-2">
                         <span>{s.sku.id}</span>
                         <span>•</span>
                         <span>{s.sku.category}</span>
                       </div>
                     </td>
-                    <td className="py-3 px-4 font-mono font-semibold text-slate-200">
+                    <td className="py-3 px-4 font-mono font-semibold">
                       {s.currentStock.toLocaleString()}
                     </td>
-                    <td className="py-3 px-4 font-mono font-semibold text-red-400">
+                    <td className="py-3 px-4 font-mono font-semibold text-red-500">
                       {s.mcResult.dynamicRop.toLocaleString()}
                     </td>
-                    <td className="py-3 px-4 font-mono font-semibold text-indigo-400">
+                    <td className="py-3 px-4 font-mono font-semibold text-indigo-500">
                       {s.mcResult.dynamicSafetyStock.toLocaleString()}
                     </td>
                     <td className="py-3 px-4">
                       <div className="flex items-center gap-2">
-                        <div className="w-16 h-1.5 rounded-full bg-slate-800 overflow-hidden">
+                        <div
+                          className={`w-16 h-1.5 rounded-full overflow-hidden ${
+                            isDark ? "bg-slate-800" : "bg-slate-200"
+                          }`}
+                        >
                           <div
                             className={`h-full rounded-full ${
                               s.mcResult.stockoutProbabilityPct > 25
@@ -219,33 +266,37 @@ export const RiskTable: React.FC<RiskTableProps> = ({
                         <span
                           className={`font-mono font-bold ${
                             s.mcResult.stockoutProbabilityPct > 25
-                              ? "text-red-400"
+                              ? "text-red-500"
                               : s.mcResult.stockoutProbabilityPct > 10
-                              ? "text-amber-400"
-                              : "text-emerald-400"
+                              ? "text-amber-500"
+                              : "text-emerald-500"
                           }`}
                         >
                           {s.mcResult.stockoutProbabilityPct.toFixed(1)}%
                         </span>
                       </div>
                     </td>
-                    <td className="py-3 px-4 font-mono font-semibold text-amber-300">
+                    <td className="py-3 px-4 font-mono font-semibold text-amber-500">
                       ₹{s.revenueAtRisk.toLocaleString("en-IN")}
                     </td>
-                    <td className="py-3 px-4 font-mono font-bold text-white">
+                    <td className="py-3 px-4 font-mono font-bold">
                       {s.mcResult.recommendedReorderQty > 0 ? (
-                        <span className="text-emerald-400">
+                        <span className="text-emerald-500">
                           +{s.mcResult.recommendedReorderQty.toLocaleString()} units
                         </span>
                       ) : (
-                        <span className="text-slate-500">—</span>
+                        <span className="text-slate-400">—</span>
                       )}
                     </td>
                     <td className="py-3 px-4">{getUrgencyBadge(s.mcResult.urgency)}</td>
                     <td className="py-3 px-4 text-right">
                       <button
                         onClick={() => onSelectSku(s.sku.id)}
-                        className="px-2.5 py-1 rounded bg-slate-800 hover:bg-slate-700 text-indigo-300 border border-slate-700 text-[11px] font-semibold cursor-pointer transition-all"
+                        className={`px-2.5 py-1 rounded text-[11px] font-semibold cursor-pointer transition-all border ${
+                          isDark
+                            ? "bg-slate-800 hover:bg-slate-700 text-indigo-300 border-slate-700"
+                            : "bg-slate-100 hover:bg-slate-200 text-indigo-600 border-slate-300"
+                        }`}
                       >
                         Deep-Dive
                       </button>
