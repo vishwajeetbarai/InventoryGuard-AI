@@ -8,6 +8,7 @@ import {
   Warehouse,
   InterTransferRecommendation,
   DispatchedPoRecord,
+  SupplierScorecard,
 } from "../types";
 
 export const WAREHOUSES: Warehouse[] = [
@@ -46,6 +47,9 @@ export const SKUS: SkuMetadata[] = [
     holdingCost: 1.80,
     stockoutPenalty: 35.0,
     stockMultiplier: 2.2,
+    shelfLifeDays: 4,
+    isPerishable: true,
+    supplierName: "Amul Fresh Dairy Co.",
   },
   {
     id: "SKU-002",
@@ -58,6 +62,9 @@ export const SKUS: SkuMetadata[] = [
     holdingCost: 4.20,
     stockoutPenalty: 95.0,
     stockMultiplier: 3.1,
+    shelfLifeDays: 5,
+    isPerishable: true,
+    supplierName: "Hass Valley Orchards",
   },
   {
     id: "SKU-003",
@@ -70,6 +77,9 @@ export const SKUS: SkuMetadata[] = [
     holdingCost: 2.50,
     stockoutPenalty: 120.0,
     stockMultiplier: 5.0,
+    shelfLifeDays: 90,
+    isPerishable: false,
+    supplierName: "TrueElements Organics",
   },
   {
     id: "SKU-004",
@@ -82,6 +92,9 @@ export const SKUS: SkuMetadata[] = [
     holdingCost: 2.10,
     stockoutPenalty: 55.0,
     stockMultiplier: 2.8,
+    shelfLifeDays: 14,
+    isPerishable: true,
+    supplierName: "Blue Tokai Roasters",
   },
   {
     id: "SKU-005",
@@ -94,6 +107,9 @@ export const SKUS: SkuMetadata[] = [
     holdingCost: 3.00,
     stockoutPenalty: 70.0,
     stockMultiplier: 2.4,
+    shelfLifeDays: 6,
+    isPerishable: true,
+    supplierName: "Epigamia Dairy Cold-Chain",
   },
 ];
 
@@ -116,6 +132,80 @@ function sampleStandardNormal(rand: () => number): number {
 }
 
 /**
+ * Supplier Reliability Matrix & Scorecard Grading
+ * Grades each supplier (Grade A to F) based on lead-time variance (sigma_L)
+ * and automatically scales lead-time shock buffer multipliers.
+ */
+export function evaluateSupplierGrade(
+  stdDays: number,
+  supplierName: string,
+  skuId: string,
+  skuName: string
+): SupplierScorecard {
+  if (stdDays <= 0.9) {
+    return {
+      skuId,
+      skuName,
+      supplierName,
+      grade: "A",
+      onTimeDeliveryPct: 98.6,
+      effectiveStdDays: stdDays,
+      bufferMultiplier: 1.0,
+      riskTier: "LOW",
+      auditNotes: "Tier-1 certified supplier. Dedicated cold-chain fleet with GPS telemetry.",
+    };
+  } else if (stdDays <= 1.2) {
+    return {
+      skuId,
+      skuName,
+      supplierName,
+      grade: "B",
+      onTimeDeliveryPct: 94.4,
+      effectiveStdDays: Math.round(stdDays * 1.15 * 10) / 10,
+      bufferMultiplier: 1.15,
+      riskTier: "MODERATE",
+      auditNotes: "Stable regional partner with minor peak-season docking variance.",
+    };
+  } else if (stdDays <= 1.6) {
+    return {
+      skuId,
+      skuName,
+      supplierName,
+      grade: "C",
+      onTimeDeliveryPct: 88.2,
+      effectiveStdDays: Math.round(stdDays * 1.30 * 10) / 10,
+      bufferMultiplier: 1.30,
+      riskTier: "ELEVATED",
+      auditNotes: "Moderate variance due to agricultural harvesting cycles. Buffer expanded +30%.",
+    };
+  } else if (stdDays <= 2.1) {
+    return {
+      skuId,
+      skuName,
+      supplierName,
+      grade: "D",
+      onTimeDeliveryPct: 81.0,
+      effectiveStdDays: Math.round(stdDays * 1.50 * 10) / 10,
+      bufferMultiplier: 1.50,
+      riskTier: "CRITICAL",
+      auditNotes: "High lead-time volatility with freight bottlenecks. Buffer expanded +50%.",
+    };
+  } else {
+    return {
+      skuId,
+      skuName,
+      supplierName,
+      grade: "F",
+      onTimeDeliveryPct: 70.5,
+      effectiveStdDays: Math.round(stdDays * 1.80 * 10) / 10,
+      bufferMultiplier: 1.80,
+      riskTier: "CRITICAL",
+      auditNotes: "Unacceptable dispatch variance. Dual-sourcing procurement mandated.",
+    };
+  }
+}
+
+/**
  * Generates 365 days of synthetic historical records
  */
 export function generateSyntheticHistoricalData(): DailyRecord[] {
@@ -132,10 +222,9 @@ export function generateSyntheticHistoricalData(): DailyRecord[] {
       for (let i = 364; i >= 0; i--) {
         const d = new Date(today);
         d.setDate(today.getDate() - i);
-        const dayOfWeek = d.getDay(); // 0 is Sunday
+        const dayOfWeek = d.getDay();
         const dayOfYear = Math.floor((d.getTime() - new Date(d.getFullYear(), 0, 0).getTime()) / 86400000);
 
-        // Weekend surge (Fri=5, Sat=6, Sun=0)
         const isWeekend = dayOfWeek === 0 || dayOfWeek === 5 || dayOfWeek === 6;
         const weekendLift = isWeekend ? 1.35 : 0.90;
         const annualWave = 1.0 + 0.15 * Math.sin((2 * Math.PI * dayOfYear) / 365.0);
@@ -148,7 +237,6 @@ export function generateSyntheticHistoricalData(): DailyRecord[] {
 
         const simLeadTime = Math.max(1.0, sku.leadTimeMean + sampleStandardNormal(rand) * sku.leadTimeStd);
 
-        // Deplete and replenish periodically
         if (simStock < Math.round(baseD * 2.2)) {
           simStock += Math.round(baseD * (4.0 + rand() * 3.0));
         }
@@ -172,7 +260,7 @@ export function generateSyntheticHistoricalData(): DailyRecord[] {
 }
 
 /**
- * Machine Learning demand forecasting pipeline (Autoregressive Gradient Boosting approximation)
+ * Machine Learning demand forecasting pipeline
  */
 export function trainDemandForecast(
   historicalSales: { date: string; units: number }[],
@@ -186,7 +274,6 @@ export function trainDemandForecast(
   const n = historicalSales.length;
   const units = historicalSales.map((h) => h.units);
 
-  // Calculate holdout validation metrics on last 30 days
   const testWindow = 30;
   let sse = 0;
   let sae = 0;
@@ -208,7 +295,6 @@ export function trainDemandForecast(
   const rmse = Math.sqrt(sse / testWindow);
   const mae = sae / testWindow;
 
-  // Multi-step forward projection
   const buffer = [...units];
   const forecastPoints: ForecastPoint[] = [];
   const lastDate = new Date(historicalSales[n - 1].date);
@@ -231,12 +317,10 @@ export function trainDemandForecast(
     if (isWeekend) basePred *= 1.25;
     else basePred *= 0.92;
 
-    // Apply flash sale promo uplift scenario
     const adjustedPred = Math.max(0, basePred * (1.0 + promotionalUpliftPct / 100.0));
-
     buffer.push(adjustedPred);
 
-    const uncertainty = 1.28 * rmse; // 80% confidence interval
+    const uncertainty = 1.28 * rmse;
     forecastPoints.push({
       date: stepDate.toISOString().split("T")[0],
       demand: Math.round(adjustedPred * 10) / 10,
@@ -254,20 +338,20 @@ export function trainDemandForecast(
 
 /**
  * Monte Carlo Risk & Safety Stock Simulation
- * Dual Variance Propagation: Z * sqrt( L_bar * sigma_d^2 + D_bar^2 * sigma_L^2 )
+ * Dual Variance Propagation with supplier lead time volatility:
+ * SS = Z * sqrt( L_bar * sigma_d^2 + D_bar^2 * sigma_L^2 )
  */
 export function runMonteCarloSimulation(
   demandMean: number,
   demandStd: number,
   leadTimeMean: number,
   leadTimeStd: number,
-  currentStock: number,
+  usableStock: number,
   serviceLevelZ: number,
   iterations: number = 1000
 ): MonteCarloResult {
   const rand = pseudoRandom(1337);
 
-  // Dual Variance Formula
   const varianceTerm = leadTimeMean * Math.pow(demandStd, 2) + Math.pow(demandMean, 2) * Math.pow(leadTimeStd, 2);
   const jointSigma = Math.sqrt(Math.max(0.001, varianceTerm));
   const dynamicSafetyStock = Math.ceil(serviceLevelZ * jointSigma);
@@ -275,12 +359,10 @@ export function runMonteCarloSimulation(
   const expectedLeadTimeDemand = Math.round(demandMean * leadTimeMean * 10) / 10;
   const dynamicRop = Math.ceil(expectedLeadTimeDemand + dynamicSafetyStock);
 
-  // Vectorized Monte Carlo sample iterations
   const simulatedDdlt: number[] = new Array(iterations);
   let stockoutCount = 0;
 
   for (let i = 0; i < iterations; i++) {
-    // Sample lead time >= 1.0
     const ltSample = Math.max(1.0, leadTimeMean + sampleStandardNormal(rand) * leadTimeStd);
     const ltDays = Math.ceil(ltSample);
 
@@ -291,12 +373,12 @@ export function runMonteCarloSimulation(
     }
 
     simulatedDdlt[i] = Math.round(ddltSum);
-    if (ddltSum > currentStock) {
+    // Evaluated against usable stock (spoilage discounted)
+    if (ddltSum > usableStock) {
       stockoutCount++;
     }
   }
 
-  // Sort simulated DDLT to compute percentiles
   const sorted = [...simulatedDdlt].sort((a, b) => a - b);
   const p95 = sorted[Math.floor(iterations * 0.95)] || sorted[iterations - 1];
   const p99 = sorted[Math.floor(iterations * 0.99)] || sorted[iterations - 1];
@@ -304,17 +386,16 @@ export function runMonteCarloSimulation(
   const stockoutProbabilityPct = Math.round((stockoutCount / iterations) * 1000) / 10;
 
   let urgency: "CRITICAL REORDER NOW" | "WARNING" | "OPTIMAL";
-  if (currentStock <= dynamicRop || stockoutProbabilityPct >= 25.0) {
+  if (usableStock <= dynamicRop || stockoutProbabilityPct >= 25.0) {
     urgency = "CRITICAL REORDER NOW";
-  } else if (currentStock <= Math.round(dynamicRop * 1.3) || stockoutProbabilityPct >= 10.0) {
+  } else if (usableStock <= Math.round(dynamicRop * 1.3) || stockoutProbabilityPct >= 10.0) {
     urgency = "WARNING";
   } else {
     urgency = "OPTIMAL";
   }
 
-  // Target Inventory = ROP + 7 days cycle demand
   const targetInventory = dynamicRop + Math.round(demandMean * 7.0);
-  const recommendedReorderQty = Math.max(0, targetInventory - currentStock);
+  const recommendedReorderQty = Math.max(0, targetInventory - usableStock);
 
   return {
     dynamicSafetyStock,
@@ -330,7 +411,9 @@ export function runMonteCarloSimulation(
 }
 
 /**
- * Execute simulation across all selected SKUs
+ * Execute simulation across all selected SKUs with:
+ * 1. Perishable Batch Decay & Expiry Engine
+ * 2. Supplier Reliability Matrix Buffer Scaling
  */
 export function executeSupplyChainEngine(
   allRecords: DailyRecord[],
@@ -364,7 +447,6 @@ export function executeSupplyChainEngine(
 
     const fc = trainDemandForecast(historicalSales, forecastHorizon, promoUpliftPct);
 
-    // Compute mean and std of forecasted demand
     const dValues = fc.forecastPoints.map((f) => f.demand);
     const dMean = dValues.reduce((a, b) => a + b, 0) / dValues.length;
     const dStd = Math.max(
@@ -372,23 +454,47 @@ export function executeSupplyChainEngine(
       Math.sqrt(dValues.map((x) => Math.pow(x - dMean, 2)).reduce((a, b) => a + b, 0) / dValues.length)
     );
 
-    const effLtMean = skuMeta.leadTimeMean + supplierDelayBias;
-    const effLtStd = skuMeta.leadTimeStd;
+    // 1. Supplier Reliability Scorecard & Buffer Scaling
+    const scorecard = evaluateSupplierGrade(
+      skuMeta.leadTimeStd,
+      skuMeta.supplierName,
+      skuMeta.id,
+      skuMeta.name
+    );
 
+    // Scale lead-time std deviation by supplier risk multiplier + operational delay bias
+    const effLtStd = Math.round((skuMeta.leadTimeStd * scorecard.bufferMultiplier) * 10) / 10;
+    const effLtMean = Math.round((skuMeta.leadTimeMean + supplierDelayBias) * 10) / 10;
+
+    // 2. Perishable Batch Decay Engine
+    // Models batch aging and calculates usable stock discount prior to ROP calculation
+    let decayRatePct = 0;
+    let decayedUnits = 0;
+    let usableStock = currentStock;
+
+    if (skuMeta.isPerishable) {
+      const daysOfSupply = currentStock / Math.max(1, dMean);
+      // If days of supply approaches or exceeds shelf life, decay accelerates
+      const ratio = daysOfSupply / skuMeta.shelfLifeDays;
+      decayRatePct = Math.min(35.0, Math.max(4.0, Math.round(ratio * 14.5 * 10) / 10));
+      decayedUnits = Math.round(currentStock * (decayRatePct / 100.0));
+      usableStock = Math.max(0, currentStock - decayedUnits);
+    }
+
+    // Run Monte Carlo against usable stock (discounting expired/decayed batches)
     const mc = runMonteCarloSimulation(
       dMean,
       dStd,
       effLtMean,
       effLtStd,
-      currentStock,
+      usableStock,
       serviceLevelZ,
       monteCarloIterations
     );
 
-    // Revenue at Risk calculation
     let revenueAtRisk = 0;
-    if (mc.stockoutProbabilityPct > 5.0 && mc.p95LeadTimeDemand > currentStock) {
-      const deficitUnits = mc.p95LeadTimeDemand - currentStock;
+    if (mc.stockoutProbabilityPct > 5.0 && mc.p95LeadTimeDemand > usableStock) {
+      const deficitUnits = mc.p95LeadTimeDemand - usableStock;
       const penalty = skuMeta.stockoutPenalty + skuMeta.basePrice;
       revenueAtRisk = Math.round(deficitUnits * penalty * (mc.stockoutProbabilityPct / 100.0));
     }
@@ -396,14 +502,18 @@ export function executeSupplyChainEngine(
     results.push({
       sku: skuMeta,
       currentStock,
+      usableStock,
+      decayedUnits,
+      decayRatePct,
       forecastPoints: fc.forecastPoints,
       historicalSales,
       rmse: fc.rmse,
       mae: fc.mae,
       mcResult: mc,
       revenueAtRisk,
-      effectiveLeadTimeMean: Math.round(effLtMean * 10) / 10,
-      effectiveLeadTimeStd: Math.round(effLtStd * 10) / 10,
+      effectiveLeadTimeMean: effLtMean,
+      effectiveLeadTimeStd: effLtStd,
+      supplierScorecard: scorecard,
     });
   }
 
@@ -422,7 +532,7 @@ export function generatePurchaseOrders(
   const poBatchId = `PO-${todayStr}-${warehouse.id}`;
 
   for (const state of simulationStates) {
-    const { sku, currentStock, mcResult, effectiveLeadTimeMean } = state;
+    const { sku, currentStock, usableStock, mcResult, effectiveLeadTimeMean, supplierScorecard } = state;
 
     if (mcResult.recommendedReorderQty > 0 || mcResult.urgency === "CRITICAL REORDER NOW" || mcResult.urgency === "WARNING") {
       const poQty = Math.max(mcResult.recommendedReorderQty, Math.round(mcResult.dynamicSafetyStock * 1.5));
@@ -439,6 +549,7 @@ export function generatePurchaseOrders(
         skuName: sku.name,
         category: sku.category,
         currentStock,
+        usableStock,
         dynamicRop: mcResult.dynamicRop,
         safetyStock: mcResult.dynamicSafetyStock,
         recommendedOrderQty: poQty,
@@ -446,6 +557,8 @@ export function generatePurchaseOrders(
         totalPoValueInr: Math.round(totalCost),
         expectedDeliveryDate: expectedDate.toISOString().split("T")[0],
         priority: mcResult.urgency === "CRITICAL REORDER NOW" ? "URGENT" : "NORMAL",
+        supplierName: sku.supplierName,
+        supplierGrade: supplierScorecard.grade,
       });
     }
   }
@@ -454,53 +567,7 @@ export function generatePurchaseOrders(
 }
 
 /**
- * Export POs to CSV string
- */
-export function exportPurchaseOrdersToCsv(pos: PurchaseOrder[]): string {
-  if (pos.length === 0) return "";
-
-  const headers = [
-    "PO_Number",
-    "Warehouse_ID",
-    "Warehouse_Name",
-    "SKU_ID",
-    "SKU_Name",
-    "Category",
-    "Current_Stock",
-    "Dynamic_ROP",
-    "Safety_Stock",
-    "Recommended_Order_Qty",
-    "Unit_Cost_INR",
-    "Total_PO_Value_INR",
-    "Expected_Delivery_Date",
-    "Priority",
-  ];
-
-  const rows = pos.map((p) => [
-    p.poNumber,
-    p.warehouseId,
-    `"${p.warehouseName}"`,
-    p.skuId,
-    `"${p.skuName}"`,
-    p.category,
-    p.currentStock,
-    p.dynamicRop,
-    p.safetyStock,
-    p.recommendedOrderQty,
-    p.unitCostInr,
-    p.totalPoValueInr,
-    p.expectedDeliveryDate,
-    p.priority,
-  ]);
-
-  return [headers.join(","), ...rows.map((r) => r.join(","))].join("\n");
-}
-
-/**
  * Multi-Echelon Dark Store Inter-Transfer Engine
- * When an SKU hits "CRITICAL REORDER NOW" status at one dark store,
- * check if another nearby dark store has surplus stock (Current Stock > ROP + 14 days supply).
- * If surplus exists, suggest an "Inter-Warehouse Stock Transfer" instead of placing a new supplier PO.
  */
 export function evaluateInterWarehouseTransfers(
   allRecords: DailyRecord[],
@@ -520,10 +587,9 @@ export function evaluateInterWarehouseTransfers(
     const destDailyDemand = critState.sku.baseDemand * destWarehouse.demandFactor;
     const destDeficit = Math.max(
       15,
-      critState.mcResult.dynamicRop + Math.round(destDailyDemand * 7) - critState.currentStock
+      critState.mcResult.dynamicRop + Math.round(destDailyDemand * 7) - critState.usableStock
     );
 
-    // Scan other warehouses for surplus stock
     for (const originWh of otherWarehouses) {
       const originRecords = allRecords
         .filter((r) => r.warehouseId === originWh.id && r.skuId === skuId)
@@ -538,7 +604,6 @@ export function evaluateInterWarehouseTransfers(
       );
       const surplusThreshold = originEstRop + Math.round(originDailyDemand * 14);
 
-      // Check surplus condition: Current Stock > ROP + 14 days supply
       if (originCurrentStock > surplusThreshold) {
         const availableSurplus = originCurrentStock - surplusThreshold;
         const transferQty = Math.min(availableSurplus, destDeficit);
@@ -557,7 +622,7 @@ export function evaluateInterWarehouseTransfers(
             category: critState.sku.category,
             destWarehouseId: destWarehouse.id,
             destWarehouseName: destWarehouse.name,
-            destStock: critState.currentStock,
+            destStock: critState.usableStock,
             destRop: critState.mcResult.dynamicRop,
             originWarehouseId: originWh.id,
             originWarehouseName: originWh.name,
@@ -570,7 +635,7 @@ export function evaluateInterWarehouseTransfers(
             stockoutLossPreventedInr,
             status: "PENDING",
           });
-          break; // found optimal origin donor
+          break;
         }
       }
     }
@@ -580,12 +645,59 @@ export function evaluateInterWarehouseTransfers(
 }
 
 /**
- * Generates an initial seed ledger of dispatched POs for enterprise audit tracking
+ * Generates an ANSI X12 EDI 850 Purchase Order format payload
+ */
+export function generateEdi850Payload(
+  poBatch: string,
+  warehouse: { id: string; name: string },
+  items: { skuId: string; skuName: string; qty: number; unitCost: number; supplier: string }[]
+): string {
+  const dateStr = new Date().toISOString().slice(2, 10).replace(/-/g, "");
+  const timeStr = new Date().toISOString().slice(11, 16).replace(/:/g, "");
+
+  const segments = [
+    `ISA*00*          *00*          *ZZ*RETAILOPS      *ZZ*SAPCLOUD       *${dateStr}*${timeStr}*U*00401*000000001*0*T*:~`,
+    `GS*PO*RETAILOPS*SAPCLOUD*20${dateStr}*${timeStr}*1*X*004010~`,
+    `ST*850*0001~`,
+    `BEG*00*SA*${poBatch}**20${dateStr}~`,
+    `CUR*IN*INR~`,
+    `REF*DP*${warehouse.id}~`,
+    `N1*ST*${warehouse.name}*92*${warehouse.id}~`,
+  ];
+
+  items.forEach((item, idx) => {
+    segments.push(
+      `PO1*${idx + 1}*${item.qty}*EA*${item.unitCost.toFixed(2)}*PE*${item.skuId}*VN*${item.supplier}~`
+    );
+    segments.push(`PID*F****${item.skuName}~`);
+  });
+
+  segments.push(`CTT*${items.length}~`);
+  segments.push(`SE*${segments.length - 2}*0001~`);
+  segments.push(`GE*1*1~`);
+  segments.push(`IEA*1*000000001~`);
+
+  return segments.join("\n");
+}
+
+/**
+ * Generates initial seed ledger of dispatched POs for enterprise audit tracking
  */
 export function getInitialDispatchedLedger(): DispatchedPoRecord[] {
   const now = new Date();
   const t1 = new Date(now.getTime() - 1000 * 60 * 42).toISOString();
   const t2 = new Date(now.getTime() - 1000 * 60 * 180).toISOString();
+
+  const seed1Items = [
+    { skuId: "SKU-001", skuName: "Organic Milk 1L", qty: 220, unitCost: 78.0, supplier: "Amul Fresh Dairy Co." },
+    { skuId: "SKU-002", skuName: "Avocado Hass 2pk", qty: 240, unitCost: 249.0, supplier: "Hass Valley Orchards" },
+  ];
+
+  const seed2Items = [
+    { skuId: "SKU-003", skuName: "Protein Granola 500g", qty: 180, unitCost: 425.0, supplier: "TrueElements Organics" },
+    { skuId: "SKU-004", skuName: "Cold Brew Coffee 250ml", qty: 260, unitCost: 160.0, supplier: "Blue Tokai Roasters" },
+    { skuId: "SKU-005", skuName: "Greek Yogurt 400g", qty: 180, unitCost: 195.0, supplier: "Epigamia Dairy" },
+  ];
 
   return [
     {
@@ -601,8 +713,27 @@ export function getInitialDispatchedLedger(): DispatchedPoRecord[] {
       endpointUrl: "https://api.erp.retail-logistics.io/v2/orders/inbound",
       httpStatus: 200,
       latencyMs: 142,
-      payloadHash: "sha256:7f9a2b8e3d0c41ab82ef10",
+      payloadHash: "sha256:7f9a2b8e3d0c41ab82ef10b0f443a290c5819e8315",
       skuList: ["SKU-001 (Organic Milk)", "SKU-002 (Avocado Hass)"],
+      rawJsonPayload: JSON.stringify(
+        {
+          schemaVersion: "2026-10",
+          messageType: "PURCHASE_ORDER_OUTBOUND",
+          poBatchId: "PO-20261007-WH-BOM-01",
+          fulfillmentNode: { id: "WH-BOM-01", name: "Mumbai Central Dark Store" },
+          dispatchedAt: t1,
+          protocol: "EDI_850_OVER_AS2",
+          items: seed1Items,
+          signature: "sha256:7f9a2b8e3d0c41ab82ef10b0f443a290c5819e8315",
+        },
+        null,
+        2
+      ),
+      edi850Payload: generateEdi850Payload(
+        "PO-20261007-WH-BOM-01",
+        { id: "WH-BOM-01", name: "Mumbai Central Dark Store" },
+        seed1Items
+      ),
     },
     {
       dispatchId: "DSP-20261007-0088",
@@ -617,8 +748,27 @@ export function getInitialDispatchedLedger(): DispatchedPoRecord[] {
       endpointUrl: "https://netsuite.quickcommerce-ops.internal/webhook/po-ingress",
       httpStatus: 200,
       latencyMs: 198,
-      payloadHash: "sha256:1a84f3c9e67d9834ba90ef",
+      payloadHash: "sha256:1a84f3c9e67d9834ba90ef81e4b882310ca981249b",
       skuList: ["SKU-003 (Protein Granola)", "SKU-004 (Cold Brew)", "SKU-005 (Greek Yogurt)"],
+      rawJsonPayload: JSON.stringify(
+        {
+          schemaVersion: "2026-10",
+          messageType: "PURCHASE_ORDER_OUTBOUND",
+          poBatchId: "PO-20261007-WH-BLR-02",
+          fulfillmentNode: { id: "WH-BLR-02", name: "Bengaluru Indiranagar Hub" },
+          dispatchedAt: t2,
+          protocol: "REST_WEBHOOK_JSON",
+          items: seed2Items,
+          signature: "sha256:1a84f3c9e67d9834ba90ef81e4b882310ca981249b",
+        },
+        null,
+        2
+      ),
+      edi850Payload: generateEdi850Payload(
+        "PO-20261007-WH-BLR-02",
+        { id: "WH-BLR-02", name: "Bengaluru Indiranagar Hub" },
+        seed2Items
+      ),
     },
   ];
 }
@@ -635,11 +785,63 @@ export function createDispatchedPoRecord(
   const dispatchNum = Math.floor(1000 + Math.random() * 9000);
   const totalUnits = pos.reduce((acc, p) => acc + p.recommendedOrderQty, 0);
   const totalVal = pos.reduce((acc, p) => acc + p.totalPoValueInr, 0);
-  const hashHex = Array.from({ length: 16 }, () => Math.floor(Math.random() * 16).toString(16)).join("");
+  const hashHex = Array.from({ length: 40 }, () => Math.floor(Math.random() * 16).toString(16)).join("");
+
+  const poBatchNumber = pos[0]?.poNumber ? pos[0].poNumber.split("-").slice(0, 4).join("-") : `PO-${warehouse.id}`;
+
+  const payloadItems = pos.map((p) => ({
+    skuId: p.skuId,
+    skuName: p.skuName,
+    qty: p.recommendedOrderQty,
+    unitCost: p.unitCostInr,
+    supplier: p.supplierName,
+  }));
+
+  const rawJson = JSON.stringify(
+    {
+      documentType: "850_PURCHASE_ORDER",
+      dispatchId: `DSP-${now.toISOString().slice(0, 10).replace(/-/g, "")}-${dispatchNum}`,
+      poBatchNumber,
+      warehouseNode: {
+        id: warehouse.id,
+        name: warehouse.name,
+        city: warehouse.city,
+      },
+      dispatchedTimestampUtc: now.toISOString(),
+      targetSystem: erpSystem,
+      httpStatusExpected: 200,
+      financialCommitment: {
+        currency: "INR",
+        totalValuation: totalVal,
+        totalPhysicalUnits: totalUnits,
+      },
+      lineItems: pos.map((p, idx) => ({
+        lineIndex: idx + 1,
+        skuId: p.skuId,
+        skuName: p.skuName,
+        category: p.category,
+        supplierName: p.supplierName,
+        supplierGrade: p.supplierGrade,
+        orderedQuantity: p.recommendedOrderQty,
+        unitCostInr: p.unitCostInr,
+        extendedTotalInr: p.totalPoValueInr,
+        expectedDeliveryDate: p.expectedDeliveryDate,
+        priority: p.priority,
+      })),
+      cryptoVerification: {
+        algorithm: "HMAC-SHA256",
+        signature: `sha256:${hashHex}`,
+      },
+    },
+    null,
+    2
+  );
+
+  const edi850 = generateEdi850Payload(poBatchNumber, warehouse, payloadItems);
 
   return {
     dispatchId: `DSP-${now.toISOString().slice(0, 10).replace(/-/g, "")}-${dispatchNum}`,
-    poBatchNumber: pos[0]?.poNumber ? pos[0].poNumber.split("-").slice(0, 4).join("-") : `PO-${warehouse.id}`,
+    poBatchNumber,
     warehouseId: warehouse.id,
     warehouseName: warehouse.name,
     timestamp: now.toISOString(),
@@ -652,12 +854,57 @@ export function createDispatchedPoRecord(
     latencyMs: Math.floor(110 + Math.random() * 90),
     payloadHash: `sha256:${hashHex}`,
     skuList: pos.map((p) => `${p.skuId} (${p.skuName})`),
+    rawJsonPayload: rawJson,
+    edi850Payload: edi850,
   };
 }
 
-/**
- * Export dispatched ledger to CSV
- */
+export function exportPurchaseOrdersToCsv(pos: PurchaseOrder[]): string {
+  if (pos.length === 0) return "";
+
+  const headers = [
+    "PO_Number",
+    "Warehouse_ID",
+    "Warehouse_Name",
+    "SKU_ID",
+    "SKU_Name",
+    "Category",
+    "Current_Stock",
+    "Usable_Stock",
+    "Dynamic_ROP",
+    "Safety_Stock",
+    "Recommended_Order_Qty",
+    "Unit_Cost_INR",
+    "Total_PO_Value_INR",
+    "Expected_Delivery_Date",
+    "Priority",
+    "Supplier_Name",
+    "Supplier_Grade",
+  ];
+
+  const rows = pos.map((p) => [
+    p.poNumber,
+    p.warehouseId,
+    `"${p.warehouseName}"`,
+    p.skuId,
+    `"${p.skuName}"`,
+    p.category,
+    p.currentStock,
+    p.usableStock,
+    p.dynamicRop,
+    p.safetyStock,
+    p.recommendedOrderQty,
+    p.unitCostInr,
+    p.totalPoValueInr,
+    p.expectedDeliveryDate,
+    p.priority,
+    `"${p.supplierName}"`,
+    p.supplierGrade,
+  ]);
+
+  return [headers.join(","), ...rows.map((r) => r.join(","))].join("\n");
+}
+
 export function exportDispatchedLedgerToCsv(records: DispatchedPoRecord[]): string {
   if (records.length === 0) return "";
   const headers = [
@@ -690,4 +937,3 @@ export function exportDispatchedLedgerToCsv(records: DispatchedPoRecord[]): stri
   ]);
   return [headers.join(","), ...rows.map((row) => row.join(","))].join("\n");
 }
-

@@ -15,14 +15,16 @@ import { VisualAnalytics } from "./components/VisualAnalytics";
 import { RiskTable } from "./components/RiskTable";
 import { PoGenerator } from "./components/PoGenerator";
 import { InterTransferView } from "./components/InterTransferView";
+import { SupplierScorecardView } from "./components/SupplierScorecardView";
 import { SourceCodeViewer } from "./components/SourceCodeViewer";
-import { DispatchedPoRecord, InterTransferRecommendation } from "./types";
+import { DispatchedPoRecord } from "./types";
 import {
   TrendingUp,
   Table,
   FileCheck2,
   Code2,
   ArrowRightLeft,
+  Award,
   ShieldCheck,
 } from "lucide-react";
 
@@ -44,24 +46,26 @@ requests>=2.31.0
 `;
 
 const README_MD = `# 📦 Multi-Source Supply Chain & Inventory Stock-Out Forecaster
-### *Production-Grade Predictive Inventory Optimization, Monte Carlo Risk & Inter-Transfer Control Tower*
+### *Production-Grade Predictive Inventory Optimization, Monte Carlo Risk, Perishable Decay & Supplier Scorecards*
 
 ## 🚀 Problem Statement & Architecture
 Quick-commerce platforms (Zepto, Blinkit, Instamart) face severe revenue leakage due to inventory stock-outs.
-Static heuristics fail because they ignore demand variance, promotional velocity, and supplier delivery delays.
+Static heuristics fail because they ignore demand variance, perishable shelf-life decay, and supplier delivery delays.
 
 This platform bridges:
 1. **LightGBM / Scikit-Learn GradientBoostingRegressor** for multi-step daily demand forecasting.
 2. **Dual-Variance Dynamic Safety Stock**:
    $$SS = Z \\times \\sqrt{\\bar{L} \\cdot \\sigma_d^2 + \\bar{D}^2 \\cdot \\sigma_L^2}$$
-3. **Joint Bivariate Monte Carlo Simulation**:
-   - 1,000+ stochastic iterations sampling demand and supplier lead-time distributions concurrently.
-   - Calculates empirical Stock-Out Probability (%) and worst-case tail demand (P95/P99).
-4. **Multi-Echelon Dark Store Inter-Transfer Engine**:
-   - Discovers surplus inventory across neighboring dark store nodes (Current Stock > ROP + 14 days supply).
-   - Rebalances inventory intra-city within 3–6 hours instead of triggering expensive 2–5 day supplier lead-time POs.
-5. **Interactive ERP Webhook & Dispatched Ledger**:
-   - Logs dispatched orders into an in-memory audit table \`dispatched_po_ledger\`.
+3. **Perishable Batch Decay & Expiry Engine**:
+   - Models batch age & shelf-life degradation ($\delta_{\\text{decay}}$) for perishables (Organic Milk, Yogurt, Hass Avocados).
+   - Reorder points and Monte Carlo stock-out risks are evaluated against **Usable Stock** rather than nominal expired inventory.
+4. **Supplier Reliability Matrix**:
+   - Grades vendors (Grade A to F) based on lead-time variance ($\sigma_L$).
+   - Automatically expands buffer multipliers ($1.0\\times$ to $1.8\\times$) based on supplier reliability risk.
+5. **Multi-Echelon Dark Store Inter-Transfer Engine**:
+   - Fulfills critical stock-outs within 3–6 hours using neighboring dark store surplus ($\text{Stock} > \text{ROP} + 14d$).
+6. **Interactive ERP Webhook & Dispatched Ledger**:
+   - Dispatches orders via mock ERP webhooks with SHA-256 signatures, raw JSON, and ANSI X12 EDI 850 payloads.
 
 ## ⚡ Quickstart
 \`\`\`bash
@@ -85,7 +89,7 @@ export default function App() {
   const [supplierDelayDays, setSupplierDelayDays] = useState<number>(0);
 
   // Tabs & Ledger State
-  const [activeTab, setActiveTab] = useState<"analytics" | "table" | "transfer" | "po" | "code">("analytics");
+  const [activeTab, setActiveTab] = useState<"analytics" | "table" | "transfer" | "suppliers" | "po" | "code">("analytics");
   const [isSimulating, setIsSimulating] = useState<boolean>(false);
   const [pythonCode, setPythonCode] = useState<string>("");
   const [dispatchedLedger, setDispatchedLedger] = useState<DispatchedPoRecord[]>(getInitialDispatchedLedger());
@@ -109,7 +113,7 @@ export default function App() {
     return generateSyntheticHistoricalData();
   }, []);
 
-  // Execute Supply Chain Engine
+  // Execute Supply Chain Engine with Perishable Decay & Supplier Reliability Matrix
   const simulationStates = useMemo(() => {
     return executeSupplyChainEngine(
       allHistoricalRecords,
@@ -159,12 +163,10 @@ export default function App() {
     }));
   }, [allHistoricalRecords, selectedWarehouseId, simulationStates, approvedTransferIds]);
 
-  // Toggle Theme handler
   const handleToggleTheme = () => {
     setTheme((prev) => (prev === "dark" ? "light" : "dark"));
   };
 
-  // Re-simulate trigger
   const handleTriggerSimulation = () => {
     setIsSimulating(true);
     setTimeout(() => {
@@ -325,6 +327,20 @@ export default function App() {
               </button>
 
               <button
+                onClick={() => setActiveTab("suppliers")}
+                className={`flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                  activeTab === "suppliers"
+                    ? "bg-indigo-600 text-white shadow-sm shadow-indigo-600/30"
+                    : isDark
+                    ? "text-slate-400 hover:text-slate-200 hover:bg-slate-900"
+                    : "text-slate-600 hover:text-slate-900 hover:bg-slate-200"
+                }`}
+              >
+                <Award className="w-3.5 h-3.5" />
+                <span>Supplier Reliability</span>
+              </button>
+
+              <button
                 onClick={() => setActiveTab("po")}
                 className={`flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-bold transition-all cursor-pointer ${
                   activeTab === "po"
@@ -360,7 +376,7 @@ export default function App() {
 
             <div className="hidden xl:flex items-center gap-2 text-xs text-slate-400">
               <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
-              <span>Monte Carlo Engine Active</span>
+              <span>Decay Engine &amp; Scorecard Active</span>
             </div>
           </div>
 
@@ -387,6 +403,13 @@ export default function App() {
             <InterTransferView
               recommendations={interTransfers}
               onApproveTransfer={handleApproveTransfer}
+              theme={theme}
+            />
+          )}
+
+          {activeTab === "suppliers" && (
+            <SupplierScorecardView
+              simulationStates={simulationStates}
               theme={theme}
             />
           )}

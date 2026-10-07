@@ -17,6 +17,9 @@ export interface SkuMetadata {
   holdingCost: number;
   stockoutPenalty: number;
   stockMultiplier: number;
+  shelfLifeDays: number;
+  isPerishable: boolean;
+  supplierName: string;
 }
 
 export interface DailyRecord {
@@ -49,9 +52,24 @@ export interface MonteCarloResult {
   p99LeadTimeDemand: number;
 }
 
+export interface SupplierScorecard {
+  skuId: string;
+  skuName: string;
+  supplierName: string;
+  grade: "A" | "B" | "C" | "D" | "F";
+  onTimeDeliveryPct: number;
+  effectiveStdDays: number;
+  bufferMultiplier: number;
+  riskTier: "LOW" | "MODERATE" | "ELEVATED" | "CRITICAL";
+  auditNotes: string;
+}
+
 export interface SkuSimulationState {
   sku: SkuMetadata;
   currentStock: number;
+  usableStock: number;
+  decayedUnits: number;
+  decayRatePct: number;
   forecastPoints: ForecastPoint[];
   historicalSales: { date: string; units: number }[];
   rmse: number;
@@ -60,6 +78,7 @@ export interface SkuSimulationState {
   revenueAtRisk: number;
   effectiveLeadTimeMean: number;
   effectiveLeadTimeStd: number;
+  supplierScorecard: SupplierScorecard;
 }
 
 export interface PurchaseOrder {
@@ -70,6 +89,7 @@ export interface PurchaseOrder {
   skuName: string;
   category: string;
   currentStock: number;
+  usableStock: number;
   dynamicRop: number;
   safetyStock: number;
   recommendedOrderQty: number;
@@ -77,6 +97,8 @@ export interface PurchaseOrder {
   totalPoValueInr: number;
   expectedDeliveryDate: string;
   priority: "URGENT" | "NORMAL";
+  supplierName: string;
+  supplierGrade: string;
 }
 
 export interface InterTransferRecommendation {
@@ -115,5 +137,6 @@ export interface DispatchedPoRecord {
   latencyMs: number;
   payloadHash: string;
   skuList: string[];
+  rawJsonPayload: string;
+  edi850Payload: string;
 }
-

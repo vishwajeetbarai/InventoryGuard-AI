@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { SkuSimulationState } from "../types";
-import { TrendingUp, Sparkles, BarChart2, Activity } from "lucide-react";
+import { TrendingUp, Sparkles, BarChart2, Activity, Award, AlertTriangle, ShieldCheck, Clock } from "lucide-react";
 
 interface VisualAnalyticsProps {
   simulationStates: SkuSimulationState[];
@@ -28,11 +28,15 @@ export const VisualAnalytics: React.FC<VisualAnalyticsProps> = ({
   const {
     sku,
     currentStock,
+    usableStock,
+    decayedUnits,
+    decayRatePct,
     forecastPoints,
     historicalSales,
     rmse,
     mae,
     mcResult,
+    supplierScorecard,
   } = activeState;
 
   // Chart 1: Historical Sales (last 30 days) + Forecast (horizon)
@@ -115,8 +119,8 @@ export const VisualAnalytics: React.FC<VisualAnalyticsProps> = ({
         ].join(" ")
       : "";
 
-  // Chart 2: Inventory Depletion vs ROP
-  let runningStock = currentStock;
+  // Chart 2: Inventory Depletion vs ROP (Starts from Usable Stock to discount expired batches)
+  let runningStock = usableStock;
   const depletionData = forecastPoints.map((f, i) => {
     runningStock = Math.max(0, runningStock - f.demand);
     return {
@@ -133,7 +137,7 @@ export const VisualAnalytics: React.FC<VisualAnalyticsProps> = ({
   const innerH2 = c2Height - c2Padding.top - c2Padding.bottom;
 
   const maxVal2 = Math.max(
-    currentStock * 1.1,
+    currentStock * 1.15,
     mcResult.dynamicRop * 1.35,
     50
   );
@@ -144,12 +148,12 @@ export const VisualAnalytics: React.FC<VisualAnalyticsProps> = ({
     c2Padding.top + innerH2 - (val / maxVal2) * innerH2;
 
   const depletionPath = [
-    `M ${c2Padding.left} ${getY2(currentStock)}`,
+    `M ${c2Padding.left} ${getY2(usableStock)}`,
     ...depletionData.map((d, i) => `L ${getX2(i)} ${getY2(d.stock)}`),
   ].join(" ");
 
   const depletionArea = [
-    `M ${c2Padding.left} ${getY2(currentStock)}`,
+    `M ${c2Padding.left} ${getY2(usableStock)}`,
     ...depletionData.map((d, i) => `L ${getX2(i)} ${getY2(d.stock)}`),
     `L ${getX2(depletionData.length - 1)} ${c2Padding.top + innerH2}`,
     `L ${c2Padding.left} ${c2Padding.top + innerH2}`,
@@ -196,7 +200,7 @@ export const VisualAnalytics: React.FC<VisualAnalyticsProps> = ({
 
   return (
     <div className="space-y-6">
-      {/* Active SKU Selector Bar */}
+      {/* Active SKU Selector Bar with Perishable & Supplier Matrix badges */}
       <div
         className={`border rounded-xl p-4 flex flex-col md:flex-row md:items-center justify-between gap-4 transition-colors ${cardCls}`}
       >
@@ -206,9 +210,9 @@ export const VisualAnalytics: React.FC<VisualAnalyticsProps> = ({
           </div>
           <div>
             <span className="text-xs text-slate-400 uppercase tracking-wider font-semibold">
-              Selected SKU Deep-Dive
+              Selected SKU Deep-Dive &amp; Audit Profile
             </span>
-            <div className="flex items-center gap-2 mt-0.5">
+            <div className="flex flex-wrap items-center gap-2 mt-0.5">
               <h3
                 className={`text-base font-bold ${
                   isDark ? "text-white" : "text-slate-900"
@@ -224,6 +228,22 @@ export const VisualAnalytics: React.FC<VisualAnalyticsProps> = ({
                 }`}
               >
                 {sku.category}
+              </span>
+
+              {sku.isPerishable ? (
+                <span className="text-xs px-2 py-0.5 rounded font-bold bg-amber-500/10 text-amber-500 border border-amber-500/30 flex items-center gap-1">
+                  <span>Shelf Life: {sku.shelfLifeDays}d</span>
+                  <span>•</span>
+                  <span>Decay: -{decayRatePct}%</span>
+                </span>
+              ) : (
+                <span className="text-xs px-2 py-0.5 rounded font-medium bg-emerald-500/10 text-emerald-500 border border-emerald-500/30">
+                  Ambient Non-Perishable ({sku.shelfLifeDays}d)
+                </span>
+              )}
+
+              <span className="text-xs px-2 py-0.5 rounded font-bold bg-sky-500/10 text-sky-400 border border-sky-500/30">
+                Vendor: {supplierScorecard.grade} ({supplierScorecard.bufferMultiplier}x Buffer)
               </span>
             </div>
           </div>
@@ -287,7 +307,6 @@ export const VisualAnalytics: React.FC<VisualAnalyticsProps> = ({
               viewBox={`0 0 ${c1Width} ${c1Height}`}
               className="w-full h-auto select-none"
             >
-              {/* Horizontal Grid lines */}
               {[0, 0.25, 0.5, 0.75, 1].map((pct, i) => {
                 const y = c1Padding.top + innerH1 * (1 - pct);
                 const val = Math.round(maxVal1 * pct);
@@ -315,7 +334,6 @@ export const VisualAnalytics: React.FC<VisualAnalyticsProps> = ({
                 );
               })}
 
-              {/* Confidence Band Polygon */}
               {confidenceBandPath && (
                 <path
                   d={confidenceBandPath}
@@ -323,7 +341,6 @@ export const VisualAnalytics: React.FC<VisualAnalyticsProps> = ({
                 />
               )}
 
-              {/* Historical Line */}
               {histPath && (
                 <path
                   d={histPath}
@@ -333,7 +350,6 @@ export const VisualAnalytics: React.FC<VisualAnalyticsProps> = ({
                 />
               )}
 
-              {/* Forecast Line */}
               {forePath && (
                 <path
                   d={forePath}
@@ -344,7 +360,6 @@ export const VisualAnalytics: React.FC<VisualAnalyticsProps> = ({
                 />
               )}
 
-              {/* Vertical separation marker */}
               <line
                 x1={getX1(foreIdxOffset - 1)}
                 y1={c1Padding.top}
@@ -388,7 +403,7 @@ export const VisualAnalytics: React.FC<VisualAnalyticsProps> = ({
           </div>
         </div>
 
-        {/* CHART 2: Forward Inventory Depletion vs Dynamic ROP */}
+        {/* CHART 2: Forward Inventory Depletion vs Dynamic ROP (with Decay Callout) */}
         <div className={`border rounded-xl p-5 shadow-sm transition-colors ${cardCls}`}>
           <div className="flex items-center justify-between mb-3">
             <div>
@@ -398,21 +413,21 @@ export const VisualAnalytics: React.FC<VisualAnalyticsProps> = ({
                 }`}
               >
                 <BarChart2 className="w-4 h-4 text-sky-400" />
-                Forward Stock Depletion vs. Dynamic ROP
+                Forward Depletion vs. Dynamic ROP (Usable Stock)
               </h4>
               <p className="text-xs text-slate-400 mt-0.5">
-                Current On-Hand Inventory vs. Reorder Point (ROP) &amp; Safety Stock
+                Effective fulfillment stock after discounting expired perishable batches
               </p>
             </div>
             <div className="text-right">
               <span
                 className={`text-xs font-semibold px-2 py-0.5 rounded border ${
-                  currentStock <= mcResult.dynamicRop
+                  usableStock <= mcResult.dynamicRop
                     ? "bg-red-500/10 text-red-500 border-red-500/20"
                     : "bg-emerald-500/10 text-emerald-500 border-emerald-500/20"
                 }`}
               >
-                Stock: {currentStock} | ROP: {mcResult.dynamicRop}
+                Usable: {usableStock} ({currentStock} Gross) | ROP: {mcResult.dynamicRop}
               </span>
             </div>
           </div>
@@ -423,7 +438,6 @@ export const VisualAnalytics: React.FC<VisualAnalyticsProps> = ({
               viewBox={`0 0 ${c2Width} ${c2Height}`}
               className="w-full h-auto select-none"
             >
-              {/* Horizontal Grid lines */}
               {[0, 0.25, 0.5, 0.75, 1].map((pct, i) => {
                 const y = c2Padding.top + innerH2 * (1 - pct);
                 const val = Math.round(maxVal2 * pct);
@@ -450,7 +464,7 @@ export const VisualAnalytics: React.FC<VisualAnalyticsProps> = ({
                 );
               })}
 
-              {/* ROP Threshold Line */}
+              {/* ROP Line */}
               <line
                 x1={c2Padding.left}
                 y1={getY2(mcResult.dynamicRop)}
@@ -471,7 +485,7 @@ export const VisualAnalytics: React.FC<VisualAnalyticsProps> = ({
                 ROP: {mcResult.dynamicRop} units
               </text>
 
-              {/* Safety Stock Threshold Line */}
+              {/* Safety Stock Line */}
               <line
                 x1={c2Padding.left}
                 y1={getY2(mcResult.dynamicSafetyStock)}
@@ -492,6 +506,29 @@ export const VisualAnalytics: React.FC<VisualAnalyticsProps> = ({
                 Safety Stock: {mcResult.dynamicSafetyStock}
               </text>
 
+              {/* Gross vs Usable Stock marker at day 0 */}
+              {decayedUnits > 0 && (
+                <g>
+                  <line
+                    x1={c2Padding.left}
+                    y1={getY2(currentStock)}
+                    x2={c2Padding.left + 40}
+                    y2={getY2(currentStock)}
+                    stroke="#F59E0B"
+                    strokeWidth="1.5"
+                    strokeDasharray="2 2"
+                  />
+                  <text
+                    x={c2Padding.left + 45}
+                    y={getY2(currentStock) + 3}
+                    fill="#F59E0B"
+                    fontSize="9"
+                  >
+                    Gross: {currentStock} (-{decayedUnits} Expired)
+                  </text>
+                </g>
+              )}
+
               {/* Depletion Area */}
               <path d={depletionArea} fill="rgba(56, 189, 248, 0.1)" />
 
@@ -504,7 +541,6 @@ export const VisualAnalytics: React.FC<VisualAnalyticsProps> = ({
                 strokeLinecap="round"
               />
 
-              {/* Data points */}
               {depletionData.map((d, i) => (
                 <circle
                   key={i}
@@ -526,14 +562,16 @@ export const VisualAnalytics: React.FC<VisualAnalyticsProps> = ({
           >
             <div className="flex items-center gap-4">
               <span className="flex items-center gap-1.5">
-                <span className="w-3 h-0.5 bg-sky-400 rounded-full" /> Projected Stock
+                <span className="w-3 h-0.5 bg-sky-400 rounded-full" /> Usable Stock ({usableStock})
               </span>
               <span className="flex items-center gap-1.5">
                 <span className="w-3 h-0.5 bg-red-400 rounded-full" /> Dynamic ROP
               </span>
-              <span className="flex items-center gap-1.5">
-                <span className="w-3 h-0.5 bg-amber-400 rounded-full" /> Safety Stock
-              </span>
+              {decayedUnits > 0 && (
+                <span className="flex items-center gap-1.5 text-amber-500 font-medium">
+                  ⚠ {decayedUnits} Expired Waste Units
+                </span>
+              )}
             </div>
             <span className="font-medium">Forward Days</span>
           </div>
@@ -553,7 +591,7 @@ export const VisualAnalytics: React.FC<VisualAnalyticsProps> = ({
               Monte Carlo Joint Lead-Time Risk Distribution ({monteCarloIterations.toLocaleString()} Iterations)
             </h4>
             <p className="text-xs text-slate-400 mt-0.5">
-              Stochastic simulation coupling demand variance with supplier lead-time fluctuations
+              Coupling demand variance ($\sigma_d$) with supplier lead-time risk ($\sigma_L = \pm{activeState.effectiveLeadTimeStd}d$ scaled by {supplierScorecard.grade}-Grade vendor buffer)
             </p>
           </div>
           <div className="flex items-center gap-2">
@@ -586,7 +624,6 @@ export const VisualAnalytics: React.FC<VisualAnalyticsProps> = ({
             viewBox={`0 0 ${c3Width} ${c3Height}`}
             className="w-full h-auto select-none"
           >
-            {/* Grid */}
             {[0, 0.5, 1].map((pct, i) => {
               const y = c3Padding.top + innerH3 * (1 - pct);
               return (
@@ -602,7 +639,6 @@ export const VisualAnalytics: React.FC<VisualAnalyticsProps> = ({
               );
             })}
 
-            {/* Histogram Bars */}
             {bins.map((bin, i) => {
               const x1 = getX3(bin.binStart);
               const x2 = getX3(bin.binEnd);
@@ -610,7 +646,7 @@ export const VisualAnalytics: React.FC<VisualAnalyticsProps> = ({
               const barH = (bin.count / maxBinCount) * innerH3;
               const y = c3Padding.top + innerH3 - barH;
 
-              const isStockoutBin = bin.binEnd > currentStock;
+              const isStockoutBin = bin.binEnd > usableStock;
 
               return (
                 <rect
@@ -625,20 +661,19 @@ export const VisualAnalytics: React.FC<VisualAnalyticsProps> = ({
               );
             })}
 
-            {/* Threshold Vertical Line: Current Stock on Hand */}
-            {currentStock >= minDdlt && currentStock <= maxDdlt && (
+            {usableStock >= minDdlt && usableStock <= maxDdlt && (
               <g>
                 <line
-                  x1={getX3(currentStock)}
+                  x1={getX3(usableStock)}
                   y1={c3Padding.top}
-                  x2={getX3(currentStock)}
+                  x2={getX3(usableStock)}
                   y2={c3Padding.top + innerH3}
                   stroke="#F43F5E"
                   strokeWidth="2.5"
                   strokeDasharray="4 3"
                 />
                 <rect
-                  x={getX3(currentStock) - 60}
+                  x={getX3(usableStock) - 60}
                   y={c3Padding.top - 18}
                   width="120"
                   height="18"
@@ -646,19 +681,18 @@ export const VisualAnalytics: React.FC<VisualAnalyticsProps> = ({
                   fill="#F43F5E"
                 />
                 <text
-                  x={getX3(currentStock)}
+                  x={getX3(usableStock)}
                   y={c3Padding.top - 5}
                   fill="#FFFFFF"
                   fontSize="9.5"
                   fontWeight="bold"
                   textAnchor="middle"
                 >
-                  Current Stock: {currentStock}
+                  Usable Stock: {usableStock}
                 </text>
               </g>
             )}
 
-            {/* Threshold Vertical Line: Dynamic Reorder Point */}
             {mcResult.dynamicRop >= minDdlt && mcResult.dynamicRop <= maxDdlt && (
               <g>
                 <line
@@ -691,7 +725,6 @@ export const VisualAnalytics: React.FC<VisualAnalyticsProps> = ({
               </g>
             )}
 
-            {/* X-axis tick labels */}
             {[minDdlt, Math.round((minDdlt + maxDdlt) / 2), maxDdlt].map((val, idx) => (
               <text
                 key={idx}
@@ -707,7 +740,6 @@ export const VisualAnalytics: React.FC<VisualAnalyticsProps> = ({
           </svg>
         </div>
 
-        {/* Legend */}
         <div
           className={`flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs mt-2 border-t pt-3 ${
             isDark

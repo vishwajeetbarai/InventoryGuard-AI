@@ -24,7 +24,8 @@ export const RiskTable: React.FC<RiskTableProps> = ({
       const matchSearch =
         s.sku.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
         s.sku.id.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        s.sku.category.toLowerCase().includes(searchTerm.toLowerCase());
+        s.sku.category.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        s.sku.supplierName.toLowerCase().includes(searchTerm.toLowerCase());
       const matchStatus =
         statusFilter === "ALL" || s.mcResult.urgency === statusFilter;
       return matchSearch && matchStatus;
@@ -36,8 +37,8 @@ export const RiskTable: React.FC<RiskTableProps> = ({
         vA = a.mcResult.stockoutProbabilityPct;
         vB = b.mcResult.stockoutProbabilityPct;
       } else if (sortField === "stock") {
-        vA = a.currentStock;
-        vB = b.currentStock;
+        vA = a.usableStock;
+        vB = b.usableStock;
       } else if (sortField === "revRisk") {
         vA = a.revenueAtRisk;
         vB = b.revenueAtRisk;
@@ -71,6 +72,19 @@ export const RiskTable: React.FC<RiskTableProps> = ({
     }
   };
 
+  const getGradeBadge = (grade: string) => {
+    switch (grade) {
+      case "A":
+        return <span className="px-1.5 py-0.5 rounded text-[10px] font-bold bg-emerald-500/10 text-emerald-500 border border-emerald-500/30">Grade A</span>;
+      case "B":
+        return <span className="px-1.5 py-0.5 rounded text-[10px] font-bold bg-sky-500/10 text-sky-500 border border-sky-500/30">Grade B</span>;
+      case "C":
+        return <span className="px-1.5 py-0.5 rounded text-[10px] font-bold bg-amber-500/10 text-amber-500 border border-amber-500/30">Grade C</span>;
+      default:
+        return <span className="px-1.5 py-0.5 rounded text-[10px] font-bold bg-red-500/10 text-red-500 border border-red-500/30">Grade {grade}</span>;
+    }
+  };
+
   const containerCls = isDark
     ? "bg-slate-900/80 border-slate-800 text-slate-100"
     : "bg-white border-slate-200 text-slate-900 shadow-sm";
@@ -92,7 +106,7 @@ export const RiskTable: React.FC<RiskTableProps> = ({
             Stock-Out Risk &amp; Reorder Action Prioritization
           </h3>
           <p className="text-xs text-slate-400 mt-0.5">
-            Ranked by Monte Carlo stock-out probability during supplier fulfillment window
+            Ranked by Monte Carlo stock-out probability evaluated against usable stock (discounting perishable batch decay)
           </p>
         </div>
 
@@ -156,6 +170,7 @@ export const RiskTable: React.FC<RiskTableProps> = ({
               }`}
             >
               <th className="py-3 px-4">SKU / Catalog</th>
+              <th className="py-3 px-4">Supplier &amp; Risk Grade</th>
               <th
                 className="py-3 px-4 cursor-pointer hover:text-indigo-400"
                 onClick={() => {
@@ -164,7 +179,7 @@ export const RiskTable: React.FC<RiskTableProps> = ({
                 }}
               >
                 <div className="flex items-center gap-1">
-                  <span>Current Stock</span>
+                  <span>Usable / Gross Stock</span>
                   <ArrowUpDown className="w-3 h-3" />
                 </div>
               </th>
@@ -206,7 +221,7 @@ export const RiskTable: React.FC<RiskTableProps> = ({
           >
             {filtered.length === 0 ? (
               <tr>
-                <td colSpan={9} className="py-8 text-center text-slate-400">
+                <td colSpan={10} className="py-8 text-center text-slate-400">
                   No SKUs matched the current filters.
                 </td>
               </tr>
@@ -236,8 +251,20 @@ export const RiskTable: React.FC<RiskTableProps> = ({
                         <span>{s.sku.category}</span>
                       </div>
                     </td>
+                    <td className="py-3 px-4">
+                      <div className="font-medium text-slate-300 truncate max-w-[130px]">
+                        {s.sku.supplierName}
+                      </div>
+                      <div className="mt-0.5">{getGradeBadge(s.supplierScorecard.grade)}</div>
+                    </td>
                     <td className="py-3 px-4 font-mono font-semibold">
-                      {s.currentStock.toLocaleString()}
+                      <span className="text-sky-400 font-bold">{s.usableStock}</span>
+                      <span className="text-slate-500"> / {s.currentStock}</span>
+                      {s.decayedUnits > 0 && (
+                        <div className="text-[10px] text-amber-500 font-sans font-medium">
+                          -{s.decayedUnits} units decayed ({s.decayRatePct}%)
+                        </div>
+                      )}
                     </td>
                     <td className="py-3 px-4 font-mono font-semibold text-red-500">
                       {s.mcResult.dynamicRop.toLocaleString()}

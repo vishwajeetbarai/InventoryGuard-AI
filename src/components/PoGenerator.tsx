@@ -7,24 +7,24 @@ import {
   FileSpreadsheet,
   Send,
   Database,
-  ExternalLink,
+  Eye,
+  FileCode,
   ShieldCheck,
   Check,
-  Layers,
-  Activity,
 } from "lucide-react";
 import {
   exportPurchaseOrdersToCsv,
   createDispatchedPoRecord,
   exportDispatchedLedgerToCsv,
 } from "../engine/supplyChainEngine";
+import { PayloadInspectModal } from "./PayloadInspectModal";
 
 interface PoGeneratorProps {
   purchaseOrders: PurchaseOrder[];
   warehouse: Warehouse;
   dispatchedLedger: DispatchedPoRecord[];
   onDispatchPo: (newRecord: DispatchedPoRecord) => void;
-  theme: "dark" | "light";
+  theme?: "dark" | "light";
 }
 
 export const PoGenerator: React.FC<PoGeneratorProps> = ({
@@ -32,12 +32,13 @@ export const PoGenerator: React.FC<PoGeneratorProps> = ({
   warehouse,
   dispatchedLedger,
   onDispatchPo,
-  theme,
+  theme = "dark",
 }) => {
   const isDark = theme === "dark";
   const [selectedErp, setSelectedErp] = useState<string>("SAP S/4HANA Cloud (EDI 850)");
   const [isDispatching, setIsDispatching] = useState<boolean>(false);
   const [lastDispatchedRecord, setLastDispatchedRecord] = useState<DispatchedPoRecord | null>(null);
+  const [inspectingRecord, setInspectingRecord] = useState<DispatchedPoRecord | null>(null);
 
   const totalPoValue = purchaseOrders.reduce((acc, p) => acc + p.totalPoValueInr, 0);
   const totalUnits = purchaseOrders.reduce((acc, p) => acc + p.recommendedOrderQty, 0);
@@ -78,12 +79,25 @@ export const PoGenerator: React.FC<PoGeneratorProps> = ({
       onDispatchPo(record);
       setLastDispatchedRecord(record);
       setIsDispatching(false);
-    }, 400);
+    }, 450);
+  };
+
+  const getGradeBadge = (grade: string) => {
+    switch (grade) {
+      case "A":
+        return <span className="px-1.5 py-0.5 rounded text-[10px] font-bold bg-emerald-500/10 text-emerald-500 border border-emerald-500/30">Grade A (1.0x)</span>;
+      case "B":
+        return <span className="px-1.5 py-0.5 rounded text-[10px] font-bold bg-sky-500/10 text-sky-500 border border-sky-500/30">Grade B (1.15x)</span>;
+      case "C":
+        return <span className="px-1.5 py-0.5 rounded text-[10px] font-bold bg-amber-500/10 text-amber-500 border border-amber-500/30">Grade C (1.3x)</span>;
+      default:
+        return <span className="px-1.5 py-0.5 rounded text-[10px] font-bold bg-red-500/10 text-red-500 border border-red-500/30">Grade {grade} (1.5x)</span>;
+    }
   };
 
   return (
     <div className="space-y-6">
-      {/* Executive Financial Metrics */}
+      {/* Financial Metrics */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
         <div
           className={`border rounded-xl p-5 shadow-sm transition-colors ${
@@ -120,7 +134,7 @@ export const PoGenerator: React.FC<PoGeneratorProps> = ({
             <span className="text-sm font-medium text-slate-400">Units</span>
           </div>
           <div className="mt-1 text-xs text-slate-500">
-            Dynamic Safety Stock + Cycle Replenishment
+            Scaled by Vendor Reliability Risk
           </div>
         </div>
 
@@ -160,12 +174,11 @@ export const PoGenerator: React.FC<PoGeneratorProps> = ({
               Automated Procurement Purchase Orders (PO Batch)
             </h3>
             <p className="text-xs text-slate-400 mt-0.5">
-              Node: <strong className={isDark ? "text-slate-200" : "text-slate-800"}>{warehouse.name}</strong> • Stochastic ROP Optimization
+              Node: <strong className={isDark ? "text-slate-200" : "text-slate-800"}>{warehouse.name}</strong> • Dynamic ROP with Expiry Decay Discount
             </p>
           </div>
 
           <div className="flex flex-wrap items-center gap-2.5">
-            {/* ERP Target Selector */}
             <select
               value={selectedErp}
               onChange={(e) => setSelectedErp(e.target.value)}
@@ -180,7 +193,6 @@ export const PoGenerator: React.FC<PoGeneratorProps> = ({
               <option value="Odoo Enterprise Supply API">Odoo Enterprise Supply API</option>
             </select>
 
-            {/* Export CSV */}
             <button
               onClick={handleDownloadCsv}
               disabled={purchaseOrders.length === 0}
@@ -190,7 +202,6 @@ export const PoGenerator: React.FC<PoGeneratorProps> = ({
               <span>Export CSV</span>
             </button>
 
-            {/* Dispatch to ERP Webhook */}
             <button
               onClick={handleDispatchToErp}
               disabled={purchaseOrders.length === 0 || isDispatching}
@@ -202,18 +213,22 @@ export const PoGenerator: React.FC<PoGeneratorProps> = ({
           </div>
         </div>
 
-        {/* Dispatch Confirmation Banner */}
+        {/* Dispatch Confirmation Banner with Quick Inspect */}
         {lastDispatchedRecord && (
           <div className="mt-4 p-3.5 rounded-lg bg-emerald-500/10 border border-emerald-500/30 flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-xs text-emerald-400">
             <div className="flex items-center gap-2">
               <CheckCircle className="w-4 h-4 text-emerald-400 shrink-0" />
               <span>
-                <strong>Dispatched to ERP:</strong> Batch <code>{lastDispatchedRecord.poBatchNumber}</code> posted to <strong>{lastDispatchedRecord.erpSystem}</strong> (HTTP {lastDispatchedRecord.httpStatus} OK in {lastDispatchedRecord.latencyMs}ms).
+                <strong>Dispatched to ERP:</strong> Batch <code>{lastDispatchedRecord.poBatchNumber}</code> posted to <strong>{lastDispatchedRecord.erpSystem}</strong> (HTTP {lastDispatchedRecord.httpStatus} in {lastDispatchedRecord.latencyMs}ms).
               </span>
             </div>
-            <span className="font-mono text-[11px] text-emerald-500/80">
-              {lastDispatchedRecord.payloadHash}
-            </span>
+            <button
+              onClick={() => setInspectingRecord(lastDispatchedRecord)}
+              className="inline-flex items-center gap-1 text-xs font-bold text-indigo-400 hover:text-indigo-300 underline cursor-pointer shrink-0"
+            >
+              <Eye className="w-3.5 h-3.5" />
+              <span>Inspect Webhook Payload</span>
+            </button>
           </div>
         )}
 
@@ -230,12 +245,13 @@ export const PoGenerator: React.FC<PoGeneratorProps> = ({
               >
                 <th className="py-2.5 px-4">PO Identifier</th>
                 <th className="py-2.5 px-4">SKU / Item</th>
-                <th className="py-2.5 px-4">Stock on Hand</th>
+                <th className="py-2.5 px-4">Supplier &amp; Grade</th>
+                <th className="py-2.5 px-4">Usable / Total Stock</th>
                 <th className="py-2.5 px-4">Dynamic ROP</th>
                 <th className="py-2.5 px-4">Order Qty</th>
                 <th className="py-2.5 px-4">Unit Cost</th>
                 <th className="py-2.5 px-4">Total Value</th>
-                <th className="py-2.5 px-4">Expected Arrival</th>
+                <th className="py-2.5 px-4">Arrival</th>
                 <th className="py-2.5 px-4">Priority</th>
               </tr>
             </thead>
@@ -246,7 +262,7 @@ export const PoGenerator: React.FC<PoGeneratorProps> = ({
             >
               {purchaseOrders.length === 0 ? (
                 <tr>
-                  <td colSpan={9} className="py-8 text-center text-slate-500">
+                  <td colSpan={10} className="py-8 text-center text-slate-500">
                     No items currently require replenishment reorders.
                   </td>
                 </tr>
@@ -273,8 +289,15 @@ export const PoGenerator: React.FC<PoGeneratorProps> = ({
                         {po.skuId} • {po.category}
                       </div>
                     </td>
-                    <td className="py-2.5 px-4 font-mono text-slate-400">
-                      {po.currentStock.toLocaleString()}
+                    <td className="py-2.5 px-4">
+                      <div className="font-medium text-slate-300 truncate max-w-[140px]">
+                        {po.supplierName}
+                      </div>
+                      <div className="mt-0.5">{getGradeBadge(po.supplierGrade)}</div>
+                    </td>
+                    <td className="py-2.5 px-4 font-mono text-slate-300">
+                      <span className="font-bold text-sky-400">{po.usableStock}</span>
+                      <span className="text-slate-500"> / {po.currentStock}</span>
                     </td>
                     <td className="py-2.5 px-4 font-mono text-red-500 font-semibold">
                       {po.dynamicRop.toLocaleString()}
@@ -330,6 +353,9 @@ export const PoGenerator: React.FC<PoGeneratorProps> = ({
             >
               Enterprise Audit Ledger: <code>dispatched_po_ledger</code>
             </h4>
+            <span className="text-[11px] px-2 py-0.5 rounded bg-sky-500/10 text-sky-400 border border-sky-500/20 font-mono">
+              Click Inspect to View JSON &amp; EDI 850
+            </span>
           </div>
 
           <button
@@ -360,7 +386,7 @@ export const PoGenerator: React.FC<PoGeneratorProps> = ({
                 <th className="py-2 px-3">Units</th>
                 <th className="py-2 px-3">Total Value</th>
                 <th className="py-2 px-3">Webhook Status</th>
-                <th className="py-2 px-3">Audit Hash</th>
+                <th className="py-2 px-3 text-right">Inspect Payload</th>
               </tr>
             </thead>
             <tbody
@@ -403,8 +429,14 @@ export const PoGenerator: React.FC<PoGeneratorProps> = ({
                       HTTP {rec.httpStatus} ({rec.latencyMs}ms)
                     </span>
                   </td>
-                  <td className="py-2 px-3 font-mono text-[10px] text-slate-500 truncate max-w-[100px]">
-                    {rec.payloadHash}
+                  <td className="py-2 px-3 text-right">
+                    <button
+                      onClick={() => setInspectingRecord(rec)}
+                      className="inline-flex items-center gap-1 px-2.5 py-1 rounded bg-indigo-600 hover:bg-indigo-500 text-white text-[11px] font-semibold cursor-pointer transition-colors shadow-sm"
+                    >
+                      <FileCode className="w-3 h-3" />
+                      <span>Inspect</span>
+                    </button>
                   </td>
                 </tr>
               ))}
@@ -412,6 +444,15 @@ export const PoGenerator: React.FC<PoGeneratorProps> = ({
           </table>
         </div>
       </div>
+
+      {/* Interactive Payload Inspector Modal */}
+      {inspectingRecord && (
+        <PayloadInspectModal
+          record={inspectingRecord}
+          onClose={() => setInspectingRecord(null)}
+          theme={theme}
+        />
+      )}
     </div>
   );
 };
