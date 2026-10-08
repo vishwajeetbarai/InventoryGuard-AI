@@ -1,12 +1,26 @@
 import React, { useState } from "react";
 import { SkuSimulationState } from "../types";
-import { TrendingUp, Sparkles, BarChart2, Activity, Award, AlertTriangle, ShieldCheck, Clock } from "lucide-react";
+import {
+  TrendingUp,
+  Sparkles,
+  BarChart2,
+  Activity,
+  Award,
+  AlertTriangle,
+  ShieldCheck,
+  Clock,
+  CloudRain,
+  Leaf,
+  PackageX,
+  Calendar,
+} from "lucide-react";
 
 interface VisualAnalyticsProps {
   simulationStates: SkuSimulationState[];
   selectedSkuId: string;
   onSelectSkuId: (id: string) => void;
   monteCarloIterations: number;
+  weatherSurgePct?: number;
   theme?: "dark" | "light";
 }
 
@@ -15,6 +29,7 @@ export const VisualAnalytics: React.FC<VisualAnalyticsProps> = ({
   selectedSkuId,
   onSelectSkuId,
   monteCarloIterations,
+  weatherSurgePct = 0,
   theme = "dark",
 }) => {
   const isDark = theme === "dark";
@@ -232,13 +247,22 @@ export const VisualAnalytics: React.FC<VisualAnalyticsProps> = ({
 
               {sku.isPerishable ? (
                 <span className="text-xs px-2 py-0.5 rounded font-bold bg-amber-500/10 text-amber-500 border border-amber-500/30 flex items-center gap-1">
-                  <span>Shelf Life: {sku.shelfLifeDays}d</span>
+                  <Leaf className="w-3 h-3 text-amber-500" />
+                  <span>Perishable Shelf Life: {sku.shelfLifeDays}d</span>
                   <span>•</span>
                   <span>Decay: -{decayRatePct}%</span>
                 </span>
               ) : (
                 <span className="text-xs px-2 py-0.5 rounded font-medium bg-emerald-500/10 text-emerald-500 border border-emerald-500/30">
-                  Ambient Non-Perishable ({sku.shelfLifeDays}d)
+                  Ambient Shelf-Stable ({sku.shelfLifeDays}d)
+                </span>
+              )}
+
+              {activeState.weatherDemandUpliftPct > 0 && (
+                <span className="text-xs px-2 py-0.5 rounded font-bold bg-sky-500/15 text-sky-400 border border-sky-500/30 flex items-center gap-1">
+                  <CloudRain className="w-3 h-3 text-sky-400" />
+                  <span>Rain Shock: +{activeState.weatherDemandUpliftPct}%</span>
+                  <span className="opacity-75">({sku.weatherSensitivity}x)</span>
                 </span>
               )}
 
@@ -576,6 +600,133 @@ export const VisualAnalytics: React.FC<VisualAnalyticsProps> = ({
             <span className="font-medium">Forward Days</span>
           </div>
         </div>
+      </div>
+
+      {/* Perishable Batch Expiry & Decay Engine Diagnostic Card */}
+      <div
+        className={`border rounded-xl p-5 shadow-sm transition-colors ${
+          isDark
+            ? sku.isPerishable
+              ? "bg-amber-950/15 border-amber-500/30"
+              : "bg-slate-900/60 border-slate-800"
+            : sku.isPerishable
+            ? "bg-amber-50/70 border-amber-200"
+            : "bg-slate-50 border-slate-200"
+        }`}
+      >
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-slate-700/30">
+          <div className="flex items-center gap-2">
+            {sku.isPerishable ? (
+              <Leaf className="w-4 h-4 text-amber-500" />
+            ) : (
+              <ShieldCheck className="w-4 h-4 text-emerald-500" />
+            )}
+            <h4
+              className={`text-sm font-bold ${
+                isDark ? "text-white" : "text-slate-900"
+              }`}
+            >
+              {sku.isPerishable
+                ? "Perishable Batch Expiry & Shelf-Life Decay Engine"
+                : "Ambient Non-Perishable Shelf Stability"}
+            </h4>
+          </div>
+          <span
+            className={`text-xs px-2.5 py-0.5 rounded-full font-bold border ${
+              sku.isPerishable
+                ? "bg-amber-500/10 text-amber-400 border-amber-500/30"
+                : "bg-emerald-500/10 text-emerald-400 border-emerald-500/30"
+            }`}
+          >
+            {sku.isPerishable
+              ? `Dynamic Spoilage Discount: -${decayRatePct}% Usable Stock`
+              : "Zero Expiry Discount (90-Day Stable)"}
+          </span>
+        </div>
+
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mt-4">
+          <div className="space-y-1">
+            <div className="text-xs text-slate-400 flex items-center gap-1">
+              <Calendar className="w-3.5 h-3.5 text-slate-400" />
+              <span>Shelf-Life Limit</span>
+            </div>
+            <div
+              className={`text-lg font-extrabold ${
+                isDark ? "text-white" : "text-slate-900"
+              }`}
+            >
+              {sku.shelfLifeDays}{" "}
+              <span className="text-xs font-normal text-slate-400">Days</span>
+            </div>
+            <div className="text-[11px] text-slate-500">
+              {sku.isPerishable
+                ? "Cold-chain expiration limit"
+                : "Ambient shelf stability"}
+            </div>
+          </div>
+
+          <div className="space-y-1">
+            <div className="text-xs text-slate-400">Gross Physical Stock</div>
+            <div
+              className={`text-lg font-extrabold font-mono ${
+                isDark ? "text-slate-200" : "text-slate-800"
+              }`}
+            >
+              {currentStock}{" "}
+              <span className="text-xs font-normal text-slate-400">Units</span>
+            </div>
+            <div className="text-[11px] text-slate-500">
+              Total warehouse count
+            </div>
+          </div>
+
+          <div className="space-y-1">
+            <div className="text-xs text-slate-400 flex items-center gap-1">
+              <PackageX className="w-3.5 h-3.5 text-amber-400" />
+              <span>Expired Spoilage</span>
+            </div>
+            <div className="text-lg font-extrabold text-amber-500 font-mono">
+              -{decayedUnits}{" "}
+              <span className="text-xs font-normal text-amber-400/80">
+                ({decayRatePct}%)
+              </span>
+            </div>
+            <div className="text-[11px] text-slate-500">
+              ₹{(decayedUnits * sku.basePrice).toLocaleString("en-IN")} written-off
+            </div>
+          </div>
+
+          <div className="space-y-1">
+            <div className="text-xs text-slate-400 flex items-center gap-1">
+              <ShieldCheck className="w-3.5 h-3.5 text-sky-400" />
+              <span>Net Usable Stock</span>
+            </div>
+            <div className="text-lg font-extrabold text-sky-400 font-mono">
+              {usableStock}{" "}
+              <span className="text-xs font-normal text-slate-400">Units</span>
+            </div>
+            <div className="text-[11px] text-slate-500">
+              Engine ROP baseline
+            </div>
+          </div>
+        </div>
+
+        {sku.isPerishable && (
+          <div
+            className={`mt-4 p-3 rounded-lg text-xs flex items-start gap-2 border ${
+              isDark
+                ? "bg-slate-900/80 border-slate-800 text-slate-300"
+                : "bg-white border-slate-200 text-slate-700"
+            }`}
+          >
+            <AlertTriangle className="w-4 h-4 text-amber-500 shrink-0 mt-0.5" />
+            <div>
+              <strong>Quick-Commerce Batch Freshness Protection:</strong>{" "}
+              Without expiration decay modeling, the gross count of {currentStock} units
+              would falsely appear to satisfy demand. By factoring in aging batches, usable stock is adjusted to {usableStock} units, accelerating the Reorder Point trigger and preventing customer delivery of expired milk or yogurt.
+            </div>
+          </div>
+        )}
       </div>
 
       {/* CHART 3: Monte Carlo Lead-Time Demand Distribution Histogram */}

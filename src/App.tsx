@@ -86,6 +86,7 @@ export default function App() {
   const [forecastHorizon, setForecastHorizon] = useState<number>(21);
   const [monteCarloRuns, setMonteCarloRuns] = useState<number>(1000);
   const [promoSurgePct, setPromoSurgePct] = useState<number>(0);
+  const [weatherSurgePct, setWeatherSurgePct] = useState<number>(0);
   const [supplierDelayDays, setSupplierDelayDays] = useState<number>(0);
 
   // Tabs & Ledger State
@@ -113,7 +114,7 @@ export default function App() {
     return generateSyntheticHistoricalData();
   }, []);
 
-  // Execute Supply Chain Engine with Perishable Decay & Supplier Reliability Matrix
+  // Execute Supply Chain Engine with Perishable Decay, Supplier Reliability Matrix & Weather Surge
   const simulationStates = useMemo(() => {
     return executeSupplyChainEngine(
       allHistoricalRecords,
@@ -123,7 +124,8 @@ export default function App() {
       forecastHorizon,
       monteCarloRuns,
       promoSurgePct,
-      supplierDelayDays
+      supplierDelayDays,
+      weatherSurgePct
     );
   }, [
     allHistoricalRecords,
@@ -134,6 +136,7 @@ export default function App() {
     monteCarloRuns,
     promoSurgePct,
     supplierDelayDays,
+    weatherSurgePct,
   ]);
 
   // Current Warehouse Metadata
@@ -251,6 +254,11 @@ export default function App() {
           promoSurgePct={promoSurgePct}
           onChangePromoSurgePct={(pct) => {
             setPromoSurgePct(pct);
+            handleTriggerSimulation();
+          }}
+          weatherSurgePct={weatherSurgePct}
+          onChangeWeatherSurgePct={(pct) => {
+            setWeatherSurgePct(pct);
             handleTriggerSimulation();
           }}
           supplierDelayDays={supplierDelayDays}
@@ -387,6 +395,7 @@ export default function App() {
               selectedSkuId={activeSkuId}
               onSelectSkuId={setActiveSkuId}
               monteCarloIterations={monteCarloRuns}
+              weatherSurgePct={weatherSurgePct}
               theme={theme}
             />
           )}

@@ -38,16 +38,21 @@ The Reorder Point triggers a replenishment order whenever warehouse physical sto
 
 $$\text{ROP} = (\bar{D}_{\text{forecast}} \times \bar{L}_{\text{supplier}}) + \text{Safety Stock}$$
 
-### 3. Joint Bivariate Monte Carlo Simulation
-To model the non-linear tail risks of concurrent demand surges and severe supplier delivery disruptions:
-1. For each SKU and Dark Store, the simulator runs $N$ independent iterations ($N \in [500, 2000]$).
-2. For each iteration $i$:
-   - Sample simulated supplier lead time: $L_i \sim \text{LogNormal}(\mu_L, \sigma_L)$ or clipped $\mathcal{N}(\mu_L, \sigma_L^2)$, satisfying $L_i \ge 1$ day.
-   - For each day $t \in [1, \lfloor L_i \rfloor]$ during that lead-time window, draw daily demand $d_{i,t} \sim \mathcal{N}(\hat{y}_t, \sigma_{\text{model}}^2)$ with promotional amplification.
-   - Compute total simulated demand during lead time: $DDLT_i = \sum_{t=1}^{\lfloor L_i \rfloor} d_{i,t}$.
-   - If $DDLT_i > \text{Stock on Hand}$, record a stock-out event ($E_i = 1$).
-3. **Empirical Stock-Out Probability:**
-   $$P(\text{Stock-Out}) = \frac{1}{N} \sum_{i=1}^N \mathbf{1}(DDLT_i > \text{Current Stock})$$
+### 4. Perishable Batch Expiry & Decay Engine
+For perishable cold-chain products (e.g., Organic Milk 1L, Greek Yogurt 400g, Hass Avocado 2pk):
+- Models batch degradation ($\delta_{\text{decay}}$) as inventory ages relative to product shelf life:
+  $$\delta_{\text{decay}} = \min\left(0.35, \max\left(0.04, \frac{\text{DOS}}{\text{ShelfLife}} \times 0.145\right)\right)$$
+- Evaluates Dynamic ROP and Monte Carlo stock-out risks against **Usable Stock** rather than nominal expired inventory.
+
+### 5. Weather & Local Event Surge Sandbox
+- Simulates sudden localized weather disruptions (e.g. Heavy Rain / Monsoon Surge +0% to +50%).
+- Scales demand projections by each SKU's weather sensitivity parameter:
+  $$\hat{D}_{\text{weather}} = \hat{D}_{\text{forecast}} \times \left(1 + \frac{\text{WeatherSurgePct} \times \text{Sensitivity}}{100}\right)$$
+
+### 6. Enhanced Inter-Store Transfer Profitability Matrix
+- Evaluates cross-dock stock redeployment between nearby dark stores when an SKU reaches critical stockout:
+  $$\text{Net Profitability} = \text{Salvaged Revenue} - \text{Freight Transit Fee}$$
+  $$\text{Lead-Time Savings} = \text{Supplier Lead-Time Hours} - \text{Intra-City Transit Hours} \approx 60–120 \text{ Hours Saved}$$
 
 ---
 

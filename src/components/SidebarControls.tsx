@@ -1,6 +1,6 @@
 import React from "react";
 import { Warehouse, SkuMetadata } from "../types";
-import { Sliders, MapPin, Tag, Shield, Calendar, Shuffle, Flame, Truck, RefreshCw } from "lucide-react";
+import { Sliders, MapPin, Tag, Shield, Calendar, Shuffle, Flame, Truck, RefreshCw, CloudRain } from "lucide-react";
 
 interface SidebarControlsProps {
   warehouses: Warehouse[];
@@ -19,6 +19,8 @@ interface SidebarControlsProps {
   onChangeMonteCarloRuns: (runs: number) => void;
   promoSurgePct: number;
   onChangePromoSurgePct: (pct: number) => void;
+  weatherSurgePct?: number;
+  onChangeWeatherSurgePct?: (pct: number) => void;
   supplierDelayDays: number;
   onChangeSupplierDelayDays: (days: number) => void;
   isSimulating: boolean;
@@ -43,6 +45,8 @@ export const SidebarControls: React.FC<SidebarControlsProps> = ({
   onChangeMonteCarloRuns,
   promoSurgePct,
   onChangePromoSurgePct,
+  weatherSurgePct = 0,
+  onChangeWeatherSurgePct,
   supplierDelayDays,
   onChangeSupplierDelayDays,
   isSimulating,
@@ -254,6 +258,32 @@ export const SidebarControls: React.FC<SidebarControlsProps> = ({
             onChange={(e) => onChangePromoSurgePct(Number(e.target.value))}
             className="w-full accent-amber-500 cursor-pointer"
           />
+        </div>
+
+        {/* Weather & Local Event Surge Sandbox */}
+        <div className="space-y-1.5">
+          <div className="flex items-center justify-between text-xs">
+            <span className={`flex items-center gap-1 ${labelCls}`}>
+              <CloudRain className="w-3.5 h-3.5 text-sky-400" />
+              <span>Weather Shock Impact</span>
+            </span>
+            <span className="font-mono text-sky-400 font-bold">
+              +{weatherSurgePct}% Rain
+            </span>
+          </div>
+          <input
+            type="range"
+            min={0}
+            max={50}
+            step={5}
+            value={weatherSurgePct}
+            onChange={(e) => onChangeWeatherSurgePct && onChangeWeatherSurgePct(Number(e.target.value))}
+            className="w-full accent-sky-400 cursor-pointer"
+          />
+          <div className={`flex justify-between text-[10px] ${subTextCls}`}>
+            <span>Clear Sky (0%)</span>
+            <span>Monsoon (+50%)</span>
+          </div>
         </div>
 
         {/* Lead Time Delay Bias Slider */}

@@ -20,6 +20,7 @@ export interface SkuMetadata {
   shelfLifeDays: number;
   isPerishable: boolean;
   supplierName: string;
+  weatherSensitivity: number;
 }
 
 export interface DailyRecord {
@@ -79,6 +80,7 @@ export interface SkuSimulationState {
   effectiveLeadTimeMean: number;
   effectiveLeadTimeStd: number;
   supplierScorecard: SupplierScorecard;
+  weatherDemandUpliftPct: number;
 }
 
 export interface PurchaseOrder {
@@ -119,6 +121,10 @@ export interface InterTransferRecommendation {
   transitHours: number;
   transitCostInr: number;
   stockoutLossPreventedInr: number;
+  netProfitabilityInr: number;
+  supplierLeadTimeDays: number;
+  supplierLeadTimeHours: number;
+  leadTimeSavedHours: number;
   status: "PENDING" | "APPROVED" | "IN_TRANSIT";
 }
 

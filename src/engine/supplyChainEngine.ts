@@ -50,6 +50,7 @@ export const SKUS: SkuMetadata[] = [
     shelfLifeDays: 4,
     isPerishable: true,
     supplierName: "Amul Fresh Dairy Co.",
+    weatherSensitivity: 1.35,
   },
   {
     id: "SKU-002",
@@ -65,6 +66,7 @@ export const SKUS: SkuMetadata[] = [
     shelfLifeDays: 5,
     isPerishable: true,
     supplierName: "Hass Valley Orchards",
+    weatherSensitivity: 0.60,
   },
   {
     id: "SKU-003",
@@ -80,6 +82,7 @@ export const SKUS: SkuMetadata[] = [
     shelfLifeDays: 90,
     isPerishable: false,
     supplierName: "TrueElements Organics",
+    weatherSensitivity: 0.40,
   },
   {
     id: "SKU-004",
@@ -95,6 +98,7 @@ export const SKUS: SkuMetadata[] = [
     shelfLifeDays: 14,
     isPerishable: true,
     supplierName: "Blue Tokai Roasters",
+    weatherSensitivity: 1.45,
   },
   {
     id: "SKU-005",
@@ -110,6 +114,7 @@ export const SKUS: SkuMetadata[] = [
     shelfLifeDays: 6,
     isPerishable: true,
     supplierName: "Epigamia Dairy Cold-Chain",
+    weatherSensitivity: 1.10,
   },
 ];
 
@@ -423,7 +428,8 @@ export function executeSupplyChainEngine(
   forecastHorizon: number,
   monteCarloIterations: number,
   promoUpliftPct: number,
-  supplierDelayBias: number
+  supplierDelayBias: number,
+  weatherSurgePct: number = 0
 ): SkuSimulationState[] {
   const results: SkuSimulationState[] = [];
 
@@ -445,7 +451,11 @@ export function executeSupplyChainEngine(
       units: r.unitsSold,
     }));
 
-    const fc = trainDemandForecast(historicalSales, forecastHorizon, promoUpliftPct);
+    // Weather Shock Sandbox: Scale demand forecast for weather-sensitive SKUs
+    const skuWeatherUpliftPct = Math.round(weatherSurgePct * (skuMeta.weatherSensitivity || 1.0) * 10) / 10;
+    const totalDemandUpliftPct = promoUpliftPct + skuWeatherUpliftPct;
+
+    const fc = trainDemandForecast(historicalSales, forecastHorizon, totalDemandUpliftPct);
 
     const dValues = fc.forecastPoints.map((f) => f.demand);
     const dMean = dValues.reduce((a, b) => a + b, 0) / dValues.length;
@@ -514,6 +524,7 @@ export function executeSupplyChainEngine(
       effectiveLeadTimeMean: effLtMean,
       effectiveLeadTimeStd: effLtStd,
       supplierScorecard: scorecard,
+      weatherDemandUpliftPct: skuWeatherUpliftPct,
     });
   }
 
@@ -610,10 +621,14 @@ export function evaluateInterWarehouseTransfers(
 
         if (transferQty >= 10) {
           const transitHours = originWh.city === destWarehouse.city ? 3 : 6;
-          const transitCostInr = 150 + transferQty * 1.5;
+          const transitCostInr = Math.round(150 + transferQty * 1.5);
           const stockoutLossPreventedInr = Math.round(
             transferQty * (critState.sku.stockoutPenalty + critState.sku.basePrice * 0.25)
           );
+          const netProfitabilityInr = stockoutLossPreventedInr - transitCostInr;
+          const supplierLeadTimeDays = critState.sku.leadTimeMean;
+          const supplierLeadTimeHours = Math.round(supplierLeadTimeDays * 24);
+          const leadTimeSavedHours = Math.max(0, supplierLeadTimeHours - transitHours);
 
           recommendations.push({
             id: `XFER-${Date.now().toString().slice(-4)}-${skuId}-${originWh.id.slice(-2)}`,
@@ -631,8 +646,12 @@ export function evaluateInterWarehouseTransfers(
             originSurplusUnits: availableSurplus,
             recommendedTransferQty: transferQty,
             transitHours,
-            transitCostInr: Math.round(transitCostInr),
+            transitCostInr,
             stockoutLossPreventedInr,
+            netProfitabilityInr,
+            supplierLeadTimeDays,
+            supplierLeadTimeHours,
+            leadTimeSavedHours,
             status: "PENDING",
           });
           break;
