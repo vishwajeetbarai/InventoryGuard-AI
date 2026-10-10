@@ -611,9 +611,48 @@ def evaluate_inter_store_transfers(df_raw: pd.DataFrame, current_wh_id: str, sim
 # --------------------------------------------------------------------------------------
 df_raw = generate_synthetic_supply_chain_data()
 
+if "weather_surge" not in st.session_state:
+    st.session_state["weather_surge"] = 0
+if "delay_bias" not in st.session_state:
+    st.session_state["delay_bias"] = 0.0
+if "promo_surge" not in st.session_state:
+    st.session_state["promo_surge"] = 0
+if "approved_transfers" not in st.session_state:
+    st.session_state.approved_transfers = []
+if "issued_debit_notes" not in st.session_state:
+    st.session_state.issued_debit_notes = []
+if "applied_markdowns" not in st.session_state:
+    st.session_state.applied_markdowns = []
+
 with st.sidebar:
     st.markdown("### 🎛️ Control Tower Parameters")
     
+    # Crisis Scenario Presets (1-Click Stress Tests)
+    st.markdown("#### ⚡ Crisis Scenario Presets")
+    c_p1, c_p2 = st.columns(2)
+    if c_p1.button("🌧️ Monsoon", help="+40% Rain Shock, +2.5d Vendor Delay"):
+        st.session_state["weather_surge"] = 40
+        st.session_state["delay_bias"] = 2.5
+        st.session_state["promo_surge"] = 15
+        st.rerun()
+    if c_p2.button("🔥 Flash Sale", help="+65% Demand Surge, 99.5% CSL"):
+        st.session_state["promo_surge"] = 65
+        st.session_state["weather_surge"] = 0
+        st.session_state["delay_bias"] = 0.5
+        st.rerun()
+    c_p3, c_p4 = st.columns(2)
+    if c_p3.button("🚢 Strike", help="+4.0d Vendor Delay Shock"):
+        st.session_state["delay_bias"] = 4.0
+        st.session_state["weather_surge"] = 0
+        st.session_state["promo_surge"] = 0
+        st.rerun()
+    if c_p4.button("⚖️ Normal", help="Reset to baseline operational values"):
+        st.session_state["weather_surge"] = 0
+        st.session_state["delay_bias"] = 0.0
+        st.session_state["promo_surge"] = 0
+        st.rerun()
+
+    st.markdown("---")
     selected_warehouse_id = st.selectbox(
         "📍 Dark Store / Warehouse Node",
         options=list(WAREHOUSE_REGISTRY.keys()),
@@ -647,10 +686,11 @@ with st.sidebar:
     
     st.markdown("---")
     st.markdown("#### ⚡ Stress Test & Promo Sandbox")
-    promo_uplift = st.slider("Flash Sale Demand Surge (+%)", 0, 100, 0, 5)
-    weather_surge = st.slider("🌧️ Weather Shock Impact (Monsoon/Rain Surge +%)", 0, 50, 0, 5)
-    supplier_delay_bias = st.slider("Supplier Delay Shock (+Days)", 0.0, 5.0, 0.0, 0.5)
-    st.caption("AI Studio Supply Chain Engine v2.7 • Weather Surge & Profitability Matrix Active")
+    promo_uplift = st.slider("Flash Sale Demand Surge (+%)", 0, 100, int(st.session_state["promo_surge"]), 5)
+    weather_surge = st.slider("🌧️ Weather Shock Impact (Monsoon/Rain Surge +%)", 0, 50, int(st.session_state["weather_surge"]), 5)
+    supplier_delay_bias = st.slider("Supplier Delay Shock (+Days)", 0.0, 5.0, float(st.session_state["delay_bias"]), 0.5)
+    st.markdown("---")
+    st.caption("AI Studio Supply Chain Engine v2.8 • Topology & Export System Active")
 
 # TOP TITLE BAR
 st.markdown(
@@ -818,10 +858,29 @@ with kpi_col4:
 
 st.markdown("<div style='height: 16px;'></div>", unsafe_allow_html=True)
 
+# Executive Export Bar
+export_col1, export_col2 = st.columns([8, 4])
+with export_col2:
+    csv_rows = []
+    csv_rows.append("SKU ID,SKU Name,Category,Current Stock,Decayed Spoilage,Usable Stock,Dynamic ROP,Safety Stock,Stockout Prob %,Urgency,Recommended Order Qty")
+    for s_id in selected_skus:
+        s_res = simulation_results[s_id]
+        m_res = s_res["mc_output"]
+        csv_rows.append(f"{s_id},{SKU_CATALOG[s_id]['name']},{SKU_CATALOG[s_id]['category']},{s_res['current_stock']},{s_res['decayed_units']},{s_res['usable_stock']},{m_res['dynamic_rop']},{m_res['dynamic_safety_stock']},{m_res['stockout_probability_pct']}%,{m_res['urgency']},{m_res['recommended_reorder_qty']}")
+    csv_payload = "\n".join(csv_rows)
+    st.download_button(
+        label="📥 Export Executive Audit Report (CSV)",
+        data=csv_payload,
+        file_name=f"SupplyChain_Audit_{selected_warehouse_id}.csv",
+        mime="text/csv",
+        use_container_width=True,
+    )
+
 # --------------------------------------------------------------------------------------
 # 13. DASHBOARD TABS
 # --------------------------------------------------------------------------------------
-tab_analytics, tab_table, tab_transfers, tab_suppliers, tab_po, tab_architecture = st.tabs([
+tab_network, tab_analytics, tab_table, tab_transfers, tab_suppliers, tab_po, tab_architecture = st.tabs([
+    "🗺️ Network Topology Map",
     "📈 Visual Analytics",
     "📋 Stock-Out Risk Prioritization",
     f"🔄 Inter-Store Transfers ({len(inter_transfers)})",
@@ -829,6 +888,99 @@ tab_analytics, tab_table, tab_transfers, tab_suppliers, tab_po, tab_architecture
     "📑 Automated PO & ERP Webhook Inspector",
     "🧠 Algorithmic Architecture",
 ])
+
+# --------------------------------------------------------------------------------------
+# TAB 0: NETWORK TOPOLOGY MAP
+# --------------------------------------------------------------------------------------
+with tab_network:
+    st.markdown("#### 🗺️ Multi-Echelon Dark Store Network Topology & Active Corridor Telemetry")
+    st.markdown("Geographic network visualization across the 3 core fulfillment hubs with active transit links and stock equilibrium indicators.")
+    
+    col_map, col_details = st.columns([7, 5])
+    
+    with col_map:
+        fig_net = go.Figure()
+        
+        # Coordinates for the 3 fulfillment nodes
+        node_coords = {
+            "WH-DEL-03": {"lat": 28.6139, "lon": 77.2090, "city": "Delhi NCR", "name": "Delhi NCR Fulfillment Node"},
+            "WH-BOM-01": {"lat": 19.0760, "lon": 72.8777, "city": "Mumbai", "name": "Mumbai Central Dark Store"},
+            "WH-BLR-02": {"lat": 12.9716, "lon": 77.5946, "city": "Bengaluru", "name": "Bengaluru Indiranagar Hub"},
+        }
+        
+        # Corridor links
+        corridors = [
+            ("WH-DEL-03", "WH-BOM-01", "Delhi ⇄ Mumbai (1,410 km · 6h transit)"),
+            ("WH-BOM-01", "WH-BLR-02", "Mumbai ⇄ Bengaluru (980 km · 4h transit)"),
+            ("WH-DEL-03", "WH-BLR-02", "Delhi ⇄ Bengaluru (2,150 km · 6.5h transit)"),
+        ]
+        
+        for orig, dest, label in corridors:
+            has_xfer = any((t["origin_wh"] == orig and t["dest_wh"] == dest) or (t["origin_wh"] == dest and t["dest_wh"] == orig) for t in inter_transfers)
+            fig_net.add_trace(go.Scattergeo(
+                lat=[node_coords[orig]["lat"], node_coords[dest]["lat"]],
+                lon=[node_coords[orig]["lon"], node_coords[dest]["lon"]],
+                mode="lines",
+                line=dict(width=3 if has_xfer else 1.5, color="#F59E0B" if has_xfer else "#475569", dash="solid" if has_xfer else "dash"),
+                hoverinfo="text",
+                text=label,
+                showlegend=False,
+            ))
+            
+        # Add Node markers
+        for wh_id, coords in node_coords.items():
+            is_active = wh_id == selected_warehouse_id
+            is_donor = any(t["origin_wh"] == wh_id for t in inter_transfers)
+            is_dest = any(t["dest_wh"] == wh_id for t in inter_transfers)
+            
+            node_color = "#10B981" # green
+            if is_dest or (is_active and critical_stockouts_count > 0):
+                node_color = "#EF4444"
+            elif is_donor:
+                node_color = "#F59E0B"
+                
+            fig_net.add_trace(go.Scattergeo(
+                lat=[coords["lat"]],
+                lon=[coords["lon"]],
+                mode="markers+text",
+                marker=dict(size=20 if is_active else 14, color=node_color, line=dict(width=2, color="#FFFFFF")),
+                text=[f"<b>{coords['city']}</b>{' (Active)' if is_active else ''}"],
+                textposition="bottom center",
+                hoverinfo="text",
+                hovertext=f"<b>{coords['name']}</b><br>ID: {wh_id}<br>Status: {'Critical Deficit' if node_color == '#EF4444' else ('Surplus Donor' if node_color == '#F59E0B' else 'Optimal')}",
+                showlegend=False,
+            ))
+            
+        fig_net.update_geos(
+            scope="asia",
+            fitbounds="locations",
+            showland=True,
+            landcolor="#0F172A",
+            showocean=True,
+            oceancolor="#020617",
+            showcountries=True,
+            countrycolor="#1E293B",
+            bgcolor="#0A0E1A",
+        )
+        fig_net.update_layout(
+            paper_bgcolor="#0A0E1A",
+            margin=dict(l=0, r=0, t=10, b=10),
+            height=460,
+        )
+        st.plotly_chart(fig_net, use_container_width=True)
+        
+    with col_details:
+        st.markdown(f"##### 📍 Focused Node: **{WAREHOUSE_REGISTRY[selected_warehouse_id]['name']}**")
+        st.markdown(f"**Region:** {WAREHOUSE_REGISTRY[selected_warehouse_id]['region']} · **City:** {WAREHOUSE_REGISTRY[selected_warehouse_id]['city']}")
+        st.markdown(f"**Active Stockout Deficits:** `{critical_stockouts_count}` SKUs")
+        st.markdown(f"**Active Transfer Opportunities:** `{len(inter_transfers)}` routes")
+        st.markdown("---")
+        st.markdown("##### 🚚 Active Cross-Dock Transit Corridors")
+        if not inter_transfers:
+            st.success("No emergency cross-city transfers active.")
+        else:
+            for t in inter_transfers:
+                st.markdown(f"- 📦 **{t['sku_name']}**: `{t['transfer_units']} Units` ({t['origin_wh']} ➔ {t['dest_wh']}) · ~{t['transit_hours']}h transit · **+₹{t['net_profit_inr']:,} Profit**")
 
 # --------------------------------------------------------------------------------------
 # TAB 1: VISUAL ANALYTICS
@@ -950,6 +1102,86 @@ with tab_table:
         hide_index=True,
     )
 
+    st.markdown("---")
+    # Quick-Commerce Dynamic Markdown & Spoilage Liquidation Engine
+    st.markdown("#### 🔥 Quick-Commerce Dynamic Markdown & Spoilage Liquidation Engine")
+    st.markdown("Algorithmic flash discounts (20%–35%) triggered when perishable inventory reaches &lt;72h shelf-life window to avoid discard write-offs.")
+    
+    markdown_rows = []
+    for s_id in selected_skus:
+        sku_m = SKU_CATALOG[s_id]
+        if not sku_m.get("is_perishable", False):
+            continue
+        s_data = simulation_results[s_id]
+        base_shelf_h = sku_m.get("shelf_life_days", 4) * 24
+        sim_hours_left = max(18, min(72, int(base_shelf_h * 0.35)))
+        discount_pct = 35 if sim_hours_left <= 36 else 25
+        discounted_price = round(sku_m["base_price"] * (1 - discount_pct / 100))
+        discard_loss = round(s_data["current_stock"] * sku_m["base_price"])
+        salvaged_units = round(s_data["usable_stock"] * 0.85)
+        waste_avoided_rev = round(salvaged_units * discounted_price)
+        
+        markdown_rows.append({
+            "SKU ID": s_id,
+            "SKU Name": sku_m["name"],
+            "Hours Remaining": f"~{sim_hours_left}h",
+            "Current Stock": s_data["current_stock"],
+            "Original Price": f"₹{sku_m['base_price']}",
+            "Flash Discount": f"-{discount_pct}%",
+            "Discounted Price": f"₹{discounted_price}",
+            "Discard Loss at Risk": f"₹{discard_loss:,}",
+            "Waste Avoided Revenue": f"+₹{waste_avoided_rev:,}",
+            "Status": "Deployed ✓" if s_id in st.session_state.applied_markdowns else "Actionable",
+        })
+    
+    if markdown_rows:
+        st.dataframe(pd.DataFrame(markdown_rows), use_container_width=True, hide_index=True)
+    else:
+        st.info("No perishable items currently in the critical &lt;72h decay window.")
+
+    st.markdown("---")
+    # Product Substitution & Stockout Cannibalization Engine
+    st.markdown("#### 🔀 Product Substitution & Stockout Cannibalization Engine")
+    st.markdown("When primary SKUs experience stock-outs, 25%–40% unsatisfied consumer demand is absorbed by adjacent catalog substitutes.")
+    
+    sub_map = {
+        "SKU-001": "SKU-005", # Milk -> Yogurt
+        "SKU-004": "SKU-003", # Cold Brew -> Granola
+        "SKU-002": "SKU-005", # Avocado -> Yogurt
+        "SKU-005": "SKU-001", # Yogurt -> Milk
+        "SKU-003": "SKU-004", # Granola -> Cold Brew
+    }
+    
+    sub_rows = []
+    for s_id in selected_skus:
+        s_data = simulation_results[s_id]
+        m = s_data["mc_output"]
+        deficit = max(0, m["dynamic_rop"] - s_data["usable_stock"])
+        if deficit > 0 or m["urgency"] != "OPTIMAL":
+            target_sub_id = sub_map.get(s_id, "SKU-003")
+            if target_sub_id in SKU_CATALOG:
+                target_sub = SKU_CATALOG[target_sub_id]
+                absorbed_demand = round(deficit * 0.35) if deficit > 0 else 18
+                retained_revenue = round(absorbed_demand * target_sub["base_price"])
+                sub_state = simulation_results.get(target_sub_id, {})
+                sub_avail = sub_state.get("usable_stock", 85)
+                
+                sub_rows.append({
+                    "Primary Deficit SKU": f"{s_id} - {SKU_CATALOG[s_id]['name']}",
+                    "Deficit Volume": f"{deficit} Units",
+                    "Designated Substitute": f"{target_sub_id} - {target_sub['name']}",
+                    "Absorption Rate": "35%",
+                    "Absorbed Units": f"{absorbed_demand} Units",
+                    "Substitute Available Stock": f"{sub_avail} Units",
+                    "Retained Revenue Preserved": f"+₹{retained_revenue:,}",
+                    "Buffer Health": "SAFE" if sub_avail > 60 else "TIGHT",
+                })
+                
+    if sub_rows:
+        st.dataframe(pd.DataFrame(sub_rows), use_container_width=True, hide_index=True)
+    else:
+        st.success("All inventory stock buffers healthy — no stockout demand cannibalization active.")
+
 # --------------------------------------------------------------------------------------
 # TAB 3: MULTI-ECHELON INTER-STORE TRANSFERS
 # --------------------------------------------------------------------------------------
@@ -1045,6 +1277,24 @@ with tab_transfers:
         },
     ])
     st.dataframe(matrix_df, use_container_width=True, hide_index=True)
+
+    st.markdown("##### 🌿 Green Logistics & Carbon Footprint Scorecard (ESG AAA)")
+    st.markdown("Comparative greenhouse gas lifecycle assessment: Intra-city Electric Van (EV) fleet redistribution vs. long-haul supplier diesel freight.")
+    
+    ev_co2 = round(tot_units * 0.042 * (avg_transit * 1.1), 1)
+    diesel_co2 = round(tot_units * 0.49 * 3.2, 1)
+    co2_saved = max(0.0, round(diesel_co2 - ev_co2, 1))
+    trees_eq = max(1, round(co2_saved / 21.8))
+    
+    g_c1, g_c2, g_c3, g_c4 = st.columns(4)
+    with g_c1:
+        st.metric("Intra-City EV Transit CO₂", f"{ev_co2} kg CO₂", "Zero-Tailpipe Courier")
+    with g_c2:
+        st.metric("Avoided Diesel Freight CO₂", f"{diesel_co2} kg CO₂", "Highway Trucking Avoided", delta_color="inverse")
+    with g_c3:
+        st.metric("Net Carbon Abatement", f"-{co2_saved} kg CO₂", "-92% emissions reduction")
+    with g_c4:
+        st.metric("Trees Equivalent Offset", f"{trees_eq} Mature Trees", "Annual absorption eq.")
     
     st.markdown("##### 🚚 Active Cross-Dock Transfer Opportunities")
     if not inter_transfers:
@@ -1112,6 +1362,50 @@ with tab_suppliers:
                 """,
                 unsafe_allow_html=True,
             )
+
+    st.markdown("---")
+    st.markdown("#### ⚖️ Supplier Penalty & SLA Breach Chargeback Calculator")
+    st.markdown("Contractual liquidated damages calculated for lead-time delays beyond 48-hour SLA threshold. Grade D/F suppliers incur monetary debit penalties to recover dark store carrying losses.")
+    
+    chargeback_rows = []
+    tot_fines = 0
+    tot_breach_h = 0
+    for s_id in selected_skus:
+        s_data = simulation_results[s_id]
+        sc = s_data["scorecard"]
+        g = sc["grade"]
+        if g in ["D", "F", "C"]:
+            breach_h = 32.5 if g == "F" else (18.0 if g == "D" else 6.0)
+            hourly_rate = 2200 if g == "F" else (1500 if g == "D" else 800)
+            fine_inr = round(breach_h * hourly_rate)
+            tot_fines += fine_inr
+            tot_breach_h += breach_h
+            supplier_name = SKU_CATALOG[s_id]["supplier_name"]
+            is_debited = supplier_name in st.session_state.issued_debit_notes
+            
+            chargeback_rows.append({
+                "Supplier Name": supplier_name,
+                "SKU Context": SKU_CATALOG[s_id]["name"],
+                "Grade": g,
+                "SLA Gate": "48.0 Hours",
+                "Realized Delay": f"{48.0 + breach_h:.1f}h (+{breach_h}h)",
+                "Contractual Rate": f"₹{hourly_rate:,}/hr",
+                "Total Liquidated Damages": f"₹{fine_inr:,}",
+                "Status": "Debit Dispatched ✓" if is_debited else "Pending Action",
+            })
+            
+    cb_col1, cb_col2, cb_col3 = st.columns(3)
+    with cb_col1:
+        st.metric("Total SLA Chargeback Value", f"₹{tot_fines:,}", "Enforceable Debit Notes")
+    with cb_col2:
+        st.metric("Cumulative Breach Hours", f"+{tot_breach_h:.1f} Hours", "Exceeding 48h SLA gate")
+    with cb_col3:
+        st.metric("Non-Compliant Vendors", f"{len(chargeback_rows)} Suppliers", "Tier D/F breach penalties")
+        
+    if chargeback_rows:
+        st.dataframe(pd.DataFrame(chargeback_rows), use_container_width=True, hide_index=True)
+    else:
+        st.success("All active suppliers operating strictly within agreed SLA thresholds.")
 
 # --------------------------------------------------------------------------------------
 # TAB 5: AUTOMATED PO & ERP WEBHOOK PAYLOAD INSPECTOR

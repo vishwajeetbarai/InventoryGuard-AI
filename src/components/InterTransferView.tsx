@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import { InterTransferRecommendation } from "../types";
+import { calculateGreenLogistics } from "../engine/supplyChainEngine";
 import {
   ArrowRightLeft,
   Truck,
@@ -16,6 +17,8 @@ import {
   Scale,
   DollarSign,
   PackageCheck,
+  Leaf,
+  Trees,
 } from "lucide-react";
 
 interface InterTransferViewProps {
@@ -78,6 +81,8 @@ export const InterTransferView: React.FC<InterTransferViewProps> = ({
       acc + (r.leadTimeSavedHours || Math.round((r.supplierLeadTimeDays || 3.5) * 24 - r.transitHours)),
     0
   );
+
+  const greenLogistics = calculateGreenLogistics(recommendations);
 
   return (
     <div className="space-y-6">
@@ -161,6 +166,89 @@ export const InterTransferView: React.FC<InterTransferViewProps> = ({
           </div>
           <div className="mt-1 text-xs text-slate-500">
             Instant quick-commerce fulfillment vs 60–108h vendor latency
+          </div>
+        </div>
+      </div>
+
+      {/* Green Logistics & Carbon Footprint Score */}
+      <div
+        className={`border rounded-xl p-5 shadow-sm transition-colors ${
+          isDark ? "bg-slate-900/80 border-slate-800" : "bg-white border-slate-200"
+        }`}
+      >
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-slate-800/40">
+          <div className="flex items-center gap-2.5">
+            <span className="p-2 rounded-lg bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
+              <Leaf className="w-4 h-4" />
+            </span>
+            <div>
+              <h3
+                className={`text-sm font-bold flex items-center gap-2 ${
+                  isDark ? "text-white" : "text-slate-900"
+                }`}
+              >
+                <span>Green Logistics &amp; Carbon Footprint Score</span>
+                <span className="px-2 py-0.5 rounded text-[10px] font-mono font-bold bg-emerald-500/15 text-emerald-400 border border-emerald-500/30">
+                  ESG SCORE: {greenLogistics.esgRating}
+                </span>
+              </h3>
+              <p className="text-xs text-slate-400 mt-0.5">
+                Comparative greenhouse gas lifecycle assessment: Intra-city Electric Van (EV) fleet redistribution vs. long-haul supplier diesel freight.
+              </p>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-2 self-start sm:self-auto">
+            <div className="text-right">
+              <span className="text-[10px] text-slate-400 uppercase font-semibold">Net CO₂ Reduction</span>
+              <div className="font-mono text-base font-extrabold text-emerald-400">
+                -{greenLogistics.netCo2SavedKg.toFixed(1)} kg CO₂
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div className="mt-4 grid grid-cols-1 sm:grid-cols-3 gap-4">
+          {/* Intra-City EV Van Transit */}
+          <div className="p-3.5 rounded-lg bg-slate-950/60 border border-slate-800">
+            <div className="flex items-center justify-between text-xs text-slate-400">
+              <span>Intra-City EV Fleet Transit</span>
+              <span className="font-mono text-sky-400 font-bold text-xs">Low Emission</span>
+            </div>
+            <div className="font-mono text-xl font-bold text-sky-400 mt-1">
+              {greenLogistics.evTransitCo2Kg} <span className="text-xs font-normal text-slate-400">kg CO₂</span>
+            </div>
+            <p className="text-[10px] text-slate-500 mt-1">
+              ~0.042 kg CO₂/unit via localized zero-tailpipe electric cargo van courier
+            </p>
+          </div>
+
+          {/* Avoided Diesel Freight */}
+          <div className="p-3.5 rounded-lg bg-slate-950/60 border border-slate-800">
+            <div className="flex items-center justify-between text-xs text-slate-400">
+              <span>Avoided Diesel Highway Freight</span>
+              <span className="font-mono text-rose-400 font-bold text-xs">Abated</span>
+            </div>
+            <div className="font-mono text-xl font-bold text-slate-300 mt-1">
+              {greenLogistics.dieselFreightCo2Kg} <span className="text-xs font-normal text-slate-400">kg CO₂</span>
+            </div>
+            <p className="text-[10px] text-slate-500 mt-1">
+              Avoids long-distance 16-wheel diesel freight line-haul trucking emissions
+            </p>
+          </div>
+
+          {/* Mature Tree Offset Equivalence */}
+          <div className="p-3.5 rounded-lg bg-slate-950/60 border border-slate-800">
+            <div className="flex items-center justify-between text-xs text-slate-400">
+              <span>Sequestration Equivalence</span>
+              <Trees className="w-3.5 h-3.5 text-emerald-400" />
+            </div>
+            <div className="font-mono text-xl font-bold text-emerald-400 mt-1">
+              {greenLogistics.treesEquivalent} Mature Trees
+            </div>
+            <p className="text-[10px] text-slate-500 mt-1">
+              Equivalent annual carbon absorption of {greenLogistics.treesEquivalent} urban forest trees
+            </p>
           </div>
         </div>
       </div>

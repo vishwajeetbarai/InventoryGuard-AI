@@ -65,6 +65,8 @@ export interface SupplierScorecard {
   auditNotes: string;
 }
 
+export type ReorderPolicy = "DYNAMIC_AI" | "CONTINUOUS_REVIEW" | "PERIODIC_REVIEW";
+
 export interface SkuSimulationState {
   sku: SkuMetadata;
   currentStock: number;
@@ -81,6 +83,7 @@ export interface SkuSimulationState {
   effectiveLeadTimeStd: number;
   supplierScorecard: SupplierScorecard;
   weatherDemandUpliftPct: number;
+  reorderPolicy?: ReorderPolicy;
 }
 
 export interface PurchaseOrder {
@@ -145,4 +148,56 @@ export interface DispatchedPoRecord {
   skuList: string[];
   rawJsonPayload: string;
   edi850Payload: string;
+}
+
+export interface MarkdownLiquidationItem {
+  skuId: string;
+  skuName: string;
+  category: string;
+  currentStock: number;
+  hoursRemaining: number;
+  shelfLifeDays: number;
+  basePrice: number;
+  recommendedDiscountPct: number;
+  discountedPrice: number;
+  decayLossAtRiskInr: number;
+  expectedSalesVelocityMultiplier: number;
+  projectedUnitsSalvaged: number;
+  wasteAvoidedRevenueInr: number;
+  salvageEfficiencyPct: number;
+  status: "ACTIVE" | "APPLIED";
+}
+
+export interface SubstitutionAbsorption {
+  stockoutSkuId: string;
+  stockoutSkuName: string;
+  deficitUnits: number;
+  substituteSkuId: string;
+  substituteSkuName: string;
+  absorptionRatePct: number;
+  absorbedDemandUnits: number;
+  substituteAvailableStock: number;
+  substituteBufferAdequacy: "SAFE" | "TIGHT" | "RISK";
+  retainedRevenueInr: number;
+}
+
+export interface SupplierChargebackLedger {
+  supplierName: string;
+  skuName: string;
+  grade: "A" | "B" | "C" | "D" | "F";
+  slaThresholdHours: number;
+  actualDelayHours: number;
+  breachHours: number;
+  hourlyPenaltyRateInr: number;
+  totalChargebackInr: number;
+  breachCount: number;
+  status: "PENDING_DEBIT" | "DEBIT_ISSUED";
+}
+
+export interface GreenLogisticsMetric {
+  evTransitCo2Kg: number;
+  dieselFreightCo2Kg: number;
+  netCo2SavedKg: number;
+  treesEquivalent: number;
+  esgRating: "AAA" | "AA" | "A";
 }

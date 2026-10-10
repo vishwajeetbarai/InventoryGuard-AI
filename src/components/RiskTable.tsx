@@ -1,16 +1,31 @@
 import React, { useState } from "react";
 import { SkuSimulationState } from "../types";
-import { Search, ArrowUpDown, AlertTriangle, CheckCircle2, ShieldAlert } from "lucide-react";
+import {
+  Search,
+  ArrowUpDown,
+  AlertTriangle,
+  CheckCircle2,
+  ShieldAlert,
+  Zap,
+  Truck,
+  CheckSquare,
+  Square,
+  Sparkles,
+} from "lucide-react";
 
 interface RiskTableProps {
   simulationStates: SkuSimulationState[];
   onSelectSku: (skuId: string) => void;
+  onBulkDispatchCriticalPos?: (selectedIds?: string[]) => void;
+  onAutoApproveTransfers?: () => void;
   theme?: "dark" | "light";
 }
 
 export const RiskTable: React.FC<RiskTableProps> = ({
   simulationStates,
   onSelectSku,
+  onBulkDispatchCriticalPos,
+  onAutoApproveTransfers,
   theme = "dark",
 }) => {
   const isDark = theme === "dark";
@@ -18,6 +33,7 @@ export const RiskTable: React.FC<RiskTableProps> = ({
   const [statusFilter, setStatusFilter] = useState<string>("ALL");
   const [sortField, setSortField] = useState<"risk" | "stock" | "revRisk">("risk");
   const [sortAsc, setSortAsc] = useState(false);
+  const [selectedRowIds, setSelectedRowIds] = useState<Set<string>>(new Set());
 
   const filtered = simulationStates
     .filter((s) => {
@@ -45,6 +61,47 @@ export const RiskTable: React.FC<RiskTableProps> = ({
       }
       return sortAsc ? vA - vB : vB - vA;
     });
+
+  const criticalSkus = simulationStates.filter(
+    (s) => s.mcResult.urgency === "CRITICAL REORDER NOW"
+  );
+
+  const isAllFilteredSelected =
+    filtered.length > 0 && filtered.every((s) => selectedRowIds.has(s.sku.id));
+
+  const handleToggleSelectAll = () => {
+    if (isAllFilteredSelected) {
+      setSelectedRowIds(new Set());
+    } else {
+      setSelectedRowIds(new Set(filtered.map((s) => s.sku.id)));
+    }
+  };
+
+  const handleToggleRow = (skuId: string) => {
+    const next = new Set(selectedRowIds);
+    if (next.has(skuId)) {
+      next.delete(skuId);
+    } else {
+      next.add(skuId);
+    }
+    setSelectedRowIds(next);
+  };
+
+  const handleSelectOnlyCritical = () => {
+    setSelectedRowIds(new Set(criticalSkus.map((s) => s.sku.id)));
+  };
+
+  const handleClearSelection = () => {
+    setSelectedRowIds(new Set());
+  };
+
+  const handleBulkDispatch = () => {
+    if (onBulkDispatchCriticalPos) {
+      const targetIds =
+        selectedRowIds.size > 0 ? Array.from(selectedRowIds) : undefined;
+      onBulkDispatchCriticalPos(targetIds);
+    }
+  };
 
   const getUrgencyBadge = (urgency: string) => {
     switch (urgency) {
@@ -158,6 +215,77 @@ export const RiskTable: React.FC<RiskTableProps> = ({
         </div>
       </div>
 
+      {/* Bulk Operations Toolbar */}
+      <div
+        className={`px-4 py-2.5 border-b flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs ${
+          isDark
+            ? "bg-indigo-950/20 border-slate-800/80 text-slate-300"
+            : "bg-indigo-50/70 border-slate-200 text-slate-800"
+        }`}
+      >
+        <div className="flex items-center gap-3 flex-wrap">
+          <div className="flex items-center gap-2">
+            <span className="font-semibold text-indigo-400">
+              Bulk Operations:
+            </span>
+            <span className="font-mono px-2 py-0.5 rounded text-[11px] font-bold bg-indigo-500/10 text-indigo-300 border border-indigo-500/20">
+              {selectedRowIds.size} of {filtered.length} Selected
+            </span>
+          </div>
+
+          <div className="flex items-center gap-2 text-[11px] text-slate-400">
+            <button
+              onClick={handleToggleSelectAll}
+              className="hover:text-indigo-400 hover:underline cursor-pointer"
+            >
+              {isAllFilteredSelected ? "Deselect All" : "Select All"}
+            </button>
+            <span>•</span>
+            <button
+              onClick={handleSelectOnlyCritical}
+              className="hover:text-red-400 hover:underline cursor-pointer"
+            >
+              Select All Critical ({criticalSkus.length})
+            </button>
+            {selectedRowIds.size > 0 && (
+              <>
+                <span>•</span>
+                <button
+                  onClick={handleClearSelection}
+                  className="hover:text-slate-200 hover:underline cursor-pointer"
+                >
+                  Clear
+                </button>
+              </>
+            )}
+          </div>
+        </div>
+
+        {/* Action Buttons */}
+        <div className="flex items-center gap-2 flex-wrap">
+          <button
+            onClick={handleBulkDispatch}
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-red-600 hover:bg-red-500 text-white font-bold text-xs transition-all cursor-pointer shadow-sm shadow-red-600/30"
+          >
+            <Zap className="w-3.5 h-3.5" />
+            <span>⚡ Bulk Dispatch All Critical POs</span>
+            {criticalSkus.length > 0 && (
+              <span className="px-1.5 py-0.2 rounded-full text-[10px] bg-white/20 text-white font-mono">
+                {criticalSkus.length}
+              </span>
+            )}
+          </button>
+
+          <button
+            onClick={onAutoApproveTransfers}
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-amber-600 hover:bg-amber-500 text-white font-bold text-xs transition-all cursor-pointer shadow-sm shadow-amber-600/30"
+          >
+            <Truck className="w-3.5 h-3.5" />
+            <span>🚚 Auto-Approve All Transfer Opportunities</span>
+          </button>
+        </div>
+      </div>
+
       {/* Table Content */}
       <div className="overflow-x-auto">
         <table className="w-full text-left border-collapse text-xs">
@@ -169,6 +297,14 @@ export const RiskTable: React.FC<RiskTableProps> = ({
                   : "bg-slate-100 border-slate-200 text-slate-600"
               }`}
             >
+              <th className="py-3 px-3 w-10 text-center">
+                <input
+                  type="checkbox"
+                  checked={isAllFilteredSelected}
+                  onChange={handleToggleSelectAll}
+                  className="rounded border-slate-700 text-indigo-600 focus:ring-0 focus:ring-offset-0 cursor-pointer"
+                />
+              </th>
               <th className="py-3 px-4">SKU / Catalog</th>
               <th className="py-3 px-4">Supplier &amp; Risk Grade</th>
               <th
@@ -221,22 +357,43 @@ export const RiskTable: React.FC<RiskTableProps> = ({
           >
             {filtered.length === 0 ? (
               <tr>
-                <td colSpan={10} className="py-8 text-center text-slate-400">
+                <td colSpan={11} className="py-8 text-center text-slate-400">
                   No SKUs matched the current filters.
                 </td>
               </tr>
             ) : (
               filtered.map((s) => {
                 const isCrit = s.mcResult.urgency === "CRITICAL REORDER NOW";
+                const isSelected = selectedRowIds.has(s.sku.id);
                 return (
                   <tr
                     key={s.sku.id}
                     className={`transition-colors ${
                       isDark
-                        ? `hover:bg-slate-800/40 ${isCrit ? "bg-red-500/[0.04]" : ""}`
-                        : `hover:bg-slate-50 ${isCrit ? "bg-red-50/60" : ""}`
+                        ? `hover:bg-slate-800/40 ${
+                            isSelected
+                              ? "bg-indigo-950/30"
+                              : isCrit
+                              ? "bg-red-500/[0.04]"
+                              : ""
+                          }`
+                        : `hover:bg-slate-50 ${
+                            isSelected
+                              ? "bg-indigo-50"
+                              : isCrit
+                              ? "bg-red-50/60"
+                              : ""
+                          }`
                     }`}
                   >
+                    <td className="py-3 px-3 text-center">
+                      <input
+                        type="checkbox"
+                        checked={isSelected}
+                        onChange={() => handleToggleRow(s.sku.id)}
+                        className="rounded border-slate-700 text-indigo-600 focus:ring-0 focus:ring-offset-0 cursor-pointer"
+                      />
+                    </td>
                     <td className="py-3 px-4">
                       <div
                         className={`font-bold ${
@@ -338,3 +495,4 @@ export const RiskTable: React.FC<RiskTableProps> = ({
     </div>
   );
 };
+

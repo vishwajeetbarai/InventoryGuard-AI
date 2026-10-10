@@ -1,6 +1,6 @@
 import React from "react";
-import { Warehouse, SkuMetadata } from "../types";
-import { Sliders, MapPin, Tag, Shield, Calendar, Shuffle, Flame, Truck, RefreshCw, CloudRain } from "lucide-react";
+import { Warehouse, SkuMetadata, ReorderPolicy } from "../types";
+import { Sliders, MapPin, Tag, Shield, Calendar, Shuffle, Flame, Truck, RefreshCw, CloudRain, Cpu, Repeat } from "lucide-react";
 
 interface SidebarControlsProps {
   warehouses: Warehouse[];
@@ -25,6 +25,9 @@ interface SidebarControlsProps {
   onChangeSupplierDelayDays: (days: number) => void;
   isSimulating: boolean;
   onTriggerSimulation: () => void;
+  onApplyPreset?: (preset: "MONSOON" | "FLASH_SALE" | "LOGISTICS_STRIKE" | "NORMAL") => void;
+  reorderPolicy?: ReorderPolicy;
+  onSelectReorderPolicy?: (policy: ReorderPolicy) => void;
   theme?: "dark" | "light";
 }
 
@@ -51,6 +54,9 @@ export const SidebarControls: React.FC<SidebarControlsProps> = ({
   onChangeSupplierDelayDays,
   isSimulating,
   onTriggerSimulation,
+  onApplyPreset,
+  reorderPolicy = "DYNAMIC_AI",
+  onSelectReorderPolicy,
   theme = "dark",
 }) => {
   const isDark = theme === "dark";
@@ -81,6 +87,82 @@ export const SidebarControls: React.FC<SidebarControlsProps> = ({
           <RefreshCw className={`w-3 h-3 ${isSimulating ? "animate-spin" : ""}`} />
           <span>Recompute</span>
         </button>
+      </div>
+
+      {/* Crisis Scenario Presets (1-Click Stress Tests) */}
+      <div className="space-y-2">
+        <div className="flex items-center justify-between text-xs font-semibold uppercase tracking-wider text-amber-500">
+          <span className="flex items-center gap-1.5">
+            <Flame className="w-3.5 h-3.5" />
+            <span>Crisis Stress Presets</span>
+          </span>
+          <span className="text-[10px] text-slate-400 lowercase font-normal">1-click test</span>
+        </div>
+        <div className="grid grid-cols-2 gap-1.5">
+          <button
+            onClick={() => onApplyPreset && onApplyPreset("MONSOON")}
+            className={`p-2 rounded-lg text-left text-xs transition-all border cursor-pointer ${
+              isDark
+                ? "bg-slate-950/70 border-slate-800 hover:border-sky-500/50 hover:bg-sky-950/20 text-slate-200"
+                : "bg-slate-50 border-slate-200 hover:border-sky-400 hover:bg-sky-50 text-slate-800"
+            }`}
+          >
+            <div className="font-bold flex items-center gap-1 text-[11px] text-sky-400">
+              🌧️ Monsoon Deluge
+            </div>
+            <div className="text-[10px] text-slate-400 mt-0.5 leading-tight">
+              +40% Rain, +2.5d Delay
+            </div>
+          </button>
+
+          <button
+            onClick={() => onApplyPreset && onApplyPreset("FLASH_SALE")}
+            className={`p-2 rounded-lg text-left text-xs transition-all border cursor-pointer ${
+              isDark
+                ? "bg-slate-950/70 border-slate-800 hover:border-amber-500/50 hover:bg-amber-950/20 text-slate-200"
+                : "bg-slate-50 border-slate-200 hover:border-amber-400 hover:bg-amber-50 text-slate-800"
+            }`}
+          >
+            <div className="font-bold flex items-center gap-1 text-[11px] text-amber-400">
+              🔥 Midnight Flash
+            </div>
+            <div className="text-[10px] text-slate-400 mt-0.5 leading-tight">
+              +65% Surge, 99.5% CSL
+            </div>
+          </button>
+
+          <button
+            onClick={() => onApplyPreset && onApplyPreset("LOGISTICS_STRIKE")}
+            className={`p-2 rounded-lg text-left text-xs transition-all border cursor-pointer ${
+              isDark
+                ? "bg-slate-950/70 border-slate-800 hover:border-red-500/50 hover:bg-red-950/20 text-slate-200"
+                : "bg-slate-50 border-slate-200 hover:border-red-400 hover:bg-red-50 text-slate-800"
+            }`}
+          >
+            <div className="font-bold flex items-center gap-1 text-[11px] text-red-400">
+              🚢 Freight Strike
+            </div>
+            <div className="text-[10px] text-slate-400 mt-0.5 leading-tight">
+              +4.0d Lead Time Shock
+            </div>
+          </button>
+
+          <button
+            onClick={() => onApplyPreset && onApplyPreset("NORMAL")}
+            className={`p-2 rounded-lg text-left text-xs transition-all border cursor-pointer ${
+              isDark
+                ? "bg-slate-950/70 border-slate-800 hover:border-emerald-500/50 hover:bg-emerald-950/20 text-slate-200"
+                : "bg-slate-50 border-slate-200 hover:border-emerald-400 hover:bg-emerald-50 text-slate-800"
+            }`}
+          >
+            <div className="font-bold flex items-center gap-1 text-[11px] text-emerald-400">
+              ⚖️ Normal Base
+            </div>
+            <div className="text-[10px] text-slate-400 mt-0.5 leading-tight">
+              Reset Baseline Ops
+            </div>
+          </button>
+        </div>
       </div>
 
       {/* 1. Warehouse Location Selector */}
@@ -144,6 +226,69 @@ export const SidebarControls: React.FC<SidebarControlsProps> = ({
                   ₹{sku.basePrice}
                 </span>
               </label>
+            );
+          })}
+        </div>
+      </div>
+
+      {/* Replenishment Algorithm Policy Selector */}
+      <div className="space-y-2">
+        <label className={`text-xs font-semibold flex items-center gap-1.5 uppercase tracking-wider ${labelCls}`}>
+          <Cpu className="w-3.5 h-3.5 text-indigo-500" />
+          <span>Reorder Policy Selector</span>
+        </label>
+        <div className="space-y-1">
+          {[
+            {
+              id: "DYNAMIC_AI" as const,
+              name: "Dynamic AI Safety Stock",
+              tag: "Bivariate Joint-Risk",
+              desc: "Monte Carlo dual-variance + weather & decay model",
+            },
+            {
+              id: "CONTINUOUS_REVIEW" as const,
+              name: "Continuous Review (s, S)",
+              tag: "Min-Max Policy",
+              desc: "Real-time reorder threshold (s) & target base stock (S)",
+            },
+            {
+              id: "PERIODIC_REVIEW" as const,
+              name: "Periodic Review (R, S)",
+              tag: "Weekly Batch Review",
+              desc: "Fixed review interval (R=7d) protection window",
+            },
+          ].map((pol) => {
+            const isSelected = reorderPolicy === pol.id;
+            return (
+              <button
+                key={pol.id}
+                onClick={() => onSelectReorderPolicy?.(pol.id)}
+                className={`w-full text-left p-2 rounded-lg text-xs transition-all cursor-pointer border ${
+                  isSelected
+                    ? "bg-indigo-600/20 text-indigo-300 border-indigo-500/50"
+                    : isDark
+                    ? "bg-slate-800/40 hover:bg-slate-800 text-slate-400 border-slate-700/50"
+                    : "bg-slate-100 hover:bg-slate-200 text-slate-700 border-slate-300"
+                }`}
+              >
+                <div className="flex items-center justify-between">
+                  <span className={`font-semibold ${isSelected ? "text-indigo-400" : ""}`}>
+                    {pol.name}
+                  </span>
+                  <span
+                    className={`text-[9px] font-mono px-1.5 py-0.5 rounded font-bold ${
+                      isSelected
+                        ? "bg-indigo-500/30 text-indigo-300"
+                        : isDark
+                        ? "bg-slate-800 text-slate-500"
+                        : "bg-slate-200 text-slate-600"
+                    }`}
+                  >
+                    {pol.tag}
+                  </span>
+                </div>
+                <p className="text-[10px] text-slate-400 mt-0.5">{pol.desc}</p>
+              </button>
             );
           })}
         </div>

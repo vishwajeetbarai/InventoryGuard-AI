@@ -1,6 +1,14 @@
 import React from "react";
 import { Warehouse } from "../types";
-import { ShieldCheck, RefreshCw, Sun, Moon } from "lucide-react";
+import {
+  ShieldCheck,
+  RefreshCw,
+  Sun,
+  Moon,
+  Search,
+  FileSpreadsheet,
+  Command,
+} from "lucide-react";
 
 interface HeaderProps {
   currentWarehouse: Warehouse;
@@ -8,6 +16,8 @@ interface HeaderProps {
   isSimulating: boolean;
   theme: "dark" | "light";
   onToggleTheme: () => void;
+  onOpenCommandPalette: () => void;
+  onOpenExportReport: () => void;
 }
 
 export const Header: React.FC<HeaderProps> = ({
@@ -16,6 +26,8 @@ export const Header: React.FC<HeaderProps> = ({
   isSimulating,
   theme,
   onToggleTheme,
+  onOpenCommandPalette,
+  onOpenExportReport,
 }) => {
   const isDark = theme === "dark";
 
@@ -59,13 +71,44 @@ export const Header: React.FC<HeaderProps> = ({
         </div>
 
         {/* Action Controls & Clean Sun/Moon Icon-Only Toggle */}
-        <div className="flex items-center space-x-3 self-end md:self-auto">
-          <div className="hidden sm:flex flex-col text-right">
-            <span className={`text-[11px] ${isDark ? "text-slate-400" : "text-slate-500"}`}>
+        <div className="flex items-center space-x-2.5 self-end md:self-auto flex-wrap">
+          {/* Global Command Bar Button (Cmd + K / Ctrl + K) */}
+          <button
+            onClick={onOpenCommandPalette}
+            className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border text-xs font-medium transition-colors cursor-pointer ${
+              isDark
+                ? "bg-slate-900/80 hover:bg-slate-800 text-slate-300 border-slate-700/80 hover:border-indigo-400/60"
+                : "bg-slate-100 hover:bg-slate-200 text-slate-700 border-slate-300 hover:border-indigo-400"
+            }`}
+            title="Open Executive Command Palette (Cmd + K / Ctrl + K)"
+          >
+            <Search className="w-3.5 h-3.5 text-indigo-400" />
+            <span className="hidden sm:inline">Commands</span>
+            <kbd className="px-1.5 py-0.2 rounded text-[10px] font-mono bg-slate-800 text-slate-300 border border-slate-700/60">
+              ⌘K
+            </kbd>
+          </button>
+
+          {/* Export Audit Report Button */}
+          <button
+            onClick={onOpenExportReport}
+            className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border text-xs font-semibold transition-colors cursor-pointer ${
+              isDark
+                ? "bg-slate-900/80 hover:bg-slate-800 text-emerald-400 border-emerald-500/30 hover:border-emerald-400"
+                : "bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border-emerald-300"
+            }`}
+            title="Export Supply Chain Audit Report (CSV / Printable PDF)"
+          >
+            <FileSpreadsheet className="w-3.5 h-3.5 text-emerald-500" />
+            <span>Export Audit</span>
+          </button>
+
+          <div className="hidden sm:flex flex-col text-right pl-1">
+            <span className={`text-[10px] ${isDark ? "text-slate-400" : "text-slate-500"}`}>
               Active Node
             </span>
             <span
-              className={`text-xs font-semibold ${
+              className={`text-xs font-semibold truncate max-w-[130px] ${
                 isDark ? "text-slate-200" : "text-slate-800"
               }`}
             >
@@ -100,7 +143,7 @@ export const Header: React.FC<HeaderProps> = ({
           <button
             onClick={onRefreshData}
             disabled={isSimulating}
-            className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold shadow-sm shadow-indigo-600/20 transition-all disabled:opacity-50 cursor-pointer"
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold shadow-sm shadow-indigo-600/20 transition-all disabled:opacity-50 cursor-pointer"
             title="Re-run stochastic simulation"
           >
             <RefreshCw className={`w-3.5 h-3.5 ${isSimulating ? "animate-spin" : ""}`} />

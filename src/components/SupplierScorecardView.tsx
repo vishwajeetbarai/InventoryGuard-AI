@@ -1,17 +1,45 @@
-import React from "react";
+import React, { useState } from "react";
 import { SkuSimulationState } from "../types";
-import { ShieldCheck, Truck, AlertTriangle, Clock, Layers, Award } from "lucide-react";
+import { calculateSupplierChargebacks } from "../engine/supplyChainEngine";
+import {
+  ShieldCheck,
+  Truck,
+  AlertTriangle,
+  Clock,
+  Layers,
+  Award,
+  Scale,
+  FileText,
+  IndianRupee,
+  CheckCircle2,
+  AlertOctagon,
+  Send,
+} from "lucide-react";
 
 interface SupplierScorecardViewProps {
   simulationStates: SkuSimulationState[];
+  onIssueDebitNote?: (supplierName: string, amountInr: number) => void;
   theme?: "dark" | "light";
 }
 
 export const SupplierScorecardView: React.FC<SupplierScorecardViewProps> = ({
   simulationStates,
+  onIssueDebitNote,
   theme = "dark",
 }) => {
   const isDark = theme === "dark";
+  const [issuedNotes, setIssuedNotes] = useState<string[]>([]);
+
+  const chargebacks = calculateSupplierChargebacks(simulationStates);
+  const totalPenaltiesInr = chargebacks.reduce((acc, c) => acc + c.totalChargebackInr, 0);
+  const totalBreachHours = chargebacks.reduce((acc, c) => acc + c.breachHours, 0);
+
+  const handleIssueDebit = (supplierName: string, amountInr: number) => {
+    setIssuedNotes((prev) => [...prev, supplierName]);
+    if (onIssueDebitNote) {
+      onIssueDebitNote(supplierName, amountInr);
+    }
+  };
 
   const getGradePill = (grade: string) => {
     switch (grade) {
@@ -137,6 +165,120 @@ export const SupplierScorecardView: React.FC<SupplierScorecardViewProps> = ({
               </div>
             );
           })}
+        </div>
+      </div>
+
+      {/* 2. Supplier Penalty & SLA Breach Chargeback Calculator */}
+      <div className={`border rounded-xl p-5 shadow-sm transition-colors ${containerCls}`}>
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-slate-800/60">
+          <div>
+            <h3
+              className={`text-base font-bold flex items-center gap-2 ${
+                isDark ? "text-white" : "text-slate-900"
+              }`}
+            >
+              <Scale className="w-5 h-5 text-amber-400" />
+              Supplier SLA Breach Penalty &amp; Chargeback Calculator
+            </h3>
+            <p className="text-xs text-slate-400 mt-0.5">
+              Contractual liquidated damages calculated for lead-time delays beyond 48-hour SLA threshold. Grade D/F suppliers incur monetary debit penalties to recover dark store carrying losses.
+            </p>
+          </div>
+          <div className="flex items-center gap-3">
+            <div className="text-right">
+              <span className="text-[10px] text-slate-400 uppercase font-semibold">Total SLA Debit Note Value</span>
+              <div className="font-mono text-base font-extrabold text-amber-400">
+                ₹{totalPenaltiesInr.toLocaleString("en-IN")}
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Financial KPI Highlights */}
+        <div className="mt-4 grid grid-cols-1 sm:grid-cols-3 gap-3">
+          <div className="p-3 rounded-lg bg-slate-950/60 border border-slate-800">
+            <span className="text-[11px] text-slate-400 uppercase">Cumulative Breach Delay</span>
+            <div className="font-mono text-lg font-bold text-rose-400 mt-1">
+              +{totalBreachHours.toFixed(1)} Hours
+            </div>
+            <span className="text-[10px] text-slate-500">Exceeding standard 48h SLA gate</span>
+          </div>
+          <div className="p-3 rounded-lg bg-slate-950/60 border border-slate-800">
+            <span className="text-[11px] text-slate-400 uppercase">Non-Compliant Vendors</span>
+            <div className="font-mono text-lg font-bold text-amber-400 mt-1">
+              {chargebacks.length} Suppliers
+            </div>
+            <span className="text-[10px] text-slate-500">Tier-D and Tier-F performance risk</span>
+          </div>
+          <div className="p-3 rounded-lg bg-slate-950/60 border border-slate-800">
+            <span className="text-[11px] text-slate-400 uppercase">Recovery Rate Status</span>
+            <div className="font-mono text-lg font-bold text-emerald-400 mt-1">
+              100% Contractually Enforceable
+            </div>
+            <span className="text-[10px] text-slate-500">Auto-deducted from next AP remittance</span>
+          </div>
+        </div>
+
+        {/* Ledger Table */}
+        <div className="mt-4 overflow-x-auto">
+          <table className="w-full text-xs text-left">
+            <thead>
+              <tr className="border-b border-slate-800 text-slate-400 font-mono text-[11px]">
+                <th className="py-2.5 px-3">Supplier Name</th>
+                <th className="py-2.5 px-3">SKU Context</th>
+                <th className="py-2.5 px-3">Grade</th>
+                <th className="py-2.5 px-3">SLA vs Realized</th>
+                <th className="py-2.5 px-3">Hourly Fine</th>
+                <th className="py-2.5 px-3">Total Liquidated Damages</th>
+                <th className="py-2.5 px-3 text-right">Debit Action</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-slate-800/40">
+              {chargebacks.map((c) => {
+                const isIssued = issuedNotes.includes(c.supplierName);
+                return (
+                  <tr key={c.supplierName} className="hover:bg-slate-800/20">
+                    <td className="py-3 px-3 font-semibold text-white">
+                      {c.supplierName}
+                    </td>
+                    <td className="py-3 px-3 text-slate-400">
+                      {c.skuName}
+                    </td>
+                    <td className="py-3 px-3">
+                      {getGradePill(c.grade)}
+                    </td>
+                    <td className="py-3 px-3 font-mono text-slate-300">
+                      {c.slaThresholdHours}h <span className="text-slate-500">vs</span>{" "}
+                      <span className="text-rose-400 font-bold">{c.actualDelayHours}h</span>{" "}
+                      <span className="text-rose-500 text-[10px]">(+{c.breachHours}h)</span>
+                    </td>
+                    <td className="py-3 px-3 font-mono text-slate-300">
+                      ₹{c.hourlyPenaltyRateInr}/hr
+                    </td>
+                    <td className="py-3 px-3 font-mono font-bold text-amber-400">
+                      ₹{c.totalChargebackInr.toLocaleString("en-IN")}
+                    </td>
+                    <td className="py-3 px-3 text-right">
+                      {isIssued ? (
+                        <span className="px-2.5 py-1 rounded bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 text-[11px] font-bold inline-flex items-center gap-1">
+                          <CheckCircle2 className="w-3 h-3" />
+                          <span>Debit Note Dispatched</span>
+                        </span>
+                      ) : (
+                        <button
+                          onClick={() => handleIssueDebit(c.supplierName, c.totalChargebackInr)}
+                          className="px-2.5 py-1 rounded bg-amber-500/20 hover:bg-amber-500/30 border border-amber-500/40 text-amber-300 text-[11px] font-bold inline-flex items-center gap-1 transition-all cursor-pointer"
+                        >
+                          <Send className="w-3 h-3" />
+                          <span>Issue Debit Note</span>
+                        </button>
+                      )}
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
         </div>
       </div>
     </div>

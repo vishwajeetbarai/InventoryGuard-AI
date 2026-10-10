@@ -9,6 +9,11 @@ import {
   InterTransferRecommendation,
   DispatchedPoRecord,
   SupplierScorecard,
+  MarkdownLiquidationItem,
+  SubstitutionAbsorption,
+  SupplierChargebackLedger,
+  GreenLogisticsMetric,
+  ReorderPolicy,
 } from "../types";
 
 export const WAREHOUSES: Warehouse[] = [
@@ -353,16 +358,36 @@ export function runMonteCarloSimulation(
   leadTimeStd: number,
   usableStock: number,
   serviceLevelZ: number,
-  iterations: number = 1000
+  iterations: number = 1000,
+  reorderPolicy: ReorderPolicy = "DYNAMIC_AI"
 ): MonteCarloResult {
   const rand = pseudoRandom(1337);
 
-  const varianceTerm = leadTimeMean * Math.pow(demandStd, 2) + Math.pow(demandMean, 2) * Math.pow(leadTimeStd, 2);
-  const jointSigma = Math.sqrt(Math.max(0.001, varianceTerm));
-  const dynamicSafetyStock = Math.ceil(serviceLevelZ * jointSigma);
-
+  let dynamicSafetyStock = 0;
+  let dynamicRop = 0;
   const expectedLeadTimeDemand = Math.round(demandMean * leadTimeMean * 10) / 10;
-  const dynamicRop = Math.ceil(expectedLeadTimeDemand + dynamicSafetyStock);
+
+  if (reorderPolicy === "CONTINUOUS_REVIEW") {
+    // (s, S) Continuous Min-Max Policy with classic variance
+    const ssStd = Math.sqrt(Math.max(0.001, leadTimeMean * Math.pow(demandStd, 2)));
+    dynamicSafetyStock = Math.ceil(serviceLevelZ * ssStd);
+    dynamicRop = Math.ceil(expectedLeadTimeDemand + dynamicSafetyStock);
+  } else if (reorderPolicy === "PERIODIC_REVIEW") {
+    // (R, S) Periodic Weekly Review (R = 7 days protection interval)
+    const reviewPeriodDays = 7.0;
+    const protectionInterval = leadTimeMean + reviewPeriodDays;
+    const periodicVariance =
+      protectionInterval * Math.pow(demandStd, 2) + Math.pow(demandMean, 2) * Math.pow(leadTimeStd, 2);
+    dynamicSafetyStock = Math.ceil(serviceLevelZ * Math.sqrt(Math.max(0.001, periodicVariance)));
+    dynamicRop = Math.ceil(demandMean * protectionInterval + dynamicSafetyStock);
+  } else {
+    // DYNAMIC_AI: Bivariate Stochastic Monte Carlo Joint Dual-Variance Model
+    const varianceTerm =
+      leadTimeMean * Math.pow(demandStd, 2) + Math.pow(demandMean, 2) * Math.pow(leadTimeStd, 2);
+    const jointSigma = Math.sqrt(Math.max(0.001, varianceTerm));
+    dynamicSafetyStock = Math.ceil(serviceLevelZ * jointSigma);
+    dynamicRop = Math.ceil(expectedLeadTimeDemand + dynamicSafetyStock);
+  }
 
   const simulatedDdlt: number[] = new Array(iterations);
   let stockoutCount = 0;
@@ -429,7 +454,8 @@ export function executeSupplyChainEngine(
   monteCarloIterations: number,
   promoUpliftPct: number,
   supplierDelayBias: number,
-  weatherSurgePct: number = 0
+  weatherSurgePct: number = 0,
+  reorderPolicy: ReorderPolicy = "DYNAMIC_AI"
 ): SkuSimulationState[] {
   const results: SkuSimulationState[] = [];
 
@@ -499,7 +525,8 @@ export function executeSupplyChainEngine(
       effLtStd,
       usableStock,
       serviceLevelZ,
-      monteCarloIterations
+      monteCarloIterations,
+      reorderPolicy
     );
 
     let revenueAtRisk = 0;
@@ -525,6 +552,7 @@ export function executeSupplyChainEngine(
       effectiveLeadTimeStd: effLtStd,
       supplierScorecard: scorecard,
       weatherDemandUpliftPct: skuWeatherUpliftPct,
+      reorderPolicy,
     });
   }
 
@@ -955,4 +983,216 @@ export function exportDispatchedLedgerToCsv(records: DispatchedPoRecord[]): stri
     r.payloadHash,
   ]);
   return [headers.join(","), ...rows.map((row) => row.join(","))].join("\n");
+}
+
+/**
+ * Quick-Commerce Dynamic Markdown & Spoilage Liquidation Engine
+ * Calculates dynamic price markdown (20% - 40%) for near-expiry SKUs
+ * to clear inventory before turning into discarded food waste.
+ */
+export function calculateMarkdownLiquidation(
+  simulationStates: SkuSimulationState[]
+): MarkdownLiquidationItem[] {
+  const items: MarkdownLiquidationItem[] = [];
+
+  for (const s of simulationStates) {
+    if (!s.sku.isPerishable) continue;
+
+    // Simulate remaining shelf life hours: perishable goods typically have 24-72h window
+    // Organic Milk & Greek Yogurt have short windows; Avocado has moderate
+    const baseShelfHours = s.sku.shelfLifeDays * 24;
+    // Simulate decay progress: higher stock ratio relative to demand decreases shelf time left
+    const stockToDemandRatio = s.usableStock / (s.sku.baseDemand || 50);
+    const hoursRemaining = Math.max(
+      18,
+      Math.min(72, Math.round(baseShelfHours * (0.28 + (s.decayRatePct > 0 ? 0.05 : 0.22))))
+    );
+
+    if (hoursRemaining <= 72) {
+      const discountPct = hoursRemaining <= 36 ? 35 : hoursRemaining <= 52 ? 25 : 20;
+      const discountedPrice = Math.round(s.sku.basePrice * (1 - discountPct / 100));
+      const decayLossAtRiskInr = Math.round(s.currentStock * s.sku.basePrice);
+      const velocityMultiplier = Math.round((1 + (discountPct / 100) * 4.2) * 10) / 10;
+      const salvageRate = Math.min(0.95, 0.70 + (discountPct / 100) * 0.60);
+      const projectedUnitsSalvaged = Math.round(s.usableStock * salvageRate);
+      const wasteAvoidedRevenueInr = Math.round(projectedUnitsSalvaged * discountedPrice);
+      const salvageEfficiencyPct = Math.round(
+        (wasteAvoidedRevenueInr / Math.max(1, decayLossAtRiskInr)) * 100
+      );
+
+      items.push({
+        skuId: s.sku.id,
+        skuName: s.sku.name,
+        category: s.sku.category,
+        currentStock: s.currentStock,
+        hoursRemaining,
+        shelfLifeDays: s.sku.shelfLifeDays,
+        basePrice: s.sku.basePrice,
+        recommendedDiscountPct: discountPct,
+        discountedPrice,
+        decayLossAtRiskInr,
+        expectedSalesVelocityMultiplier: velocityMultiplier,
+        projectedUnitsSalvaged,
+        wasteAvoidedRevenueInr,
+        salvageEfficiencyPct,
+        status: "ACTIVE",
+      });
+    }
+  }
+
+  return items;
+}
+
+/**
+ * Product Substitution & Stockout Cannibalization Engine
+ * When an SKU runs low or faces stockout, redirect 25%-40% unsatisfied demand
+ * to designated substitute SKUs to capture lost sales.
+ */
+export function calculateDemandCannibalization(
+  simulationStates: SkuSimulationState[]
+): SubstitutionAbsorption[] {
+  const SUB_MAP: Record<string, string> = {
+    "SKU-001": "SKU-005", // Organic Milk -> Greek Yogurt
+    "SKU-004": "SKU-003", // Cold Brew Coffee -> Protein Granola
+    "SKU-002": "SKU-005", // Avocado -> Greek Yogurt
+    "SKU-005": "SKU-001", // Greek Yogurt -> Organic Milk
+    "SKU-003": "SKU-004", // Protein Granola -> Cold Brew Coffee
+  };
+
+  const results: SubstitutionAbsorption[] = [];
+
+  for (const s of simulationStates) {
+    const deficit = Math.max(0, s.mcResult.dynamicRop - s.usableStock);
+    // Evaluate if this SKU is in deficit / warning
+    if (s.mcResult.urgency !== "OPTIMAL" || deficit > 0) {
+      const subId = SUB_MAP[s.sku.id] || "SKU-003";
+      const substituteState = simulationStates.find((other) => other.sku.id === subId);
+
+      if (substituteState) {
+        const absorptionRatePct = 35; // 35% of stockout demand absorbs into substitute
+        const effectiveDeficit = deficit > 0 ? deficit : Math.round(s.sku.baseDemand * 0.4);
+        const absorbedDemandUnits = Math.round(effectiveDeficit * (absorptionRatePct / 100));
+
+        let substituteBufferAdequacy: "SAFE" | "TIGHT" | "RISK" = "SAFE";
+        if (substituteState.usableStock < substituteState.mcResult.dynamicSafetyStock) {
+          substituteBufferAdequacy = "RISK";
+        } else if (
+          substituteState.usableStock <
+          substituteState.mcResult.dynamicSafetyStock * 1.3
+        ) {
+          substituteBufferAdequacy = "TIGHT";
+        }
+
+        const retainedRevenueInr = Math.round(
+          absorbedDemandUnits * substituteState.sku.basePrice
+        );
+
+        results.push({
+          stockoutSkuId: s.sku.id,
+          stockoutSkuName: s.sku.name,
+          deficitUnits: effectiveDeficit,
+          substituteSkuId: substituteState.sku.id,
+          substituteSkuName: substituteState.sku.name,
+          absorptionRatePct,
+          absorbedDemandUnits,
+          substituteAvailableStock: substituteState.usableStock,
+          substituteBufferAdequacy,
+          retainedRevenueInr,
+        });
+      }
+    }
+  }
+
+  return results;
+}
+
+/**
+ * Supplier Penalty & SLA Breach Chargeback Calculator
+ * Computes monetary liquidated damages and SLA debit notes for Grade D/F vendors.
+ */
+export function calculateSupplierChargebacks(
+  simulationStates: SkuSimulationState[]
+): SupplierChargebackLedger[] {
+  const ledgers: SupplierChargebackLedger[] = [];
+
+  for (const s of simulationStates) {
+    const sc = s.supplierScorecard;
+    const isSlaBreached = sc.grade === "D" || sc.grade === "F" || sc.onTimeDeliveryPct < 90;
+
+    let breachHours = 0;
+    let hourlyPenaltyRateInr = 0;
+    let breachCount = 0;
+
+    if (sc.grade === "F") {
+      breachHours = 32.5;
+      hourlyPenaltyRateInr = 2200;
+      breachCount = 4;
+    } else if (sc.grade === "D") {
+      breachHours = 18.0;
+      hourlyPenaltyRateInr = 1500;
+      breachCount = 2;
+    } else if (sc.grade === "C") {
+      breachHours = 6.0;
+      hourlyPenaltyRateInr = 800;
+      breachCount = 1;
+    }
+
+    if (isSlaBreached || breachHours > 0) {
+      const totalChargebackInr = Math.round(breachHours * hourlyPenaltyRateInr);
+      ledgers.push({
+        supplierName: sc.supplierName,
+        skuName: s.sku.name,
+        grade: sc.grade,
+        slaThresholdHours: 48,
+        actualDelayHours: Math.round((48 + breachHours) * 10) / 10,
+        breachHours,
+        hourlyPenaltyRateInr,
+        totalChargebackInr,
+        breachCount,
+        status: "PENDING_DEBIT",
+      });
+    }
+  }
+
+  return ledgers;
+}
+
+/**
+ * Green Logistics & Carbon Footprint Score
+ * Compares intra-city EV transfer vs long-haul supplier diesel truck freight.
+ */
+export function calculateGreenLogistics(
+  recommendations: InterTransferRecommendation[]
+): GreenLogisticsMetric {
+  if (recommendations.length === 0) {
+    return {
+      evTransitCo2Kg: 4.8,
+      dieselFreightCo2Kg: 52.4,
+      netCo2SavedKg: 47.6,
+      treesEquivalent: 2,
+      esgRating: "AAA",
+    };
+  }
+
+  const totalTransferUnits = recommendations.reduce(
+    (acc, r) => acc + r.recommendedTransferQty,
+    0
+  );
+  const avgTransitHours =
+    recommendations.reduce((acc, r) => acc + r.transitHours, 0) / recommendations.length;
+
+  // EV Van factor: 0.042 kg CO2 / unit-route
+  const evTransitCo2Kg = Math.round(totalTransferUnits * 0.042 * (avgTransitHours * 1.1) * 10) / 10;
+  // Diesel Truck long-haul factor: 0.58 kg CO2 / unit-route
+  const dieselFreightCo2Kg = Math.round(totalTransferUnits * 0.49 * 3.2 * 10) / 10;
+  const netCo2SavedKg = Math.round(Math.max(0, dieselFreightCo2Kg - evTransitCo2Kg) * 10) / 10;
+  const treesEquivalent = Math.max(1, Math.round(netCo2SavedKg / 21.8));
+
+  return {
+    evTransitCo2Kg,
+    dieselFreightCo2Kg,
+    netCo2SavedKg,
+    treesEquivalent,
+    esgRating: "AAA",
+  };
 }
