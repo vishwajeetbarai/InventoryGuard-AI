@@ -1,5 +1,7 @@
 import React, { useState } from "react";
-import { SkuSimulationState } from "../types";
+import { SkuSimulationState, CurrencyCode, ForecastModel } from "../types";
+import { formatCurrency } from "../utils/currency";
+import { FORECAST_MODELS_META } from "../utils/forecastModels";
 import {
   TrendingUp,
   Sparkles,
@@ -13,6 +15,8 @@ import {
   Leaf,
   PackageX,
   Calendar,
+  BrainCircuit,
+  Zap,
 } from "lucide-react";
 
 interface VisualAnalyticsProps {
@@ -21,6 +25,8 @@ interface VisualAnalyticsProps {
   onSelectSkuId: (id: string) => void;
   monteCarloIterations: number;
   weatherSurgePct?: number;
+  currency?: CurrencyCode;
+  forecastModel?: ForecastModel;
   theme?: "dark" | "light";
 }
 
@@ -30,6 +36,8 @@ export const VisualAnalytics: React.FC<VisualAnalyticsProps> = ({
   onSelectSkuId,
   monteCarloIterations,
   weatherSurgePct = 0,
+  currency = "INR",
+  forecastModel = "META_PROPHET",
   theme = "dark",
 }) => {
   const isDark = theme === "dark";
@@ -213,8 +221,57 @@ export const VisualAnalytics: React.FC<VisualAnalyticsProps> = ({
   const gridLineColor = isDark ? "rgba(255,255,255,0.06)" : "rgba(0,0,0,0.07)";
   const tickTextColor = isDark ? "#64748B" : "#94A3B8";
 
+  const activeModelMeta =
+    FORECAST_MODELS_META[activeState.forecastModel || forecastModel] ||
+    FORECAST_MODELS_META.META_PROPHET;
+
   return (
     <div className="space-y-6">
+      {/* Enterprise Time-Series Model Benchmark Banner */}
+      <div
+        className={`border rounded-xl p-3.5 flex flex-col md:flex-row md:items-center justify-between gap-3 transition-colors ${
+          isDark
+            ? "bg-slate-900/60 border-slate-800 text-slate-200"
+            : "bg-indigo-50/50 border-indigo-100 text-slate-800"
+        }`}
+      >
+        <div className="flex items-center gap-3">
+          <div className="p-2 rounded-lg bg-indigo-500/20 text-indigo-400 shrink-0">
+            <BrainCircuit className="w-5 h-5 text-indigo-400" />
+          </div>
+          <div>
+            <div className="flex items-center gap-2 flex-wrap">
+              <span className="text-xs font-bold text-indigo-400">
+                Active ML Forecasting Engine: {activeModelMeta.name}
+              </span>
+              <span className="text-[10px] px-1.5 py-0.2 rounded font-mono font-bold bg-indigo-500/20 text-indigo-300 border border-indigo-500/30">
+                {activeModelMeta.badge}
+              </span>
+              <span className="text-[10px] text-slate-400 font-mono">
+                {activeModelMeta.paperReference}
+              </span>
+            </div>
+            <p className="text-[11px] text-slate-400 mt-0.5 line-clamp-1">
+              {activeModelMeta.description}
+            </p>
+          </div>
+        </div>
+        <div className="flex items-center gap-4 text-xs font-mono shrink-0 self-start md:self-auto">
+          <div className="text-right">
+            <span className="text-[10px] text-slate-400 block uppercase">Inference</span>
+            <span className="font-bold text-emerald-400">~{activeModelMeta.inferenceLatencyMs}ms</span>
+          </div>
+          <div className="text-right">
+            <span className="text-[10px] text-slate-400 block uppercase">Benchmark MAE</span>
+            <span className="font-bold text-indigo-400">{activeModelMeta.benchmarkMae}</span>
+          </div>
+          <div className="text-right">
+            <span className="text-[10px] text-slate-400 block uppercase">Live Run RMSE</span>
+            <span className="font-bold text-amber-400">{rmse.toFixed(1)}</span>
+          </div>
+        </div>
+      </div>
+
       {/* Active SKU Selector Bar with Perishable & Supplier Matrix badges */}
       <div
         className={`border rounded-xl p-4 flex flex-col md:flex-row md:items-center justify-between gap-4 transition-colors ${cardCls}`}
@@ -312,10 +369,10 @@ export const VisualAnalytics: React.FC<VisualAnalyticsProps> = ({
                 }`}
               >
                 <TrendingUp className="w-4 h-4 text-indigo-400" />
-                Historical Sales vs. ML Demand Forecast
+                Historical Sales vs. {activeModelMeta.name} Forecast
               </h4>
               <p className="text-xs text-slate-400 mt-0.5">
-                30-Day Actuals + {forecastPoints.length}-Day Gradient Boosting Projection
+                30-Day Actuals + {forecastPoints.length}-Day {activeModelMeta.name} ({activeModelMeta.architecture})
               </p>
             </div>
             <div className="text-right">
@@ -692,7 +749,7 @@ export const VisualAnalytics: React.FC<VisualAnalyticsProps> = ({
               </span>
             </div>
             <div className="text-[11px] text-slate-500">
-              ₹{(decayedUnits * sku.basePrice).toLocaleString("en-IN")} written-off
+              {formatCurrency(decayedUnits * sku.basePrice, currency)} written-off
             </div>
           </div>
 

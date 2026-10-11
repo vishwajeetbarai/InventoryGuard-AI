@@ -1,6 +1,23 @@
 import React from "react";
-import { Warehouse, SkuMetadata, ReorderPolicy } from "../types";
-import { Sliders, MapPin, Tag, Shield, Calendar, Shuffle, Flame, Truck, RefreshCw, CloudRain, Cpu, Repeat } from "lucide-react";
+import { Warehouse, SkuMetadata, ReorderPolicy, ForecastModel, CurrencyCode } from "../types";
+import {
+  Sliders,
+  MapPin,
+  Tag,
+  Shield,
+  Calendar,
+  Shuffle,
+  Flame,
+  Truck,
+  RefreshCw,
+  CloudRain,
+  Cpu,
+  Repeat,
+  BrainCircuit,
+  Sparkles,
+} from "lucide-react";
+import { formatCurrency } from "../utils/currency";
+import { FORECAST_MODELS_META } from "../utils/forecastModels";
 
 interface SidebarControlsProps {
   warehouses: Warehouse[];
@@ -28,6 +45,9 @@ interface SidebarControlsProps {
   onApplyPreset?: (preset: "MONSOON" | "FLASH_SALE" | "LOGISTICS_STRIKE" | "NORMAL") => void;
   reorderPolicy?: ReorderPolicy;
   onSelectReorderPolicy?: (policy: ReorderPolicy) => void;
+  forecastModel?: ForecastModel;
+  onSelectForecastModel?: (model: ForecastModel) => void;
+  currency?: CurrencyCode;
   theme?: "dark" | "light";
 }
 
@@ -57,6 +77,9 @@ export const SidebarControls: React.FC<SidebarControlsProps> = ({
   onApplyPreset,
   reorderPolicy = "DYNAMIC_AI",
   onSelectReorderPolicy,
+  forecastModel = "META_PROPHET",
+  onSelectForecastModel,
+  currency = "INR",
   theme = "dark",
 }) => {
   const isDark = theme === "dark";
@@ -223,9 +246,70 @@ export const SidebarControls: React.FC<SidebarControlsProps> = ({
                 />
                 <span className="flex-1 truncate font-medium">{sku.name}</span>
                 <span className={`text-[10px] font-mono ${subTextCls}`}>
-                  ₹{sku.basePrice}
+                  {formatCurrency(sku.basePrice, currency)}
                 </span>
               </label>
+            );
+          })}
+        </div>
+      </div>
+
+      {/* Enterprise Time-Series ML Forecast Engine Selector */}
+      <div className="space-y-2">
+        <div className="flex items-center justify-between">
+          <label className={`text-xs font-semibold flex items-center gap-1.5 uppercase tracking-wider ${labelCls}`}>
+            <BrainCircuit className="w-3.5 h-3.5 text-indigo-500" />
+            <span>Time-Series ML Engine</span>
+          </label>
+          <span className="text-[10px] text-indigo-400 font-mono font-bold flex items-center gap-1">
+            <Sparkles className="w-3 h-3" />
+            <span>Enterprise ML</span>
+          </span>
+        </div>
+        <div className="space-y-1.5">
+          {(Object.values(FORECAST_MODELS_META) as (typeof FORECAST_MODELS_META[keyof typeof FORECAST_MODELS_META])[]).map((meta) => {
+            const isSelected = forecastModel === meta.id;
+            return (
+              <button
+                key={meta.id}
+                onClick={() => onSelectForecastModel?.(meta.id)}
+                className={`w-full text-left p-2.5 rounded-lg text-xs transition-all cursor-pointer border ${
+                  isSelected
+                    ? "bg-indigo-600/20 text-indigo-200 border-indigo-500/70 shadow-sm shadow-indigo-600/10"
+                    : isDark
+                    ? "bg-slate-800/40 hover:bg-slate-800 text-slate-400 border-slate-700/50"
+                    : "bg-slate-100 hover:bg-slate-200 text-slate-700 border-slate-300"
+                }`}
+              >
+                <div className="flex items-center justify-between mb-1">
+                  <div className="flex items-center gap-1.5">
+                    <span className={`font-bold ${isSelected ? "text-indigo-300" : isDark ? "text-slate-200" : "text-slate-800"}`}>
+                      {meta.name}
+                    </span>
+                    <span className="text-[9px] text-slate-400 font-mono">
+                      ({meta.vendor})
+                    </span>
+                  </div>
+                  <span
+                    className={`text-[9px] font-mono px-1.5 py-0.5 rounded font-extrabold ${
+                      isSelected
+                        ? "bg-indigo-500/30 text-indigo-300 border border-indigo-400/30"
+                        : isDark
+                        ? "bg-slate-800 text-slate-400"
+                        : "bg-slate-200 text-slate-600"
+                    }`}
+                  >
+                    {meta.badge}
+                  </span>
+                </div>
+                <p className="text-[10px] text-slate-400 line-clamp-2 leading-relaxed">
+                  {meta.description}
+                </p>
+                <div className="mt-1.5 pt-1.5 border-t border-slate-800/50 flex items-center justify-between text-[9px] font-mono text-slate-400">
+                  <span>Latency: ~{meta.inferenceLatencyMs}ms</span>
+                  <span>Benchmark MAE: {meta.benchmarkMae}</span>
+                </div>
+              </button>
             );
           })}
         </div>

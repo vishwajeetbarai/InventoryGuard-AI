@@ -1,5 +1,6 @@
 import React, { useState } from "react";
-import { SkuSimulationState } from "../types";
+import { SkuSimulationState, CurrencyCode } from "../types";
+import { formatCurrency } from "../utils/currency";
 import {
   Search,
   ArrowUpDown,
@@ -18,6 +19,7 @@ interface RiskTableProps {
   onSelectSku: (skuId: string) => void;
   onBulkDispatchCriticalPos?: (selectedIds?: string[]) => void;
   onAutoApproveTransfers?: () => void;
+  currency?: CurrencyCode;
   theme?: "dark" | "light";
 }
 
@@ -26,6 +28,7 @@ export const RiskTable: React.FC<RiskTableProps> = ({
   onSelectSku,
   onBulkDispatchCriticalPos,
   onAutoApproveTransfers,
+  currency = "INR",
   theme = "dark",
 }) => {
   const isDark = theme === "dark";
@@ -461,7 +464,7 @@ export const RiskTable: React.FC<RiskTableProps> = ({
                       </div>
                     </td>
                     <td className="py-3 px-4 font-mono font-semibold text-amber-500">
-                      ₹{s.revenueAtRisk.toLocaleString("en-IN")}
+                      {formatCurrency(s.revenueAtRisk, currency)}
                     </td>
                     <td className="py-3 px-4 font-mono font-bold">
                       {s.mcResult.recommendedReorderQty > 0 ? (

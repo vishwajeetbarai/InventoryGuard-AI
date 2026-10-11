@@ -25,8 +25,13 @@ import { NetworkTopologyMap } from "./components/NetworkTopologyMap";
 import { ToastContainer, ToastItem } from "./components/ToastContainer";
 import { CommandPaletteModal } from "./components/CommandPaletteModal";
 import { ExecutiveReportModal } from "./components/ExecutiveReportModal";
+import { WmsDataIngestionModal } from "./components/WmsDataIngestionModal";
+import { AuditLedgerModal } from "./components/AuditLedgerModal";
+import { StorageService, CustomDatasetPayload } from "./services/storageService";
+import { UserProfile, TenantOrganization, UserRole, AuditLogEntry } from "./types/auth";
+import { USER_ROLES, DEMO_USERS, TENANT_ORGANIZATIONS } from "./services/authService";
 import { generateSupplyChainAuditCsv, triggerCsvDownload } from "./utils/exportCsv";
-import { DispatchedPoRecord, ReorderPolicy } from "./types";
+import { DispatchedPoRecord, ReorderPolicy, SkuMetadata, DailyRecord, Warehouse } from "./types";
 import {
   TrendingUp,
   Table,
@@ -88,10 +93,42 @@ export default function App() {
   // Theme State: 'dark' (Pitch-Black OLED Dark Mode) or 'light' (Sleek Clean Light Mode)
   const [theme, setTheme] = useState<"dark" | "light">("dark");
 
+  // Multi-Tenant Authentication & Session State
+  const [currentUser, setCurrentUser] = useState<UserProfile>(() =>
+    StorageService.getCurrentUser()
+  );
+  const [currentTenant, setCurrentTenant] = useState<TenantOrganization>(() =>
+    StorageService.getCurrentTenant()
+  );
+  const [customDataset, setCustomDataset] = useState<CustomDatasetPayload | null>(() =>
+    StorageService.getCustomDataset()
+  );
+  const [auditLogs, setAuditLogs] = useState<AuditLogEntry[]>(() =>
+    StorageService.getAuditLogs()
+  );
+
+  // Dynamic Datasets (Default Sandbox vs Client Uploaded WMS)
+  const effectiveWarehouses = useMemo(() => {
+    return customDataset ? customDataset.warehouses : WAREHOUSES;
+  }, [customDataset]);
+
+  const effectiveSkus = useMemo(() => {
+    return customDataset ? customDataset.skus : SKUS;
+  }, [customDataset]);
+
   // Core Simulation Parameters
-  const [selectedWarehouseId, setSelectedWarehouseId] = useState<string>("WH-BOM-01");
-  const [selectedSkuIds, setSelectedSkuIds] = useState<string[]>(SKUS.map((s) => s.id));
-  const [activeSkuId, setActiveSkuId] = useState<string>("SKU-001");
+  const [selectedWarehouseId, setSelectedWarehouseId] = useState<string>(() => {
+    const ds = StorageService.getCustomDataset();
+    return ds ? ds.warehouses[0].id : "WH-BOM-01";
+  });
+  const [selectedSkuIds, setSelectedSkuIds] = useState<string[]>(() => {
+    const ds = StorageService.getCustomDataset();
+    return ds ? ds.skus.map((s) => s.id) : SKUS.map((s) => s.id);
+  });
+  const [activeSkuId, setActiveSkuId] = useState<string>(() => {
+    const ds = StorageService.getCustomDataset();
+    return ds ? ds.skus[0].id : "SKU-001";
+  });
   const [selectedServiceZ, setSelectedServiceZ] = useState<number>(2.326); // 99% Mission critical
   const [forecastHorizon, setForecastHorizon] = useState<number>(21);
   const [monteCarloRuns, setMonteCarloRuns] = useState<number>(1000);
@@ -100,21 +137,42 @@ export default function App() {
   const [supplierDelayDays, setSupplierDelayDays] = useState<number>(0);
   const [reorderPolicy, setReorderPolicy] = useState<ReorderPolicy>("DYNAMIC_AI");
 
-  // Tabs & Ledger State
+  // Tabs & Persistent Ledger State
   const [activeTab, setActiveTab] = useState<
     "analytics" | "table" | "network" | "transfer" | "suppliers" | "po" | "code"
   >("network");
   const [isSimulating, setIsSimulating] = useState<boolean>(false);
   const [pythonCode, setPythonCode] = useState<string>("");
-  const [dispatchedLedger, setDispatchedLedger] = useState<DispatchedPoRecord[]>(
-    getInitialDispatchedLedger()
+  const [dispatchedLedger, setDispatchedLedger] = useState<DispatchedPoRecord[]>(() =>
+    StorageService.getDispatchedLedger(getInitialDispatchedLedger())
   );
-  const [approvedTransferIds, setApprovedTransferIds] = useState<string[]>([]);
+  const [approvedTransferIds, setApprovedTransferIds] = useState<string[]>(() =>
+    StorageService.getApprovedTransferIds()
+  );
 
   // Modals & Feedback State
   const [isCommandPaletteOpen, setIsCommandPaletteOpen] = useState<boolean>(false);
   const [isReportModalOpen, setIsReportModalOpen] = useState<boolean>(false);
+  const [isWmsModalOpen, setIsWmsModalOpen] = useState<boolean>(false);
+  const [isAuditModalOpen, setIsAuditModalOpen] = useState<boolean>(false);
   const [toasts, setToasts] = useState<ToastItem[]>([]);
+
+  // Synchronize state with persistent storage
+  useEffect(() => {
+    StorageService.saveDispatchedLedger(dispatchedLedger);
+  }, [dispatchedLedger]);
+
+  useEffect(() => {
+    StorageService.saveApprovedTransferIds(approvedTransferIds);
+  }, [approvedTransferIds]);
+
+  useEffect(() => {
+    StorageService.setCurrentUser(currentUser);
+  }, [currentUser]);
+
+  useEffect(() => {
+    StorageService.setCurrentTenant(currentTenant);
+  }, [currentTenant]);
 
   const addToast = (
     toast: Omit<ToastItem, "id" | "timestamp"> & { id?: string; timestamp?: string }
@@ -158,10 +216,13 @@ export default function App() {
       });
   }, []);
 
-  // In-Memory Historical Records (365 days across 5 SKUs x 3 Warehouses)
+  // In-Memory or Uploaded Historical Records
   const allHistoricalRecords = useMemo(() => {
+    if (customDataset && customDataset.records.length > 0) {
+      return customDataset.records;
+    }
     return generateSyntheticHistoricalData();
-  }, []);
+  }, [customDataset]);
 
   // Execute Supply Chain Engine with Perishable Decay, Supplier Reliability Matrix & Weather Surge
   const simulationStates = useMemo(() => {
@@ -192,8 +253,11 @@ export default function App() {
 
   // Current Warehouse Metadata
   const currentWarehouse = useMemo(() => {
-    return WAREHOUSES.find((w) => w.id === selectedWarehouseId) || WAREHOUSES[0];
-  }, [selectedWarehouseId]);
+    return (
+      effectiveWarehouses.find((w) => w.id === selectedWarehouseId) ||
+      effectiveWarehouses[0]
+    );
+  }, [effectiveWarehouses, selectedWarehouseId]);
 
   // Current Service Level Object
   const currentServiceLevel = useMemo(() => {
@@ -227,6 +291,126 @@ export default function App() {
     return calculateDemandCannibalization(simulationStates);
   }, [simulationStates]);
 
+  const checkPermission = (actionDesc: string, allowedRoles: UserRole[]): boolean => {
+    if (!allowedRoles.includes(currentUser.role)) {
+      addToast({
+        type: "warning",
+        title: "Action Restricted (RBAC)",
+        message: `Active persona "${USER_ROLES[currentUser.role].title}" lacks permission to ${actionDesc}. Switch persona in the header dropdown to test this role.`,
+        meta: {
+          code: `RBAC_${currentUser.role}`,
+        },
+      });
+      return false;
+    }
+    return true;
+  };
+
+  const handleSelectRole = (newRole: UserRole) => {
+    const demoUser = DEMO_USERS[newRole];
+    const updatedUser: UserProfile = {
+      ...demoUser,
+      tenantId: currentTenant.id,
+      tenantName: currentTenant.name,
+    };
+    setCurrentUser(updatedUser);
+    StorageService.setCurrentUser(updatedUser);
+
+    addToast({
+      type: "info",
+      title: "Active Persona Switched",
+      message: `Signed in as ${updatedUser.name} (${USER_ROLES[newRole].title}) for ${currentTenant.name}.`,
+      meta: {
+        code: USER_ROLES[newRole].badgeLabel,
+      },
+    });
+  };
+
+  const handleSelectTenant = (tenant: TenantOrganization) => {
+    setCurrentTenant(tenant);
+    StorageService.setCurrentTenant(tenant);
+    setCurrentUser((prev) => ({
+      ...prev,
+      tenantId: tenant.id,
+      tenantName: tenant.name,
+    }));
+
+    addToast({
+      type: "info",
+      title: "Tenant Switched",
+      message: `Now viewing operations for ${tenant.name} (${tenant.erpIntegration} Gateway).`,
+      meta: {
+        code: tenant.tier,
+      },
+    });
+  };
+
+  const handleDatasetIngested = (payload: {
+    datasetName: string;
+    warehouses: Warehouse[];
+    skus: SkuMetadata[];
+    records: DailyRecord[];
+  }) => {
+    const dataset: CustomDatasetPayload = {
+      name: payload.datasetName,
+      uploadedAt: new Date().toISOString(),
+      source: "WMS_CSV_UPLOAD",
+      warehouses: payload.warehouses,
+      skus: payload.skus,
+      records: payload.records,
+    };
+
+    StorageService.saveCustomDataset(dataset);
+    setCustomDataset(dataset);
+
+    if (payload.warehouses.length > 0) {
+      setSelectedWarehouseId(payload.warehouses[0].id);
+    }
+    setSelectedSkuIds(payload.skus.map((s) => s.id));
+    if (payload.skus.length > 0) {
+      setActiveSkuId(payload.skus[0].id);
+    }
+
+    handleTriggerSimulation();
+
+    // Log to audit ledger
+    const log = StorageService.appendAuditLog({
+      tenantId: currentTenant.id,
+      userId: currentUser.id,
+      userName: currentUser.name,
+      userRole: currentUser.role,
+      actionType: "WMS_DATA_INGESTED",
+      targetEntity: payload.datasetName,
+      details: `Ingested ${payload.skus.length} SKUs across ${payload.warehouses.length} facility nodes with ${payload.records.length} historical records. Recomputed stochastic safety stocks in 0.4s.`,
+    });
+    setAuditLogs(StorageService.getAuditLogs());
+
+    addToast({
+      type: "success",
+      title: "Real WMS Dataset Active",
+      message: `Ingested "${payload.datasetName}" (${payload.skus.length} SKUs, ${payload.records.length} demand records). Calculated in <0.5s!`,
+      meta: {
+        code: "WMS_INGEST_OK",
+        hash: log.cryptoHash.slice(0, 18),
+      },
+    });
+  };
+
+  const handleResetCustomDataset = () => {
+    StorageService.saveCustomDataset(null);
+    setCustomDataset(null);
+    setSelectedWarehouseId(WAREHOUSES[0].id);
+    setSelectedSkuIds(SKUS.map((s) => s.id));
+    setActiveSkuId(SKUS[0].id);
+    handleTriggerSimulation();
+
+    addToast({
+      type: "info",
+      title: "Sandbox Baseline Restored",
+      message: "Reset to default quick-commerce dark store dataset (5 SKUs, 3 Warehouses).",
+    });
+  };
+
   const handleToggleTheme = () => {
     setTheme((prev) => (prev === "dark" ? "light" : "dark"));
   };
@@ -250,7 +434,7 @@ export default function App() {
   const handleSelectWarehouse = (whId: string) => {
     setSelectedWarehouseId(whId);
     handleTriggerSimulation();
-    const wh = WAREHOUSES.find((w) => w.id === whId);
+    const wh = effectiveWarehouses.find((w) => w.id === whId);
     if (wh) {
       addToast({
         type: "info",
@@ -271,7 +455,7 @@ export default function App() {
   };
 
   const handleSelectAllSkus = () => {
-    setSelectedSkuIds(SKUS.map((s) => s.id));
+    setSelectedSkuIds(effectiveSkus.map((s) => s.id));
   };
 
   const handleSelectSkuDeepDive = (id: string) => {
@@ -280,9 +464,24 @@ export default function App() {
   };
 
   const handleApproveTransfer = (id: string) => {
+    if (!checkPermission("approve inter-store warehouse transfers", ["WAREHOUSE_SUPERVISOR", "INVENTORY_MANAGER"])) {
+      return;
+    }
+
     setApprovedTransferIds((prev) => [...prev, id]);
     const xfer = interTransfers.find((t) => t.id === id);
     if (xfer) {
+      const log = StorageService.appendAuditLog({
+        tenantId: currentTenant.id,
+        userId: currentUser.id,
+        userName: currentUser.name,
+        userRole: currentUser.role,
+        actionType: "INTER_TRANSFER_APPROVAL",
+        targetEntity: `${xfer.skuName} (${xfer.originWarehouseId} ➔ ${xfer.destWarehouseId})`,
+        details: `Approved inter-store balancing transfer of ${xfer.recommendedTransferQty} units via Green EV route. Saved ${xfer.leadTimeSavedHours}h lead-time.`,
+      });
+      setAuditLogs(StorageService.getAuditLogs());
+
       addToast({
         type: "transfer",
         title: "Inter-Store Transfer Dispatched",
@@ -291,13 +490,30 @@ export default function App() {
           code: xfer.id,
           latency: `~${xfer.transitHours}h van ETA`,
           units: xfer.recommendedTransferQty,
+          hash: log.cryptoHash.slice(0, 18),
         },
       });
     }
   };
 
   const handleDispatchPo = (record: DispatchedPoRecord) => {
+    if (!checkPermission("authorize and dispatch purchase orders", ["PROCUREMENT_SPECIALIST"])) {
+      return;
+    }
+
     setDispatchedLedger((prev) => [record, ...prev]);
+
+    const log = StorageService.appendAuditLog({
+      tenantId: currentTenant.id,
+      userId: currentUser.id,
+      userName: currentUser.name,
+      userRole: currentUser.role,
+      actionType: "PO_DISPATCH",
+      targetEntity: record.poBatchNumber,
+      details: `Authorized PO dispatch to ${record.erpSystem} for ${record.itemCount} SKUs (${record.totalUnits} units, ₹${record.totalValueInr.toLocaleString("en-IN")}) with HMAC-SHA256 signature.`,
+    });
+    setAuditLogs(StorageService.getAuditLogs());
+
     addToast({
       type: "dispatch",
       title: "PO Dispatched to ERP",
@@ -364,6 +580,10 @@ export default function App() {
   };
 
   const handleSelectReorderPolicy = (policy: ReorderPolicy) => {
+    if (!checkPermission("switch automated replenishment algorithm", ["INVENTORY_MANAGER"])) {
+      return;
+    }
+
     setReorderPolicy(policy);
     handleTriggerSimulation();
     const policyName =
@@ -372,6 +592,18 @@ export default function App() {
         : policy === "CONTINUOUS_REVIEW"
         ? "Continuous Review (s, S) Min-Max Policy"
         : "Periodic Review (R, S) Weekly Batch Review";
+
+    const log = StorageService.appendAuditLog({
+      tenantId: currentTenant.id,
+      userId: currentUser.id,
+      userName: currentUser.name,
+      userRole: currentUser.role,
+      actionType: "POLICY_MODIFIED",
+      targetEntity: policy,
+      details: `Replenishment algorithm switched to ${policyName}. System recomputed dynamic safety stock and ROP baselines.`,
+    });
+    setAuditLogs(StorageService.getAuditLogs());
+
     addToast({
       type: "info",
       title: "Replenishment Policy Switched",
@@ -381,6 +613,10 @@ export default function App() {
   };
 
   const handleBulkDispatchCriticalPos = (targetSkuIds?: string[]) => {
+    if (!checkPermission("bulk dispatch critical purchase orders", ["PROCUREMENT_SPECIALIST"])) {
+      return;
+    }
+
     const criticalPOs = purchaseOrders.filter((po) => {
       if (targetSkuIds && targetSkuIds.length > 0) {
         return targetSkuIds.includes(po.skuId);
@@ -407,7 +643,7 @@ export default function App() {
       warehouseId: currentWarehouse.id,
       warehouseName: currentWarehouse.name,
       endpointUrl: "https://sap-s4hana.enterprise.corp/api/v2/po-dispatches",
-      erpSystem: "SAP S/4HANA Enterprise Cloud",
+      erpSystem: `${currentTenant.erpIntegration} Enterprise Cloud`,
       timestamp: new Date().toISOString(),
       itemCount: criticalPOs.length,
       totalUnits,
@@ -423,6 +659,7 @@ export default function App() {
             warehouse: currentWarehouse.name,
             timestamp: new Date().toISOString(),
             mode: "BULK_CRITICAL_DISPATCH",
+            tenant: currentTenant.name,
           },
           items: criticalPOs.map((p) => ({
             sku: p.skuName,
@@ -440,10 +677,22 @@ export default function App() {
     };
 
     setDispatchedLedger((prev) => [record, ...prev]);
+
+    const log = StorageService.appendAuditLog({
+      tenantId: currentTenant.id,
+      userId: currentUser.id,
+      userName: currentUser.name,
+      userRole: currentUser.role,
+      actionType: "PO_DISPATCH",
+      targetEntity: batchId,
+      details: `Bulk dispatched ${criticalPOs.length} POs (${totalUnits.toLocaleString()} units, ₹${totalVal.toLocaleString("en-IN")}) to ${currentTenant.erpIntegration}.`,
+    });
+    setAuditLogs(StorageService.getAuditLogs());
+
     addToast({
       type: "dispatch",
       title: "Bulk Critical POs Dispatched",
-      message: `⚡ ${criticalPOs.length} Purchase Orders (${totalUnits.toLocaleString()} units) dispatched to SAP S/4HANA.`,
+      message: `⚡ ${criticalPOs.length} Purchase Orders (${totalUnits.toLocaleString()} units) dispatched to ${currentTenant.erpIntegration}.`,
       meta: {
         code: batchId,
         hash: record.payloadHash,
@@ -453,6 +702,10 @@ export default function App() {
   };
 
   const handleAutoApproveAllTransfers = () => {
+    if (!checkPermission("auto-approve inter-store transfers", ["WAREHOUSE_SUPERVISOR", "INVENTORY_MANAGER"])) {
+      return;
+    }
+
     const pendingTransfers = interTransfers.filter(
       (t) => !approvedTransferIds.includes(t.id)
     );
@@ -474,6 +727,17 @@ export default function App() {
       0
     );
 
+    const log = StorageService.appendAuditLog({
+      tenantId: currentTenant.id,
+      userId: currentUser.id,
+      userName: currentUser.name,
+      userRole: currentUser.role,
+      actionType: "INTER_TRANSFER_APPROVAL",
+      targetEntity: `BULK-TRANSFERS (${pendingTransfers.length} routes)`,
+      details: `Auto-approved ${pendingTransfers.length} inter-store replenishment routes (~${totalUnits.toLocaleString()} units) via intra-city EV vans.`,
+    });
+    setAuditLogs(StorageService.getAuditLogs());
+
     addToast({
       type: "transfer",
       title: "All Transfers Auto-Approved",
@@ -487,8 +751,24 @@ export default function App() {
   };
 
   const handleApplyMarkdown = (skuId: string, discountPct: number) => {
+    if (!checkPermission("trigger promotional markdown liquidations", ["INVENTORY_MANAGER"])) {
+      return;
+    }
+
     const s = simulationStates.find((item) => item.sku.id === skuId);
     const skuName = s ? s.sku.name : skuId;
+
+    const log = StorageService.appendAuditLog({
+      tenantId: currentTenant.id,
+      userId: currentUser.id,
+      userName: currentUser.name,
+      userRole: currentUser.role,
+      actionType: "MARKDOWN_ACTIVATED",
+      targetEntity: `${skuName} (-${discountPct}%)`,
+      details: `Triggered flash promotional markdown discount of -${discountPct}% for ${skuName} to liquidate perishable inventory before expiration.`,
+    });
+    setAuditLogs(StorageService.getAuditLogs());
+
     addToast({
       type: "success",
       title: "Flash Markdown Deployed",
@@ -501,13 +781,28 @@ export default function App() {
   };
 
   const handleIssueDebitNote = (supplierName: string, amountInr: number) => {
+    if (!checkPermission("issue supplier chargeback debit notes", ["PROCUREMENT_SPECIALIST"])) {
+      return;
+    }
+
+    const log = StorageService.appendAuditLog({
+      tenantId: currentTenant.id,
+      userId: currentUser.id,
+      userName: currentUser.name,
+      userRole: currentUser.role,
+      actionType: "SLA_DEBIT_NOTE_ISSUED",
+      targetEntity: supplierName,
+      details: `Dispatched SLA breach debit note for ₹${amountInr.toLocaleString("en-IN")} to ERP Accounts Payable for persistent delivery delays.`,
+    });
+    setAuditLogs(StorageService.getAuditLogs());
+
     addToast({
       type: "dispatch",
       title: "SLA Debit Note Dispatched",
       message: `Formal liquidated damages debit note for ₹${amountInr.toLocaleString("en-IN")} dispatched to ERP Accounts Payable for ${supplierName}.`,
       meta: {
         code: `DBN-${Date.now().toString().slice(-4)}`,
-        hash: `sha256:7f9a2b8e3d0c41ab82ef10b0f443a290c5819e8315`,
+        hash: log.cryptoHash,
       },
     });
   };
@@ -524,6 +819,18 @@ export default function App() {
       csvData,
       `SupplyChain_Audit_${currentWarehouse.id}_${dateStr}.csv`
     );
+
+    const log = StorageService.appendAuditLog({
+      tenantId: currentTenant.id,
+      userId: currentUser.id,
+      userName: currentUser.name,
+      userRole: currentUser.role,
+      actionType: "AUDIT_EXPORTED",
+      targetEntity: currentWarehouse.name,
+      details: `Exported comprehensive supply chain CSV audit dossier for ${currentWarehouse.name}.`,
+    });
+    setAuditLogs(StorageService.getAuditLogs());
+
     addToast({
       type: "export",
       title: "Audit Report CSV Downloaded",
@@ -539,7 +846,7 @@ export default function App() {
         isDark ? "bg-[#0B0F19] text-slate-100" : "bg-slate-50 text-slate-900"
       }`}
     >
-      {/* Top Header with Clean Sun/Moon Icon-Only Toggle, ⌘K and Export triggers */}
+      {/* Top Header with Clean Sun/Moon Icon-Only Toggle, Persona Switcher, WMS Upload & Audit Ledger */}
       <Header
         currentWarehouse={currentWarehouse}
         onRefreshData={handleTriggerSimulation}
@@ -548,16 +855,24 @@ export default function App() {
         onToggleTheme={handleToggleTheme}
         onOpenCommandPalette={() => setIsCommandPaletteOpen(true)}
         onOpenExportReport={() => setIsReportModalOpen(true)}
+        onOpenWmsIngestion={() => setIsWmsModalOpen(true)}
+        onOpenAuditLedger={() => setIsAuditModalOpen(true)}
+        currentUser={currentUser}
+        onSelectRole={handleSelectRole}
+        currentTenant={currentTenant}
+        onSelectTenant={handleSelectTenant}
+        customDatasetName={customDataset?.name}
+        onResetCustomDataset={handleResetCustomDataset}
       />
 
       {/* Main Content Layout */}
       <div className="flex-1 flex flex-col lg:flex-row max-w-7xl w-full mx-auto">
         {/* Left Sidebar Control Panel */}
         <SidebarControls
-          warehouses={WAREHOUSES}
+          warehouses={effectiveWarehouses}
           selectedWarehouseId={selectedWarehouseId}
           onSelectWarehouse={handleSelectWarehouse}
-          allSkus={SKUS}
+          allSkus={effectiveSkus}
           selectedSkuIds={selectedSkuIds}
           onToggleSku={handleToggleSku}
           onSelectAllSkus={handleSelectAllSkus}
@@ -734,7 +1049,7 @@ export default function App() {
           {/* Active Tab View */}
           {activeTab === "network" && (
             <NetworkTopologyMap
-              warehouses={WAREHOUSES}
+              warehouses={effectiveWarehouses}
               selectedWarehouseId={selectedWarehouseId}
               onSelectWarehouse={handleSelectWarehouse}
               interTransfers={interTransfers}
@@ -816,10 +1131,10 @@ export default function App() {
       <CommandPaletteModal
         isOpen={isCommandPaletteOpen}
         onClose={() => setIsCommandPaletteOpen(false)}
-        warehouses={WAREHOUSES}
+        warehouses={effectiveWarehouses}
         selectedWarehouseId={selectedWarehouseId}
         onSelectWarehouse={handleSelectWarehouse}
-        allSkus={SKUS}
+        allSkus={effectiveSkus}
         onSelectSku={(id) => {
           setActiveSkuId(id);
           setActiveTab("analytics");
@@ -871,6 +1186,24 @@ export default function App() {
         interTransfers={interTransfers}
         dispatchedLedger={dispatchedLedger}
         onDownloadCsv={handleDownloadCsv}
+        theme={theme}
+      />
+
+      {/* Real WMS & ERP Data Ingestion Engine Modal */}
+      <WmsDataIngestionModal
+        isOpen={isWmsModalOpen}
+        onClose={() => setIsWmsModalOpen(false)}
+        onDatasetIngested={handleDatasetIngested}
+        theme={theme}
+      />
+
+      {/* Cryptographic Compliance Audit Ledger Modal */}
+      <AuditLedgerModal
+        isOpen={isAuditModalOpen}
+        onClose={() => setIsAuditModalOpen(false)}
+        auditLogs={auditLogs}
+        currentTenant={currentTenant}
+        currentUser={currentUser}
         theme={theme}
       />
 

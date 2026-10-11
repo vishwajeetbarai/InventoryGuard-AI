@@ -67,6 +67,14 @@ export interface SupplierScorecard {
 
 export type ReorderPolicy = "DYNAMIC_AI" | "CONTINUOUS_REVIEW" | "PERIODIC_REVIEW";
 
+export type ForecastModel =
+  | "META_PROPHET"
+  | "XGBOOST"
+  | "AMAZON_DEEPAR"
+  | "HOLT_WINTERS_ARIMA";
+
+export type CurrencyCode = "USD" | "EUR" | "GBP" | "INR";
+
 export interface SkuSimulationState {
   sku: SkuMetadata;
   currentStock: number;
@@ -84,6 +92,7 @@ export interface SkuSimulationState {
   supplierScorecard: SupplierScorecard;
   weatherDemandUpliftPct: number;
   reorderPolicy?: ReorderPolicy;
+  forecastModel?: ForecastModel;
 }
 
 export interface PurchaseOrder {
