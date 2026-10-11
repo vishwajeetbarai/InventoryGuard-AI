@@ -336,18 +336,18 @@ export const CommandPaletteModal: React.FC<CommandPaletteModalProps> = ({
       <div
         className={`w-full max-w-2xl rounded-2xl border shadow-2xl overflow-hidden transition-all duration-200 ${
           isDark
-            ? "bg-[#0B0F19] border-slate-800 text-slate-100"
-            : "bg-white border-slate-200 text-slate-900 shadow-slate-400/20"
+            ? "bg-neutral-950 border-neutral-800 text-neutral-100"
+            : "bg-white border-slate-200 text-slate-900 shadow-xl"
         }`}
         onClick={(e) => e.stopPropagation()}
       >
         {/* Search Input Bar */}
         <div
           className={`flex items-center px-4 py-3.5 border-b ${
-            isDark ? "border-slate-800 bg-slate-900/60" : "border-slate-200 bg-slate-50/80"
+            isDark ? "border-neutral-800 bg-neutral-900/60" : "border-slate-200 bg-slate-50/80"
           }`}
         >
-          <Search className="w-5 h-5 text-indigo-400 mr-3 shrink-0" />
+          <Search className="w-5 h-5 text-emerald-500 mr-3 shrink-0" />
           <input
             ref={inputRef}
             type="text"

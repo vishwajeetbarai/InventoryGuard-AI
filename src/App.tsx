@@ -10,7 +10,7 @@ import {
   calculateMarkdownLiquidation,
   calculateDemandCannibalization,
 } from "./engine/supplyChainEngine";
-import { Header } from "./components/Header";
+import { Header, AppPage } from "./components/Header";
 import { SidebarControls } from "./components/SidebarControls";
 import { KpiMetrics } from "./components/KpiMetrics";
 import { VisualAnalytics } from "./components/VisualAnalytics";
@@ -50,6 +50,10 @@ import {
   Award,
   ShieldCheck,
   Navigation,
+  Building2,
+  AlertTriangle,
+  Lock,
+  UploadCloud,
 } from "lucide-react";
 
 const SERVICE_LEVELS = [
@@ -99,8 +103,8 @@ streamlit run app.py
 `;
 
 export default function App() {
-  // Theme State: 'dark' (Pitch-Black OLED Dark Mode) or 'light' (Sleek Clean Light Mode)
-  const [theme, setTheme] = useState<"dark" | "light">("dark");
+  // Theme State: 'light' (Crisp Clean Light Mode by Default) or 'dark' (Pitch-Black Obsidian Dark Mode)
+  const [theme, setTheme] = useState<"dark" | "light">("light");
 
   // Multi-Tenant Authentication & Session State
   const [currentUser, setCurrentUser] = useState<UserProfile>(() =>
@@ -148,7 +152,10 @@ export default function App() {
   const [forecastModel, setForecastModel] = useState<ForecastModel>("META_PROPHET");
   const [currency, setCurrency] = useState<CurrencyCode>(() => getStoredCurrency());
 
-  // Tabs & Persistent Ledger State
+  // 4 Dedicated Core Pages & Tab State
+  const [activePage, setActivePage] = useState<AppPage>("overview");
+  const [procurementTab, setProcurementTab] = useState<"po" | "transfer" | "suppliers">("po");
+  const [operationsTab, setOperationsTab] = useState<"controls" | "ingestion" | "audit" | "code">("controls");
   const [activeTab, setActiveTab] = useState<
     "analytics" | "table" | "network" | "transfer" | "suppliers" | "po" | "code"
   >("network");
@@ -306,6 +313,10 @@ export default function App() {
   // Product Substitution & Stockout Cannibalization Absorption
   const substitutions = useMemo(() => {
     return calculateDemandCannibalization(simulationStates);
+  }, [simulationStates]);
+
+  const criticalSkus = useMemo(() => {
+    return simulationStates.filter((s) => s.mcResult.urgency === "CRITICAL REORDER NOW");
   }, [simulationStates]);
 
   const checkPermission = (actionDesc: string, allowedRoles: UserRole[]): boolean => {
@@ -477,6 +488,7 @@ export default function App() {
 
   const handleSelectSkuDeepDive = (id: string) => {
     setActiveSkuId(id);
+    setActivePage("inventory");
     setActiveTab("analytics");
   };
 
@@ -861,13 +873,17 @@ export default function App() {
 
   return (
     <div
-      className={`min-h-screen flex flex-col font-sans transition-colors duration-200 ${
-        isDark ? "bg-[#0B0F19] text-slate-100" : "bg-slate-50 text-slate-900"
+      className={`min-h-screen flex flex-col font-sans transition-colors duration-150 ${
+        isDark ? "bg-[#09090B] text-neutral-100" : "bg-[#F8FAFC] text-slate-900"
       }`}
     >
-      {/* Top Header with Clean Sun/Moon Icon-Only Toggle, Persona Switcher, WMS Upload & Audit Ledger */}
+      {/* Sleek Top Navigation Header */}
       <Header
         currentWarehouse={currentWarehouse}
+        warehouses={effectiveWarehouses}
+        onSelectWarehouse={handleSelectWarehouse}
+        activePage={activePage}
+        onSelectPage={setActivePage}
         onRefreshData={handleTriggerSimulation}
         isSimulating={isSimulating}
         theme={theme}
@@ -886,196 +902,119 @@ export default function App() {
         onSelectCurrency={setCurrency}
       />
 
-      {/* Main Content Layout */}
-      <div className="flex-1 flex flex-col lg:flex-row max-w-7xl w-full mx-auto">
-        {/* Left Sidebar Control Panel */}
-        <SidebarControls
-          warehouses={effectiveWarehouses}
-          selectedWarehouseId={selectedWarehouseId}
-          onSelectWarehouse={handleSelectWarehouse}
-          allSkus={effectiveSkus}
-          selectedSkuIds={selectedSkuIds}
-          onToggleSku={handleToggleSku}
-          onSelectAllSkus={handleSelectAllSkus}
-          serviceLevels={SERVICE_LEVELS}
-          selectedServiceZ={selectedServiceZ}
-          onSelectServiceZ={(z) => {
-            setSelectedServiceZ(z);
-            handleTriggerSimulation();
-          }}
-          forecastHorizon={forecastHorizon}
-          onChangeForecastHorizon={(days) => {
-            setForecastHorizon(days);
-            handleTriggerSimulation();
-          }}
-          monteCarloRuns={monteCarloRuns}
-          onChangeMonteCarloRuns={(runs) => {
-            setMonteCarloRuns(runs);
-            handleTriggerSimulation();
-          }}
-          promoSurgePct={promoSurgePct}
-          onChangePromoSurgePct={(pct) => {
-            setPromoSurgePct(pct);
-            handleTriggerSimulation();
-          }}
-          weatherSurgePct={weatherSurgePct}
-          onChangeWeatherSurgePct={(pct) => {
-            setWeatherSurgePct(pct);
-            handleTriggerSimulation();
-          }}
-          supplierDelayDays={supplierDelayDays}
-          onChangeSupplierDelayDays={(days) => {
-            setSupplierDelayDays(days);
-            handleTriggerSimulation();
-          }}
-          isSimulating={isSimulating}
-          onTriggerSimulation={handleTriggerSimulation}
-          onApplyPreset={handleApplyPreset}
-          reorderPolicy={reorderPolicy}
-          onSelectReorderPolicy={handleSelectReorderPolicy}
-          forecastModel={forecastModel}
-          onSelectForecastModel={(model) => {
-            setForecastModel(model);
-            handleTriggerSimulation();
-          }}
-          currency={currency}
-          theme={theme}
-        />
+      {/* Main Spacious Content Canvas */}
+      <main className="flex-1 max-w-7xl w-full mx-auto p-4 sm:p-6 lg:p-8 space-y-6">
+        {/* PAGE 1: OVERVIEW & NETWORK TOPOLOGY */}
+        {activePage === "overview" && (
+          <div className="space-y-6 animate-in fade-in duration-150">
+            {/* Facility & Engine Status Strip */}
+            <div
+              className={`p-4 sm:p-5 rounded-2xl border transition-colors flex flex-col sm:flex-row sm:items-center justify-between gap-4 ${
+                isDark
+                  ? "bg-neutral-900/60 border-neutral-800 text-neutral-200"
+                  : "bg-white border-slate-200/90 text-slate-800 shadow-xs"
+              }`}
+            >
+              <div className="flex items-center gap-3.5">
+                <div
+                  className={`w-10 h-10 rounded-xl flex items-center justify-center font-bold text-sm ${
+                    isDark ? "bg-neutral-800 text-emerald-400" : "bg-emerald-50 text-emerald-700 border border-emerald-100"
+                  }`}
+                >
+                  <Building2 className="w-5 h-5" />
+                </div>
+                <div>
+                  <div className="flex items-center gap-2">
+                    <h2 className="text-base font-bold text-slate-950 dark:text-white">
+                      {currentWarehouse.name}
+                    </h2>
+                    <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-neutral-100 dark:bg-neutral-800 text-slate-600 dark:text-neutral-400">
+                      {currentWarehouse.id}
+                    </span>
+                  </div>
+                  <div className="text-xs text-slate-400 mt-0.5 flex items-center gap-2">
+                    <span>{currentWarehouse.city}, {currentWarehouse.region}</span>
+                    <span>·</span>
+                    <span>Demand Multiplier: {currentWarehouse.demandFactor.toFixed(2)}x</span>
+                  </div>
+                </div>
+              </div>
 
-        {/* Right Dashboard Workspace */}
-        <main className="flex-1 p-5 lg:p-6 overflow-y-auto space-y-6">
-          {/* Executive KPI Metric Cards */}
-          <KpiMetrics
-            simulationStates={simulationStates}
-            selectedCslLabel={currentServiceLevel.label.split(" - ")[0]}
-            currency={currency}
-            theme={theme}
-          />
-
-          {/* Navigation Tabs */}
-          <div
-            className={`flex items-center justify-between border-b pb-2 ${
-              isDark ? "border-slate-800" : "border-slate-200"
-            }`}
-          >
-            <div className="flex flex-wrap items-center gap-1.5 sm:gap-2">
-              <button
-                onClick={() => setActiveTab("network")}
-                className={`flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-bold transition-all cursor-pointer ${
-                  activeTab === "network"
-                    ? "bg-indigo-600 text-white shadow-sm shadow-indigo-600/30"
-                    : isDark
-                    ? "text-slate-400 hover:text-slate-200 hover:bg-slate-900"
-                    : "text-slate-600 hover:text-slate-900 hover:bg-slate-200"
-                }`}
-              >
-                <Navigation className="w-3.5 h-3.5" />
-                <span>Network Topology Map</span>
-              </button>
-
-              <button
-                onClick={() => setActiveTab("analytics")}
-                className={`flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-bold transition-all cursor-pointer ${
-                  activeTab === "analytics"
-                    ? "bg-indigo-600 text-white shadow-sm shadow-indigo-600/30"
-                    : isDark
-                    ? "text-slate-400 hover:text-slate-200 hover:bg-slate-900"
-                    : "text-slate-600 hover:text-slate-900 hover:bg-slate-200"
-                }`}
-              >
-                <TrendingUp className="w-3.5 h-3.5" />
-                <span>Visual Analytics</span>
-              </button>
-
-              <button
-                onClick={() => setActiveTab("table")}
-                className={`flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-bold transition-all cursor-pointer ${
-                  activeTab === "table"
-                    ? "bg-indigo-600 text-white shadow-sm shadow-indigo-600/30"
-                    : isDark
-                    ? "text-slate-400 hover:text-slate-200 hover:bg-slate-900"
-                    : "text-slate-600 hover:text-slate-900 hover:bg-slate-200"
-                }`}
-              >
-                <Table className="w-3.5 h-3.5" />
-                <span>Risk Action Table</span>
-              </button>
-
-              <button
-                onClick={() => setActiveTab("transfer")}
-                className={`flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-bold transition-all cursor-pointer ${
-                  activeTab === "transfer"
-                    ? "bg-indigo-600 text-white shadow-sm shadow-indigo-600/30"
-                    : isDark
-                    ? "text-slate-400 hover:text-slate-200 hover:bg-slate-900"
-                    : "text-slate-600 hover:text-slate-900 hover:bg-slate-200"
-                }`}
-              >
-                <ArrowRightLeft className="w-3.5 h-3.5" />
-                <span>Inter-Store Transfers</span>
-                {interTransfers.length > 0 && (
-                  <span className="px-1.5 py-0.2 rounded-full text-[10px] bg-amber-500/20 text-amber-500 font-extrabold">
-                    {interTransfers.length}
+              <div className="flex items-center gap-4 text-xs">
+                <div className="text-right">
+                  <span className="text-[10px] text-slate-400 block uppercase font-medium">Cycle Service Level</span>
+                  <span className="font-bold text-slate-900 dark:text-white">{currentServiceLevel.label.split(" - ")[0]} (Z={selectedServiceZ})</span>
+                </div>
+                <div className="h-7 w-[1px] bg-slate-200 dark:bg-neutral-800" />
+                <div className="text-right">
+                  <span className="text-[10px] text-slate-400 block uppercase font-medium">Engine Mode</span>
+                  <span className="font-bold text-emerald-600 dark:text-emerald-400 flex items-center gap-1.5 justify-end">
+                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                    Stochastic ML
                   </span>
-                )}
-              </button>
-
-              <button
-                onClick={() => setActiveTab("suppliers")}
-                className={`flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-bold transition-all cursor-pointer ${
-                  activeTab === "suppliers"
-                    ? "bg-indigo-600 text-white shadow-sm shadow-indigo-600/30"
-                    : isDark
-                    ? "text-slate-400 hover:text-slate-200 hover:bg-slate-900"
-                    : "text-slate-600 hover:text-slate-900 hover:bg-slate-200"
-                }`}
-              >
-                <Award className="w-3.5 h-3.5" />
-                <span>Supplier Reliability</span>
-              </button>
-
-              <button
-                onClick={() => setActiveTab("po")}
-                className={`flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-bold transition-all cursor-pointer ${
-                  activeTab === "po"
-                    ? "bg-indigo-600 text-white shadow-sm shadow-indigo-600/30"
-                    : isDark
-                    ? "text-slate-400 hover:text-slate-200 hover:bg-slate-900"
-                    : "text-slate-600 hover:text-slate-900 hover:bg-slate-200"
-                }`}
-              >
-                <FileCheck2 className="w-3.5 h-3.5" />
-                <span>Automated PO Batch</span>
-                {purchaseOrders.length > 0 && (
-                  <span className="px-1.5 py-0.2 rounded-full text-[10px] bg-emerald-500/20 text-emerald-500 font-extrabold">
-                    {purchaseOrders.length}
-                  </span>
-                )}
-              </button>
-
-              <button
-                onClick={() => setActiveTab("code")}
-                className={`flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-bold transition-all cursor-pointer ${
-                  activeTab === "code"
-                    ? "bg-indigo-600 text-white shadow-sm shadow-indigo-600/30"
-                    : isDark
-                    ? "text-slate-400 hover:text-slate-200 hover:bg-slate-900"
-                    : "text-slate-600 hover:text-slate-900 hover:bg-slate-200"
-                }`}
-              >
-                <Code2 className="w-3.5 h-3.5" />
-                <span>Python Streamlit Artifacts</span>
-              </button>
+                </div>
+              </div>
             </div>
 
-            <div className="hidden xl:flex items-center gap-2 text-xs text-slate-400">
-              <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
-              <span>Decay Engine &amp; Scorecard Active</span>
-            </div>
-          </div>
+            {/* High-Level Executive KPI Cards */}
+            <KpiMetrics
+              simulationStates={simulationStates}
+              selectedCslLabel={currentServiceLevel.label.split(" - ")[0]}
+              currency={currency}
+              theme={theme}
+            />
 
-          {/* Active Tab View */}
-          {activeTab === "network" && (
+            {/* Action Center Banner if Urgent Replenishment or Transfers Exist */}
+            {(criticalSkus.length > 0 || interTransfers.length > 0) && (
+              <div
+                className={`p-4 rounded-xl border flex flex-col md:flex-row md:items-center justify-between gap-3 ${
+                  isDark
+                    ? "bg-neutral-900/40 border-neutral-800 text-neutral-200"
+                    : "bg-slate-50 border-slate-200 text-slate-800"
+                }`}
+              >
+                <div className="flex items-center gap-3">
+                  <div className="w-8 h-8 rounded-lg bg-amber-500/10 text-amber-500 flex items-center justify-center shrink-0">
+                    <AlertTriangle className="w-4 h-4" />
+                  </div>
+                  <div>
+                    <div className="text-xs font-bold text-slate-900 dark:text-white">
+                      {criticalSkus.length} Urgent Stockout Alerts &amp; {interTransfers.length} Rebalance Opportunities
+                    </div>
+                    <div className="text-xs text-slate-400 mt-0.5">
+                      Immediate action recommended to avoid stockout revenue leakage at {currentWarehouse.name}.
+                    </div>
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-2">
+                  {criticalSkus.length > 0 && (
+                    <button
+                      onClick={() => {
+                        setActivePage("procurement");
+                        setProcurementTab("po");
+                      }}
+                      className="px-3 py-1.5 rounded-lg text-xs font-semibold bg-rose-600 hover:bg-rose-500 text-white transition-colors cursor-pointer"
+                    >
+                      Review {criticalSkus.length} Critical POs
+                    </button>
+                  )}
+                  {interTransfers.length > 0 && (
+                    <button
+                      onClick={() => {
+                        setActivePage("procurement");
+                        setProcurementTab("transfer");
+                      }}
+                      className="px-3 py-1.5 rounded-lg text-xs font-semibold border border-slate-300 dark:border-neutral-700 hover:bg-slate-100 dark:hover:bg-neutral-800 text-slate-800 dark:text-neutral-200 transition-colors cursor-pointer"
+                    >
+                      Inspect Transfers
+                    </button>
+                  )}
+                </div>
+              </div>
+            )}
+
+            {/* Full Width Dark Store Network Topology Map */}
             <NetworkTopologyMap
               warehouses={effectiveWarehouses}
               selectedWarehouseId={selectedWarehouseId}
@@ -1086,9 +1025,12 @@ export default function App() {
               currency={currency}
               theme={theme}
             />
-          )}
+          </div>
+        )}
 
-          {activeTab === "analytics" && (
+        {/* PAGE 2: INVENTORY & FORECASTING */}
+        {activePage === "inventory" && (
+          <div className="space-y-6 animate-in fade-in duration-150">
             <VisualAnalytics
               simulationStates={simulationStates}
               selectedSkuId={activeSkuId}
@@ -1099,69 +1041,307 @@ export default function App() {
               forecastModel={forecastModel}
               theme={theme}
             />
-          )}
 
-          {activeTab === "table" && (
-            <div className="space-y-6">
-              <RiskTable
-                simulationStates={simulationStates}
-                onSelectSku={handleSelectSkuDeepDive}
-                onBulkDispatchCriticalPos={handleBulkDispatchCriticalPos}
-                onAutoApproveTransfers={handleAutoApproveAllTransfers}
-                currency={currency}
-                theme={theme}
-              />
-              <DynamicMarkdownCard
-                items={markdownItems}
-                onApplyMarkdown={handleApplyMarkdown}
-                currency={currency}
-                theme={theme}
-              />
-              <SubstitutionCard
-                substitutions={substitutions}
-                theme={theme}
-              />
-            </div>
-          )}
-
-          {activeTab === "transfer" && (
-            <InterTransferView
-              recommendations={interTransfers}
-              onApproveTransfer={handleApproveTransfer}
-              currency={currency}
-              theme={theme}
-            />
-          )}
-
-          {activeTab === "suppliers" && (
-            <SupplierScorecardView
+            <RiskTable
               simulationStates={simulationStates}
-              onIssueDebitNote={handleIssueDebitNote}
+              onSelectSku={handleSelectSkuDeepDive}
+              onBulkDispatchCriticalPos={handleBulkDispatchCriticalPos}
+              onAutoApproveTransfers={handleAutoApproveAllTransfers}
               currency={currency}
               theme={theme}
             />
-          )}
 
-          {activeTab === "po" && (
-            <PoGenerator
-              purchaseOrders={purchaseOrders}
-              warehouse={currentWarehouse}
-              dispatchedLedger={dispatchedLedger}
-              onDispatchPo={handleDispatchPo}
+            <DynamicMarkdownCard
+              items={markdownItems}
+              onApplyMarkdown={handleApplyMarkdown}
               currency={currency}
               theme={theme}
             />
-          )}
 
-          {activeTab === "code" && (
-            <SourceCodeViewer
-              appPyCode={pythonCode}
-              requirementsTxt={REQUIREMENTS_TXT}
-              readmeContent={README_MD}
+            <SubstitutionCard
+              substitutions={substitutions}
+              theme={theme}
             />
-          )}
-        </main>
-      </div>
+          </div>
+        )}
+
+        {/* PAGE 3: PROCUREMENT & ROUTING */}
+        {activePage === "procurement" && (
+          <div className="space-y-6 animate-in fade-in duration-150">
+            {/* Segmented Sub-Nav Controls */}
+            <div
+              className={`p-1.5 rounded-xl border flex items-center gap-1.5 w-fit ${
+                isDark ? "bg-neutral-900/60 border-neutral-800" : "bg-slate-100 border-slate-200"
+              }`}
+            >
+              <button
+                onClick={() => setProcurementTab("po")}
+                className={`flex items-center gap-2 px-3.5 py-1.5 rounded-lg text-xs font-semibold transition-colors cursor-pointer ${
+                  procurementTab === "po"
+                    ? isDark
+                      ? "bg-neutral-800 text-white shadow-xs"
+                      : "bg-white text-slate-900 shadow-xs border border-slate-200"
+                    : "text-slate-500 hover:text-slate-900 dark:hover:text-white"
+                }`}
+              >
+                <FileCheck2 className="w-3.5 h-3.5" />
+                <span>Automated PO Batches</span>
+                {purchaseOrders.length > 0 && (
+                  <span className="px-1.5 py-0.2 rounded-full text-[10px] font-mono font-bold bg-emerald-500/10 text-emerald-600 dark:text-emerald-400">
+                    {purchaseOrders.length}
+                  </span>
+                )}
+              </button>
+
+              <button
+                onClick={() => setProcurementTab("transfer")}
+                className={`flex items-center gap-2 px-3.5 py-1.5 rounded-lg text-xs font-semibold transition-colors cursor-pointer ${
+                  procurementTab === "transfer"
+                    ? isDark
+                      ? "bg-neutral-800 text-white shadow-xs"
+                      : "bg-white text-slate-900 shadow-xs border border-slate-200"
+                    : "text-slate-500 hover:text-slate-900 dark:hover:text-white"
+                }`}
+              >
+                <ArrowRightLeft className="w-3.5 h-3.5" />
+                <span>Inter-Store Transfers</span>
+                {interTransfers.length > 0 && (
+                  <span className="px-1.5 py-0.2 rounded-full text-[10px] font-mono font-bold bg-amber-500/10 text-amber-600 dark:text-amber-400">
+                    {interTransfers.length}
+                  </span>
+                )}
+              </button>
+
+              <button
+                onClick={() => setProcurementTab("suppliers")}
+                className={`flex items-center gap-2 px-3.5 py-1.5 rounded-lg text-xs font-semibold transition-colors cursor-pointer ${
+                  procurementTab === "suppliers"
+                    ? isDark
+                      ? "bg-neutral-800 text-white shadow-xs"
+                      : "bg-white text-slate-900 shadow-xs border border-slate-200"
+                    : "text-slate-500 hover:text-slate-900 dark:hover:text-white"
+                }`}
+              >
+                <Award className="w-3.5 h-3.5" />
+                <span>Supplier Reliability Matrix</span>
+              </button>
+            </div>
+
+            {procurementTab === "po" && (
+              <PoGenerator
+                purchaseOrders={purchaseOrders}
+                warehouse={currentWarehouse}
+                dispatchedLedger={dispatchedLedger}
+                onDispatchPo={handleDispatchPo}
+                currency={currency}
+                theme={theme}
+              />
+            )}
+
+            {procurementTab === "transfer" && (
+              <InterTransferView
+                recommendations={interTransfers}
+                onApproveTransfer={handleApproveTransfer}
+                currency={currency}
+                theme={theme}
+              />
+            )}
+
+            {procurementTab === "suppliers" && (
+              <SupplierScorecardView
+                simulationStates={simulationStates}
+                onIssueDebitNote={handleIssueDebitNote}
+                currency={currency}
+                theme={theme}
+              />
+            )}
+          </div>
+        )}
+
+        {/* PAGE 4: DATA HUB & CONTROL TOWER */}
+        {activePage === "operations" && (
+          <div className="space-y-6 animate-in fade-in duration-150">
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+              {/* Left Column: Control Tower Simulation Sliders */}
+              <div className="lg:col-span-5 space-y-6">
+                <SidebarControls
+                  warehouses={effectiveWarehouses}
+                  selectedWarehouseId={selectedWarehouseId}
+                  onSelectWarehouse={handleSelectWarehouse}
+                  allSkus={effectiveSkus}
+                  selectedSkuIds={selectedSkuIds}
+                  onToggleSku={handleToggleSku}
+                  onSelectAllSkus={handleSelectAllSkus}
+                  serviceLevels={SERVICE_LEVELS}
+                  selectedServiceZ={selectedServiceZ}
+                  onSelectServiceZ={(z) => {
+                    setSelectedServiceZ(z);
+                    handleTriggerSimulation();
+                  }}
+                  forecastHorizon={forecastHorizon}
+                  onChangeForecastHorizon={(days) => {
+                    setForecastHorizon(days);
+                    handleTriggerSimulation();
+                  }}
+                  monteCarloRuns={monteCarloRuns}
+                  onChangeMonteCarloRuns={(runs) => {
+                    setMonteCarloRuns(runs);
+                    handleTriggerSimulation();
+                  }}
+                  promoSurgePct={promoSurgePct}
+                  onChangePromoSurgePct={(pct) => {
+                    setPromoSurgePct(pct);
+                    handleTriggerSimulation();
+                  }}
+                  weatherSurgePct={weatherSurgePct}
+                  onChangeWeatherSurgePct={(pct) => {
+                    setWeatherSurgePct(pct);
+                    handleTriggerSimulation();
+                  }}
+                  supplierDelayDays={supplierDelayDays}
+                  onChangeSupplierDelayDays={(days) => {
+                    setSupplierDelayDays(days);
+                    handleTriggerSimulation();
+                  }}
+                  isSimulating={isSimulating}
+                  onTriggerSimulation={handleTriggerSimulation}
+                  onApplyPreset={handleApplyPreset}
+                  reorderPolicy={reorderPolicy}
+                  onSelectReorderPolicy={handleSelectReorderPolicy}
+                  forecastModel={forecastModel}
+                  onSelectForecastModel={(model) => {
+                    setForecastModel(model);
+                    handleTriggerSimulation();
+                  }}
+                  currency={currency}
+                  theme={theme}
+                />
+              </div>
+
+              {/* Right Column: Data Ingestion, Cryptographic Audit Ledger & Code Artifacts */}
+              <div className="lg:col-span-7 space-y-6">
+                {/* WMS Data Ingestion Card */}
+                <div
+                  className={`p-5 rounded-xl border transition-colors ${
+                    isDark ? "bg-neutral-900/80 border-neutral-800" : "bg-white border-slate-200/90 shadow-xs"
+                  }`}
+                >
+                  <div className="flex items-center justify-between pb-3 border-b border-neutral-800/40 dark:border-neutral-800">
+                    <div className="flex items-center gap-2">
+                      <div className="p-1.5 rounded-lg bg-emerald-500/10 text-emerald-500">
+                        <UploadCloud className="w-4 h-4" />
+                      </div>
+                      <div>
+                        <h3 className="font-bold text-sm">Enterprise WMS Data Ingestion</h3>
+                        <p className="text-xs text-slate-400">Connect real customer CSV or reload baseline sandbox</p>
+                      </div>
+                    </div>
+
+                    <button
+                      onClick={() => setIsWmsModalOpen(true)}
+                      className="px-3 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-semibold transition-colors cursor-pointer"
+                    >
+                      Upload CSV
+                    </button>
+                  </div>
+
+                  <div className="mt-3 flex items-center justify-between text-xs text-slate-400">
+                    <div>
+                      Active Dataset: <strong className="text-slate-700 dark:text-neutral-200">{customDataset?.name || "Baseline Synthetic Sandbox"}</strong>
+                    </div>
+                    {customDataset && (
+                      <button
+                        onClick={handleResetCustomDataset}
+                        className="text-amber-500 hover:underline cursor-pointer"
+                      >
+                        Reset to Sandbox
+                      </button>
+                    )}
+                  </div>
+                </div>
+
+                {/* Audit Trail Card */}
+                <div
+                  className={`p-5 rounded-xl border transition-colors ${
+                    isDark ? "bg-neutral-900/80 border-neutral-800" : "bg-white border-slate-200/90 shadow-xs"
+                  }`}
+                >
+                  <div className="flex items-center justify-between pb-3 border-b border-neutral-800/40 dark:border-neutral-800">
+                    <div className="flex items-center gap-2">
+                      <div className="p-1.5 rounded-lg bg-purple-500/10 text-purple-400">
+                        <Lock className="w-4 h-4" />
+                      </div>
+                      <div>
+                        <h3 className="font-bold text-sm">Cryptographic Compliance Ledger</h3>
+                        <p className="text-xs text-slate-400">Immutable SHA-256 event audit trail ({auditLogs.length} entries)</p>
+                      </div>
+                    </div>
+
+                    <div className="flex items-center gap-2">
+                      <button
+                        onClick={handleDownloadCsv}
+                        className="px-2.5 py-1.5 rounded-lg border text-xs font-semibold hover:bg-slate-100 dark:hover:bg-neutral-800 transition-colors cursor-pointer"
+                      >
+                        Export CSV
+                      </button>
+                      <button
+                        onClick={() => setIsAuditModalOpen(true)}
+                        className="px-3 py-1.5 rounded-lg bg-slate-900 dark:bg-white text-white dark:text-neutral-950 text-xs font-semibold transition-colors cursor-pointer"
+                      >
+                        View Ledger
+                      </button>
+                    </div>
+                  </div>
+
+                  <div className="mt-3 text-xs text-slate-400">
+                    Latest Event: <span className="font-mono text-slate-600 dark:text-neutral-300">{auditLogs[0]?.details || "System initialized"}</span>
+                  </div>
+                </div>
+
+                {/* Python / Streamlit Artifacts */}
+                <div
+                  className={`rounded-xl border overflow-hidden ${
+                    isDark ? "bg-neutral-900/80 border-neutral-800" : "bg-white border-slate-200/90 shadow-xs"
+                  }`}
+                >
+                  <SourceCodeViewer
+                    appPyCode={pythonCode}
+                    requirementsTxt={REQUIREMENTS_TXT}
+                    readmeContent={README_MD}
+                  />
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+      </main>
+
+      {/* Clean Minimal 1-Line Footer */}
+      <footer
+        className={`border-t py-4 px-6 text-xs transition-colors ${
+          isDark
+            ? "border-neutral-800 bg-black text-neutral-400"
+            : "border-slate-200 bg-white text-slate-500"
+        }`}
+      >
+        <div className="max-w-7xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-3 text-center sm:text-left">
+          <div className="flex items-center gap-2 flex-wrap justify-center sm:justify-start">
+            <span className="font-bold text-slate-800 dark:text-white">Apex Supply Intelligence</span>
+            <span>·</span>
+            <span>Multi-Echelon Quick-Commerce Control Tower</span>
+            <span>·</span>
+            <span>Bivariate Monte Carlo Engine</span>
+          </div>
+          <div className="flex items-center gap-3">
+            <span className="flex items-center gap-1.5 text-emerald-500">
+              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+              Operational (14ms latency)
+            </span>
+            <span>·</span>
+            <span>Press <kbd className="px-1 py-0.5 rounded text-[10px] font-mono bg-neutral-100 dark:bg-neutral-800 border border-neutral-300 dark:border-neutral-700">⌘K</kbd></span>
+          </div>
+        </div>
+      </footer>
 
       {/* Global Command Bar Modal (Cmd + K / Ctrl + K) */}
       <CommandPaletteModal
@@ -1173,12 +1353,26 @@ export default function App() {
         allSkus={effectiveSkus}
         onSelectSku={(id) => {
           setActiveSkuId(id);
-          setActiveTab("analytics");
+          setActivePage("inventory");
         }}
         onNavigateTab={(tab) => {
-          setActiveTab(
-            tab as "analytics" | "table" | "network" | "transfer" | "suppliers" | "po" | "code"
-          );
+          if (tab === "network") {
+            setActivePage("overview");
+          } else if (tab === "analytics" || tab === "table") {
+            setActivePage("inventory");
+          } else if (tab === "po") {
+            setActivePage("procurement");
+            setProcurementTab("po");
+          } else if (tab === "transfer") {
+            setActivePage("procurement");
+            setProcurementTab("transfer");
+          } else if (tab === "suppliers") {
+            setActivePage("procurement");
+            setProcurementTab("suppliers");
+          } else if (tab === "code") {
+            setActivePage("operations");
+            setOperationsTab("code");
+          }
         }}
         onTriggerSimulation={handleTriggerSimulation}
         onApplyWeatherSurge={(pct) => {
@@ -1250,25 +1444,6 @@ export default function App() {
         onDismiss={dismissToast}
         theme={theme}
       />
-
-      {/* Global Footer */}
-      <footer
-        className={`border-t py-4 px-6 text-center text-xs transition-colors ${
-          isDark
-            ? "border-slate-800 bg-[#0B0F19] text-slate-400"
-            : "border-slate-200 bg-white text-slate-500"
-        }`}
-      >
-        <p className="flex items-center justify-center gap-2 flex-wrap">
-          <span className="font-semibold text-slate-300">InventoryGuard AI</span>
-          <span>·</span>
-          <span>Multi-Echelon Dark Store Network Topology</span>
-          <span>·</span>
-          <span>Bivariate Stochastic Monte Carlo Engine</span>
-          <span>·</span>
-          <span>Press <kbd className="px-1 py-0.5 rounded text-[10px] font-mono bg-slate-800 text-indigo-400 border border-slate-700">⌘K</kbd> for Executive Commands</span>
-        </p>
-      </footer>
     </div>
   );
 }

@@ -103,13 +103,13 @@ export const PoGenerator: React.FC<PoGeneratorProps> = ({
       {/* Financial Metrics */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
         <div
-          className={`border rounded-xl p-5 shadow-sm transition-colors ${
-            isDark ? "bg-slate-900/80 border-slate-800" : "bg-white border-slate-200"
+          className={`border rounded-xl p-5 shadow-xs transition-colors ${
+            isDark ? "bg-neutral-900/80 border-neutral-800" : "bg-white border-slate-200/90"
           }`}
         >
           <div className="flex items-center justify-between text-xs text-slate-400 font-semibold uppercase tracking-wider">
             <span>PO Financial Commitment</span>
-            <span className="p-1 px-1.5 rounded-md bg-indigo-500/10 text-indigo-400 font-bold font-mono">
+            <span className="p-1 px-1.5 rounded-md bg-neutral-100 dark:bg-neutral-800 text-slate-800 dark:text-neutral-200 font-bold font-mono">
               {CURRENCIES[currency]?.symbol || "$"}
             </span>
           </div>
@@ -126,15 +126,15 @@ export const PoGenerator: React.FC<PoGeneratorProps> = ({
         </div>
 
         <div
-          className={`border rounded-xl p-5 shadow-sm transition-colors ${
-            isDark ? "bg-slate-900/80 border-slate-800" : "bg-white border-slate-200"
+          className={`border rounded-xl p-5 shadow-xs transition-colors ${
+            isDark ? "bg-neutral-900/80 border-neutral-800" : "bg-white border-slate-200/90"
           }`}
         >
           <div className="flex items-center justify-between text-xs text-slate-400 font-semibold uppercase tracking-wider">
             <span>Total Units to Procure</span>
-            <ShoppingBag className="w-4 h-4 text-emerald-400" />
+            <ShoppingBag className="w-4 h-4 text-emerald-500" />
           </div>
-          <div className="mt-3 text-2xl font-extrabold text-emerald-500">
+          <div className="mt-3 text-2xl font-extrabold text-emerald-600 dark:text-emerald-400">
             {totalUnits.toLocaleString("en-IN")}{" "}
             <span className="text-sm font-medium text-slate-400">Units</span>
           </div>
@@ -144,15 +144,15 @@ export const PoGenerator: React.FC<PoGeneratorProps> = ({
         </div>
 
         <div
-          className={`border rounded-xl p-5 shadow-sm transition-colors ${
-            isDark ? "bg-slate-900/80 border-slate-800" : "bg-white border-slate-200"
+          className={`border rounded-xl p-5 shadow-xs transition-colors ${
+            isDark ? "bg-neutral-900/80 border-neutral-800" : "bg-white border-slate-200/90"
           }`}
         >
           <div className="flex items-center justify-between text-xs text-slate-400 font-semibold uppercase tracking-wider">
             <span>Critical Expedite Level</span>
-            <span className="p-1 rounded-md bg-red-500/10 text-red-400">⚡</span>
+            <span className="p-1 rounded-md bg-rose-500/10 text-rose-500">⚡</span>
           </div>
-          <div className="mt-3 text-2xl font-extrabold text-red-400">
+          <div className="mt-3 text-2xl font-extrabold text-rose-500">
             {urgentCount}{" "}
             <span className="text-sm font-medium text-slate-400">Urgent POs</span>
           </div>
@@ -164,18 +164,18 @@ export const PoGenerator: React.FC<PoGeneratorProps> = ({
 
       {/* PO Batch Action Header & Dispatch Section */}
       <div
-        className={`border rounded-xl p-5 shadow-sm transition-colors ${
-          isDark ? "bg-slate-900/80 border-slate-800" : "bg-white border-slate-200"
+        className={`border rounded-xl p-5 shadow-xs transition-colors ${
+          isDark ? "bg-neutral-900/80 border-neutral-800" : "bg-white border-slate-200/90"
         }`}
       >
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-4 border-b border-slate-800/60">
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-4 border-b border-neutral-800/40 dark:border-neutral-800">
           <div>
             <h3
               className={`text-base font-bold flex items-center gap-2 ${
                 isDark ? "text-white" : "text-slate-900"
               }`}
             >
-              <FileSpreadsheet className="w-5 h-5 text-indigo-400" />
+              <FileSpreadsheet className="w-5 h-5 text-emerald-500" />
               Automated Procurement Purchase Orders (PO Batch)
             </h3>
             <p className="text-xs text-slate-400 mt-0.5">
@@ -189,8 +189,8 @@ export const PoGenerator: React.FC<PoGeneratorProps> = ({
               onChange={(e) => setSelectedErp(e.target.value)}
               className={`text-xs rounded-lg px-2.5 py-2 border font-medium focus:outline-none ${
                 isDark
-                  ? "bg-slate-800 border-slate-700 text-slate-200"
-                  : "bg-slate-100 border-slate-300 text-slate-800"
+                  ? "bg-neutral-950 border-neutral-800 text-neutral-200"
+                  : "bg-slate-50 border-slate-200 text-slate-800"
               }`}
             >
               <option value="SAP S/4HANA Cloud (EDI 850)">SAP S/4HANA Cloud (EDI 850)</option>
@@ -201,7 +201,11 @@ export const PoGenerator: React.FC<PoGeneratorProps> = ({
             <button
               onClick={handleDownloadCsv}
               disabled={purchaseOrders.length === 0}
-              className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold shadow-sm shadow-emerald-600/20 transition-all cursor-pointer disabled:opacity-50"
+              className={`inline-flex items-center gap-1.5 px-3 py-2 rounded-lg border text-xs font-bold transition-all cursor-pointer disabled:opacity-50 ${
+                isDark
+                  ? "bg-neutral-800 hover:bg-neutral-700 text-neutral-200 border-neutral-700"
+                  : "bg-slate-100 hover:bg-slate-200 text-slate-800 border-slate-200"
+              }`}
             >
               <Download className="w-3.5 h-3.5" />
               <span>Export CSV</span>
@@ -210,7 +214,11 @@ export const PoGenerator: React.FC<PoGeneratorProps> = ({
             <button
               onClick={handleDispatchToErp}
               disabled={purchaseOrders.length === 0 || isDispatching}
-              className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold shadow-sm shadow-indigo-600/20 transition-all cursor-pointer disabled:opacity-50"
+              className={`inline-flex items-center gap-1.5 px-3.5 py-2 rounded-lg text-xs font-bold transition-all cursor-pointer disabled:opacity-50 ${
+                isDark
+                  ? "bg-white hover:bg-neutral-100 text-neutral-950 shadow-xs"
+                  : "bg-slate-900 hover:bg-slate-800 text-white shadow-xs"
+              }`}
             >
               <Send className={`w-3.5 h-3.5 ${isDispatching ? "animate-pulse" : ""}`} />
               <span>{isDispatching ? "Dispatching..." : "Dispatch PO to ERP"}</span>

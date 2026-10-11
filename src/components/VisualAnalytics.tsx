@@ -215,11 +215,11 @@ export const VisualAnalytics: React.FC<VisualAnalyticsProps> = ({
     c3Padding.left + ((val - minDdlt) / Math.max(1, maxDdlt - minDdlt)) * innerW3;
 
   const cardCls = isDark
-    ? "bg-slate-900/80 border-slate-800 text-slate-100"
-    : "bg-white border-slate-200 text-slate-900 shadow-sm";
+    ? "bg-neutral-900/80 border-neutral-800 text-neutral-100"
+    : "bg-white border-slate-200/90 text-slate-900 shadow-xs";
 
-  const gridLineColor = isDark ? "rgba(255,255,255,0.06)" : "rgba(0,0,0,0.07)";
-  const tickTextColor = isDark ? "#64748B" : "#94A3B8";
+  const gridLineColor = isDark ? "rgba(255,255,255,0.08)" : "rgba(0,0,0,0.06)";
+  const tickTextColor = isDark ? "#737373" : "#64748B";
 
   const activeModelMeta =
     FORECAST_MODELS_META[activeState.forecastModel || forecastModel] ||
@@ -229,22 +229,26 @@ export const VisualAnalytics: React.FC<VisualAnalyticsProps> = ({
     <div className="space-y-6">
       {/* Enterprise Time-Series Model Benchmark Banner */}
       <div
-        className={`border rounded-xl p-3.5 flex flex-col md:flex-row md:items-center justify-between gap-3 transition-colors ${
+        className={`border rounded-xl p-4 flex flex-col md:flex-row md:items-center justify-between gap-3 transition-colors ${
           isDark
-            ? "bg-slate-900/60 border-slate-800 text-slate-200"
-            : "bg-indigo-50/50 border-indigo-100 text-slate-800"
+            ? "bg-neutral-900/60 border-neutral-800 text-neutral-200"
+            : "bg-slate-50 border-slate-200/80 text-slate-800"
         }`}
       >
         <div className="flex items-center gap-3">
-          <div className="p-2 rounded-lg bg-indigo-500/20 text-indigo-400 shrink-0">
-            <BrainCircuit className="w-5 h-5 text-indigo-400" />
+          <div
+            className={`p-2 rounded-lg shrink-0 ${
+              isDark ? "bg-neutral-800 text-neutral-200" : "bg-white border border-slate-200 text-slate-800 shadow-xs"
+            }`}
+          >
+            <BrainCircuit className="w-5 h-5 text-emerald-500" />
           </div>
           <div>
             <div className="flex items-center gap-2 flex-wrap">
-              <span className="text-xs font-bold text-indigo-400">
-                Active ML Forecasting Engine: {activeModelMeta.name}
+              <span className="text-xs font-bold">
+                Forecasting Engine: {activeModelMeta.name}
               </span>
-              <span className="text-[10px] px-1.5 py-0.2 rounded font-mono font-bold bg-indigo-500/20 text-indigo-300 border border-indigo-500/30">
+              <span className="text-[10px] px-1.5 py-0.5 rounded font-mono font-bold bg-neutral-200/60 dark:bg-neutral-800 text-slate-700 dark:text-neutral-300">
                 {activeModelMeta.badge}
               </span>
               <span className="text-[10px] text-slate-400 font-mono">
@@ -259,15 +263,15 @@ export const VisualAnalytics: React.FC<VisualAnalyticsProps> = ({
         <div className="flex items-center gap-4 text-xs font-mono shrink-0 self-start md:self-auto">
           <div className="text-right">
             <span className="text-[10px] text-slate-400 block uppercase">Inference</span>
-            <span className="font-bold text-emerald-400">~{activeModelMeta.inferenceLatencyMs}ms</span>
+            <span className="font-bold text-emerald-600 dark:text-emerald-400">~{activeModelMeta.inferenceLatencyMs}ms</span>
           </div>
           <div className="text-right">
             <span className="text-[10px] text-slate-400 block uppercase">Benchmark MAE</span>
-            <span className="font-bold text-indigo-400">{activeModelMeta.benchmarkMae}</span>
+            <span className="font-bold text-slate-700 dark:text-neutral-300">{activeModelMeta.benchmarkMae}</span>
           </div>
           <div className="text-right">
             <span className="text-[10px] text-slate-400 block uppercase">Live Run RMSE</span>
-            <span className="font-bold text-amber-400">{rmse.toFixed(1)}</span>
+            <span className="font-bold text-amber-600 dark:text-amber-400">{rmse.toFixed(1)}</span>
           </div>
         </div>
       </div>
@@ -341,10 +345,12 @@ export const VisualAnalytics: React.FC<VisualAnalyticsProps> = ({
                 onClick={() => onSelectSkuId(s.sku.id)}
                 className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer flex items-center gap-1.5 ${
                   isSelected
-                    ? "bg-indigo-600 text-white shadow-sm shadow-indigo-600/30"
+                    ? isDark
+                      ? "bg-white text-neutral-950 shadow-xs"
+                      : "bg-slate-900 text-white shadow-xs"
                     : isDark
-                    ? "bg-slate-800/80 hover:bg-slate-800 text-slate-300 border border-slate-700/60"
-                    : "bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-300"
+                    ? "bg-neutral-900 hover:bg-neutral-800 text-neutral-300 border border-neutral-800"
+                    : "bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-200"
                 }`}
               >
                 <span>{s.sku.name.split(" ")[0]}</span>

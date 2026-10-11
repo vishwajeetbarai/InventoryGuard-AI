@@ -49,6 +49,7 @@ interface SidebarControlsProps {
   onSelectForecastModel?: (model: ForecastModel) => void;
   currency?: CurrencyCode;
   theme?: "dark" | "light";
+  className?: string;
 }
 
 export const SidebarControls: React.FC<SidebarControlsProps> = ({
@@ -79,33 +80,34 @@ export const SidebarControls: React.FC<SidebarControlsProps> = ({
   onSelectReorderPolicy,
   forecastModel = "META_PROPHET",
   onSelectForecastModel,
-  currency = "INR",
-  theme = "dark",
+  currency = "USD",
+  theme = "light",
+  className = "",
 }) => {
   const isDark = theme === "dark";
 
   const asideCls = isDark
-    ? "bg-slate-900/90 border-slate-800 text-slate-100"
-    : "bg-white border-slate-200 text-slate-900 shadow-sm";
+    ? "bg-neutral-900/80 border-neutral-800 text-neutral-100"
+    : "bg-white border-slate-200/90 text-slate-900 shadow-xs";
 
-  const labelCls = isDark ? "text-slate-300" : "text-slate-700";
-  const subTextCls = isDark ? "text-slate-400" : "text-slate-500";
-  const borderCls = isDark ? "border-slate-800" : "border-slate-200";
+  const labelCls = isDark ? "text-neutral-300" : "text-slate-700";
+  const subTextCls = isDark ? "text-neutral-400" : "text-slate-500";
+  const borderCls = isDark ? "border-neutral-800" : "border-slate-200";
   const inputBgCls = isDark
-    ? "bg-slate-800/90 border-slate-700 text-white"
-    : "bg-slate-100 border-slate-300 text-slate-900";
+    ? "bg-neutral-950 border-neutral-800 text-white"
+    : "bg-slate-50 border-slate-200 text-slate-900";
 
   return (
-    <aside className={`w-full lg:w-80 shrink-0 border-r p-5 space-y-6 transition-colors ${asideCls}`}>
+    <div className={`p-5 space-y-6 transition-colors rounded-xl border ${asideCls} ${className}`}>
       <div className={`flex items-center justify-between pb-3 border-b ${borderCls}`}>
         <div className="flex items-center gap-2 font-bold text-sm">
-          <Sliders className="w-4 h-4 text-indigo-500" />
+          <Sliders className="w-4 h-4 text-emerald-500" />
           <span>Control Tower Parameters</span>
         </div>
         <button
           onClick={onTriggerSimulation}
           disabled={isSimulating}
-          className="text-indigo-500 hover:text-indigo-400 text-xs font-semibold flex items-center gap-1 cursor-pointer"
+          className="text-emerald-600 dark:text-emerald-400 hover:opacity-80 text-xs font-semibold flex items-center gap-1 cursor-pointer"
         >
           <RefreshCw className={`w-3 h-3 ${isSimulating ? "animate-spin" : ""}`} />
           <span>Recompute</span>
@@ -537,6 +539,6 @@ export const SidebarControls: React.FC<SidebarControlsProps> = ({
           />
         </div>
       </div>
-    </aside>
+    </div>
   );
 };

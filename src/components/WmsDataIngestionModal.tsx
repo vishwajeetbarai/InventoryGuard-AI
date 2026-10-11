@@ -161,8 +161,8 @@ export const WmsDataIngestionModal: React.FC<WmsDataIngestionModalProps> = ({
   };
 
   const bgCls = isDark
-    ? "bg-slate-900 border-slate-700/80 text-slate-100"
-    : "bg-white border-slate-300 text-slate-900";
+    ? "bg-neutral-950 border-neutral-800 text-neutral-100"
+    : "bg-white border-slate-200 text-slate-900";
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-5 bg-black/75 backdrop-blur-md animate-in fade-in duration-200">
@@ -172,7 +172,7 @@ export const WmsDataIngestionModal: React.FC<WmsDataIngestionModalProps> = ({
         {/* Header */}
         <div
           className={`px-6 py-4 border-b flex items-center justify-between ${
-            isDark ? "border-slate-800 bg-slate-950/60" : "border-slate-200 bg-slate-50"
+            isDark ? "border-neutral-800 bg-neutral-900/60" : "border-slate-200 bg-slate-50"
           }`}
         >
           <div className="flex items-center space-x-3">

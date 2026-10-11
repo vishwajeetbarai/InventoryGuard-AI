@@ -48,11 +48,11 @@ export const DynamicMarkdownCard: React.FC<DynamicMarkdownCardProps> = ({
     return (
       <div
         className={`border rounded-xl p-5 transition-colors ${
-          isDark ? "bg-slate-900/60 border-slate-800" : "bg-white border-slate-200"
+          isDark ? "bg-neutral-900/60 border-neutral-800" : "bg-white border-slate-200/90"
         }`}
       >
         <div className="flex items-center gap-2 text-xs font-bold text-slate-400">
-          <Sparkles className="w-4 h-4 text-emerald-400" />
+          <Sparkles className="w-4 h-4 text-emerald-500" />
           <span>Quick-Commerce Markdown &amp; Spoilage Liquidation</span>
         </div>
         <p className="text-xs text-slate-500 mt-2">
@@ -64,15 +64,15 @@ export const DynamicMarkdownCard: React.FC<DynamicMarkdownCardProps> = ({
 
   return (
     <div
-      className={`border rounded-xl p-5 shadow-sm transition-colors ${
-        isDark ? "bg-slate-900/80 border-slate-800" : "bg-white border-slate-200"
+      className={`border rounded-xl p-5 shadow-xs transition-colors ${
+        isDark ? "bg-neutral-900/80 border-neutral-800" : "bg-white border-slate-200/90"
       }`}
     >
       {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4 border-b border-slate-800/60">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4 border-b border-neutral-800/40 dark:border-neutral-800">
         <div>
           <div className="flex items-center gap-2">
-            <span className="p-1.5 rounded-lg bg-amber-500/10 text-amber-400 border border-amber-500/20">
+            <span className="p-1.5 rounded-lg bg-amber-500/10 text-amber-500">
               <Flame className="w-4 h-4" />
             </span>
             <h3
@@ -94,16 +94,16 @@ export const DynamicMarkdownCard: React.FC<DynamicMarkdownCardProps> = ({
             <div className="text-[10px] text-slate-400 uppercase font-semibold">
               Total Waste Avoided
             </div>
-            <div className="font-mono text-sm font-extrabold text-emerald-400">
+            <div className="font-mono text-sm font-extrabold text-emerald-600 dark:text-emerald-400">
               {formatCurrency(totalWasteAvoidedRevenue, currency)}
             </div>
           </div>
-          <div className="h-7 w-[1px] bg-slate-800 hidden sm:block" />
+          <div className="h-7 w-[1px] bg-neutral-200 dark:bg-neutral-800 hidden sm:block" />
           <div className="text-right">
             <div className="text-[10px] text-slate-400 uppercase font-semibold">
               Discard Loss At Risk
             </div>
-            <div className="font-mono text-sm font-extrabold text-rose-400">
+            <div className="font-mono text-sm font-extrabold text-rose-600 dark:text-rose-400">
               {formatCurrency(totalDiscardLossAtRisk, currency)}
             </div>
           </div>

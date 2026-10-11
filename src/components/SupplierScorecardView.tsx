@@ -79,28 +79,28 @@ export const SupplierScorecardView: React.FC<SupplierScorecardViewProps> = ({
   };
 
   const containerCls = isDark
-    ? "bg-slate-900/80 border-slate-800 text-slate-100"
-    : "bg-white border-slate-200 text-slate-900 shadow-sm";
+    ? "bg-neutral-900/80 border-neutral-800 text-neutral-100"
+    : "bg-white border-slate-200/90 text-slate-900 shadow-xs";
 
   return (
     <div className="space-y-6">
       {/* Intro Header */}
-      <div className={`border rounded-xl p-5 shadow-sm transition-colors ${containerCls}`}>
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-slate-800/60">
+      <div className={`border rounded-xl p-5 shadow-xs transition-colors ${containerCls}`}>
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-neutral-800/40 dark:border-neutral-800">
           <div>
             <h3
               className={`text-base font-bold flex items-center gap-2 ${
                 isDark ? "text-white" : "text-slate-900"
               }`}
             >
-              <Award className="w-5 h-5 text-indigo-400" />
+              <Award className="w-5 h-5 text-emerald-500" />
               Supplier Reliability Matrix &amp; Risk Scaling Scorecard
             </h3>
             <p className="text-xs text-slate-400 mt-0.5">
               Vendor reliability directly scales the lead-time variance ($\sigma_L$) and safety stock buffers via Silver-Pyke-Peterson variance propagation.
             </p>
           </div>
-          <span className="text-xs px-2.5 py-1 rounded-full bg-indigo-500/10 text-indigo-400 border border-indigo-500/20 font-semibold self-start sm:self-auto">
+          <span className="text-xs px-2.5 py-1 rounded-lg bg-neutral-100 dark:bg-neutral-800 text-slate-700 dark:text-neutral-300 font-medium self-start sm:self-auto">
             Dynamic Safety Buffer Integration
           </span>
         </div>
@@ -114,7 +114,7 @@ export const SupplierScorecardView: React.FC<SupplierScorecardViewProps> = ({
                 key={s.sku.id}
                 className={`border rounded-xl p-4 transition-all ${
                   isDark
-                    ? "bg-slate-950/60 border-slate-800 hover:border-slate-700"
+                    ? "bg-neutral-950 border-neutral-800 hover:border-neutral-700"
                     : "bg-slate-50 border-slate-200 hover:border-slate-300"
                 }`}
               >

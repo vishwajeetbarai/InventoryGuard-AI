@@ -60,15 +60,15 @@ export const SubstitutionCard: React.FC<SubstitutionCardProps> = ({
 
   return (
     <div
-      className={`border rounded-xl p-5 shadow-sm transition-colors ${
-        isDark ? "bg-slate-900/80 border-slate-800" : "bg-white border-slate-200"
+      className={`border rounded-xl p-5 shadow-xs transition-colors ${
+        isDark ? "bg-neutral-900/80 border-neutral-800" : "bg-white border-slate-200/90"
       }`}
     >
       {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4 border-b border-slate-800/60">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4 border-b border-neutral-800/40 dark:border-neutral-800">
         <div>
           <div className="flex items-center gap-2">
-            <span className="p-1.5 rounded-lg bg-indigo-500/10 text-indigo-400 border border-indigo-500/20">
+            <span className="p-1.5 rounded-lg bg-neutral-100 dark:bg-neutral-800 text-slate-800 dark:text-neutral-200">
               <Shuffle className="w-4 h-4" />
             </span>
             <h3

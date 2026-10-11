@@ -82,7 +82,7 @@ export const ExecutiveReportModal: React.FC<ExecutiveReportModalProps> = ({
       <div
         className={`w-full max-w-4xl max-h-[90vh] rounded-2xl border shadow-2xl overflow-hidden flex flex-col transition-all ${
           isDark
-            ? "bg-[#0B0F19] border-slate-800 text-slate-100"
+            ? "bg-neutral-950 border-neutral-800 text-neutral-100"
             : "bg-white border-slate-200 text-slate-900 shadow-slate-300"
         }`}
         onClick={(e) => e.stopPropagation()}
@@ -90,7 +90,7 @@ export const ExecutiveReportModal: React.FC<ExecutiveReportModalProps> = ({
         {/* Modal Action Header (Excluded from Print) */}
         <div
           className={`flex items-center justify-between px-6 py-4 border-b print:hidden ${
-            isDark ? "border-slate-800 bg-slate-900/60" : "border-slate-200 bg-slate-50"
+            isDark ? "border-neutral-800 bg-neutral-900/60" : "border-slate-200 bg-slate-50"
           }`}
         >
           <div className="flex items-center gap-2">

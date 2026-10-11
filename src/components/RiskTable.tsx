@@ -146,15 +146,15 @@ export const RiskTable: React.FC<RiskTableProps> = ({
   };
 
   const containerCls = isDark
-    ? "bg-slate-900/80 border-slate-800 text-slate-100"
-    : "bg-white border-slate-200 text-slate-900 shadow-sm";
+    ? "bg-neutral-900/80 border-neutral-800 text-neutral-100"
+    : "bg-white border-slate-200/90 text-slate-900 shadow-xs";
 
   return (
-    <div className={`border rounded-xl overflow-hidden shadow-sm transition-colors ${containerCls}`}>
+    <div className={`border rounded-xl overflow-hidden shadow-xs transition-colors ${containerCls}`}>
       {/* Table Controls */}
       <div
         className={`p-4 border-b flex flex-col md:flex-row md:items-center justify-between gap-3 ${
-          isDark ? "border-slate-800" : "border-slate-200"
+          isDark ? "border-neutral-800" : "border-slate-200"
         }`}
       >
         <div>
@@ -163,10 +163,10 @@ export const RiskTable: React.FC<RiskTableProps> = ({
               isDark ? "text-white" : "text-slate-900"
             }`}
           >
-            Stock-Out Risk &amp; Reorder Action Prioritization
+            Stockout Risk &amp; Reorder Action Prioritization
           </h3>
           <p className="text-xs text-slate-400 mt-0.5">
-            Ranked by Monte Carlo stock-out probability evaluated against usable stock (discounting perishable batch decay)
+            Ranked by Monte Carlo stockout probability evaluated against usable stock (discounting perishable batch decay)
           </p>
         </div>
 
@@ -179,10 +179,10 @@ export const RiskTable: React.FC<RiskTableProps> = ({
               placeholder="Filter SKU or category..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className={`pl-8 pr-3 py-1.5 rounded-lg text-xs placeholder-slate-400 focus:outline-none focus:border-indigo-500 w-48 sm:w-56 border ${
+              className={`pl-8 pr-3 py-1.5 rounded-lg text-xs placeholder-slate-400 focus:outline-none focus:ring-1 focus:ring-slate-400 w-48 sm:w-56 border ${
                 isDark
-                  ? "bg-slate-800/80 border-slate-700 text-slate-200"
-                  : "bg-slate-100 border-slate-300 text-slate-800"
+                  ? "bg-neutral-950 border-neutral-800 text-neutral-200"
+                  : "bg-slate-50 border-slate-200 text-slate-800"
               }`}
             />
           </div>
@@ -191,8 +191,8 @@ export const RiskTable: React.FC<RiskTableProps> = ({
           <div
             className={`flex items-center gap-1 rounded-lg p-1 border ${
               isDark
-                ? "bg-slate-800/80 border-slate-700"
-                : "bg-slate-100 border-slate-300"
+                ? "bg-neutral-950 border-neutral-800"
+                : "bg-slate-100/80 border-slate-200"
             }`}
           >
             {["ALL", "CRITICAL REORDER NOW", "WARNING", "OPTIMAL"].map((st) => (
@@ -201,8 +201,12 @@ export const RiskTable: React.FC<RiskTableProps> = ({
                 onClick={() => setStatusFilter(st)}
                 className={`px-2.5 py-1 rounded text-xs font-semibold transition-all cursor-pointer ${
                   statusFilter === st
-                    ? "bg-indigo-600 text-white"
-                    : "text-slate-400 hover:text-slate-700 dark:hover:text-white"
+                    ? isDark
+                      ? "bg-white text-neutral-950 shadow-xs"
+                      : "bg-slate-900 text-white shadow-xs"
+                    : isDark
+                    ? "text-neutral-400 hover:text-white"
+                    : "text-slate-600 hover:text-slate-900"
                 }`}
               >
                 {st === "ALL"
@@ -222,16 +226,16 @@ export const RiskTable: React.FC<RiskTableProps> = ({
       <div
         className={`px-4 py-2.5 border-b flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs ${
           isDark
-            ? "bg-indigo-950/20 border-slate-800/80 text-slate-300"
-            : "bg-indigo-50/70 border-slate-200 text-slate-800"
+            ? "bg-neutral-950/70 border-neutral-800 text-neutral-300"
+            : "bg-slate-50 border-slate-200 text-slate-800"
         }`}
       >
         <div className="flex items-center gap-3 flex-wrap">
           <div className="flex items-center gap-2">
-            <span className="font-semibold text-indigo-400">
+            <span className="font-semibold text-slate-800 dark:text-neutral-200">
               Bulk Operations:
             </span>
-            <span className="font-mono px-2 py-0.5 rounded text-[11px] font-bold bg-indigo-500/10 text-indigo-300 border border-indigo-500/20">
+            <span className="font-mono px-2 py-0.5 rounded text-[11px] font-bold bg-neutral-200/60 dark:bg-neutral-800 text-slate-800 dark:text-neutral-200">
               {selectedRowIds.size} of {filtered.length} Selected
             </span>
           </div>

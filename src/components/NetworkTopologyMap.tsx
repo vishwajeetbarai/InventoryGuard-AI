@@ -152,16 +152,16 @@ export const NetworkTopologyMap: React.FC<NetworkTopologyMapProps> = ({
     <div className="space-y-6">
       {/* Topology Header Banner */}
       <div
-        className={`border rounded-xl p-5 shadow-sm transition-colors ${
+        className={`border rounded-xl p-5 shadow-xs transition-colors ${
           isDark
-            ? "bg-slate-900/80 border-slate-800 text-slate-100"
-            : "bg-white border-slate-200 text-slate-900"
+            ? "bg-neutral-900/80 border-neutral-800 text-neutral-100"
+            : "bg-white border-slate-200/90 text-slate-900"
         }`}
       >
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div>
             <div className="flex items-center gap-2">
-              <span className="p-1.5 rounded-lg bg-indigo-500/10 text-indigo-400 border border-indigo-500/20">
+              <span className="p-1.5 rounded-lg bg-neutral-100 dark:bg-neutral-800 text-slate-800 dark:text-neutral-200">
                 <Navigation className="w-4 h-4" />
               </span>
               <h2 className="text-base sm:text-lg font-bold">
@@ -169,24 +169,24 @@ export const NetworkTopologyMap: React.FC<NetworkTopologyMapProps> = ({
               </h2>
             </div>
             <p className="text-xs text-slate-400 mt-1">
-              Geographic network telemetry across 3 regional dark stores with active cross-dock transit pulses and dynamic stock health.
+              Geographic network telemetry across regional fulfillment hubs with active cross-dock transit corridors and dynamic stock health.
             </p>
           </div>
 
           <div className="flex items-center gap-3">
             <div className="flex items-center gap-2 text-xs">
-              <span className="flex items-center gap-1.5 text-rose-400 font-semibold">
-                <span className="w-2.5 h-2.5 rounded-full bg-rose-500 animate-ping inline-block" />
+              <span className="flex items-center gap-1.5 text-rose-500 font-semibold">
+                <span className="w-2 h-2 rounded-full bg-rose-500 animate-ping inline-block" />
                 Deficit
               </span>
-              <span className="text-slate-600">·</span>
-              <span className="flex items-center gap-1.5 text-amber-400 font-semibold">
-                <span className="w-2.5 h-2.5 rounded-full bg-amber-400 inline-block" />
+              <span className="text-slate-400">·</span>
+              <span className="flex items-center gap-1.5 text-amber-500 font-semibold">
+                <span className="w-2 h-2 rounded-full bg-amber-500 inline-block" />
                 Surplus Donor
               </span>
-              <span className="text-slate-600">·</span>
-              <span className="flex items-center gap-1.5 text-emerald-400 font-semibold">
-                <span className="w-2.5 h-2.5 rounded-full bg-emerald-400 inline-block" />
+              <span className="text-slate-400">·</span>
+              <span className="flex items-center gap-1.5 text-emerald-500 font-semibold">
+                <span className="w-2 h-2 rounded-full bg-emerald-500 inline-block" />
                 Optimal
               </span>
             </div>
@@ -197,10 +197,12 @@ export const NetworkTopologyMap: React.FC<NetworkTopologyMapProps> = ({
               }
               className={`px-2.5 py-1 text-[11px] rounded-lg border font-semibold transition-colors cursor-pointer ${
                 animationSpeed === "fast"
-                  ? "bg-indigo-600 text-white border-indigo-500"
+                  ? isDark
+                    ? "bg-white text-neutral-950 border-white"
+                    : "bg-slate-900 text-white border-slate-900"
                   : isDark
-                  ? "bg-slate-800 text-slate-300 border-slate-700 hover:bg-slate-700"
-                  : "bg-slate-100 text-slate-700 border-slate-300 hover:bg-slate-200"
+                  ? "bg-neutral-900 text-neutral-300 border-neutral-800 hover:bg-neutral-800"
+                  : "bg-slate-100 text-slate-700 border-slate-200 hover:bg-slate-200"
               }`}
             >
               {animationSpeed === "fast" ? "⚡ Fast Pulse" : "Pulse: Normal"}
@@ -213,10 +215,10 @@ export const NetworkTopologyMap: React.FC<NetworkTopologyMapProps> = ({
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
         {/* SVG Network Canvas */}
         <div
-          className={`lg:col-span-8 border rounded-xl p-5 shadow-sm relative overflow-hidden flex flex-col justify-between ${
+          className={`lg:col-span-8 border rounded-xl p-5 shadow-xs relative overflow-hidden flex flex-col justify-between ${
             isDark
-              ? "bg-[#0A0E1A] border-slate-800/90"
-              : "bg-gradient-to-b from-slate-50 to-slate-100 border-slate-200"
+              ? "bg-black border-neutral-800"
+              : "bg-slate-50/70 border-slate-200/90"
           }`}
         >
           {/* Subtle grid background pattern */}
@@ -496,13 +498,13 @@ export const NetworkTopologyMap: React.FC<NetworkTopologyMapProps> = ({
         {/* Right Telemetry Details Card for Focused Node */}
         <div className="lg:col-span-4 space-y-4">
           <div
-            className={`border rounded-xl p-5 shadow-sm transition-colors ${
-              isDark ? "bg-slate-900/80 border-slate-800" : "bg-white border-slate-200"
+            className={`border rounded-xl p-5 shadow-xs transition-colors ${
+              isDark ? "bg-neutral-900/80 border-neutral-800" : "bg-white border-slate-200/90"
             }`}
           >
-            <div className="flex items-center justify-between pb-3 border-b border-slate-800/40">
+            <div className="flex items-center justify-between pb-3 border-b border-neutral-800/40 dark:border-neutral-800">
               <div className="flex items-center gap-2">
-                <MapPin className="w-4 h-4 text-indigo-400" />
+                <MapPin className="w-4 h-4 text-emerald-500" />
                 <h3 className="font-bold text-sm">
                   {focusedWh.name}
                 </h3>
