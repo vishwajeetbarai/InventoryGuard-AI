@@ -48,14 +48,14 @@ export const DynamicMarkdownCard: React.FC<DynamicMarkdownCardProps> = ({
     return (
       <div
         className={`border rounded-xl p-5 transition-colors ${
-          isDark ? "bg-neutral-900/60 border-neutral-800" : "bg-white border-slate-200/90"
+          isDark ? "bg-neutral-900 border-neutral-800" : "bg-white border-slate-300"
         }`}
       >
-        <div className="flex items-center gap-2 text-xs font-bold text-slate-400">
+        <div className="flex items-center gap-2 text-xs font-bold text-slate-800 dark:text-neutral-200">
           <Sparkles className="w-4 h-4 text-emerald-500" />
           <span>Quick-Commerce Markdown &amp; Spoilage Liquidation</span>
         </div>
-        <p className="text-xs text-slate-500 mt-2">
+        <p className="text-xs text-slate-700 dark:text-neutral-300 mt-2 font-medium">
           No perishable inventory is currently in the critical &lt;72h expiration window. Usable stock decay is within optimal thresholds.
         </p>
       </div>
@@ -65,11 +65,11 @@ export const DynamicMarkdownCard: React.FC<DynamicMarkdownCardProps> = ({
   return (
     <div
       className={`border rounded-xl p-5 shadow-xs transition-colors ${
-        isDark ? "bg-neutral-900/80 border-neutral-800" : "bg-white border-slate-200/90"
+        isDark ? "bg-neutral-900 border-neutral-800" : "bg-white border-slate-300"
       }`}
     >
       {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4 border-b border-neutral-800/40 dark:border-neutral-800">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4 border-b border-slate-200 dark:border-neutral-800">
         <div>
           <div className="flex items-center gap-2">
             <span className="p-1.5 rounded-lg bg-amber-500/10 text-amber-500">
@@ -77,13 +77,13 @@ export const DynamicMarkdownCard: React.FC<DynamicMarkdownCardProps> = ({
             </span>
             <h3
               className={`text-sm font-bold ${
-                isDark ? "text-white" : "text-slate-900"
+                isDark ? "text-white" : "text-slate-950"
               }`}
             >
               Quick-Commerce Dynamic Markdown &amp; Spoilage Liquidation Engine
             </h3>
           </div>
-          <p className="text-xs text-slate-400 mt-1">
+          <p className="text-xs text-slate-700 dark:text-neutral-300 mt-1 font-medium">
             Algorithmic flash discounts (20%–35%) triggered when perishable inventory reaches &lt;72h shelf life to prevent discard loss.
           </p>
         </div>
@@ -91,19 +91,19 @@ export const DynamicMarkdownCard: React.FC<DynamicMarkdownCardProps> = ({
         {/* Global Financial Impact Tag */}
         <div className="flex items-center gap-3">
           <div className="text-right">
-            <div className="text-[10px] text-slate-400 uppercase font-semibold">
+            <div className="text-[10px] text-slate-700 dark:text-neutral-300 uppercase font-bold">
               Total Waste Avoided
             </div>
-            <div className="font-mono text-sm font-extrabold text-emerald-600 dark:text-emerald-400">
+            <div className="font-mono text-sm font-extrabold text-emerald-700 dark:text-emerald-400">
               {formatCurrency(totalWasteAvoidedRevenue, currency)}
             </div>
           </div>
-          <div className="h-7 w-[1px] bg-neutral-200 dark:bg-neutral-800 hidden sm:block" />
+          <div className="h-7 w-[1px] bg-slate-300 dark:bg-neutral-800 hidden sm:block" />
           <div className="text-right">
-            <div className="text-[10px] text-slate-400 uppercase font-semibold">
+            <div className="text-[10px] text-slate-700 dark:text-neutral-300 uppercase font-bold">
               Discard Loss At Risk
             </div>
-            <div className="font-mono text-sm font-extrabold text-rose-600 dark:text-rose-400">
+            <div className="font-mono text-sm font-extrabold text-rose-700 dark:text-rose-400">
               {formatCurrency(totalDiscardLossAtRisk, currency)}
             </div>
           </div>
@@ -119,14 +119,14 @@ export const DynamicMarkdownCard: React.FC<DynamicMarkdownCardProps> = ({
               key={item.skuId}
               className={`border rounded-xl p-4 transition-all flex flex-col justify-between ${
                 isDark
-                  ? "bg-slate-950/70 border-slate-800/80 hover:border-amber-500/40"
-                  : "bg-slate-50 border-slate-200 hover:border-amber-400"
+                  ? "bg-neutral-950 border-neutral-800 hover:border-amber-500/40"
+                  : "bg-slate-50 border-slate-300 hover:border-amber-500"
               }`}
             >
               <div>
                 {/* SKU Badge & Expiry Timer */}
                 <div className="flex items-center justify-between gap-2">
-                  <span className="text-[11px] font-mono font-semibold text-slate-400">
+                  <span className="text-[11px] font-mono font-bold text-slate-700 dark:text-neutral-300">
                     {item.skuId} • {item.category}
                   </span>
                   <span className="px-2 py-0.5 rounded-full text-[10px] font-mono font-bold bg-amber-500/15 text-amber-400 border border-amber-500/30 flex items-center gap-1">

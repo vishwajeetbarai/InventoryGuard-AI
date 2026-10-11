@@ -215,11 +215,11 @@ export const VisualAnalytics: React.FC<VisualAnalyticsProps> = ({
     c3Padding.left + ((val - minDdlt) / Math.max(1, maxDdlt - minDdlt)) * innerW3;
 
   const cardCls = isDark
-    ? "bg-neutral-900/80 border-neutral-800 text-neutral-100"
-    : "bg-white border-slate-200/90 text-slate-900 shadow-xs";
+    ? "bg-neutral-900 border-neutral-800 text-neutral-100"
+    : "bg-white border-slate-300 text-slate-900 shadow-xs";
 
-  const gridLineColor = isDark ? "rgba(255,255,255,0.08)" : "rgba(0,0,0,0.06)";
-  const tickTextColor = isDark ? "#737373" : "#64748B";
+  const gridLineColor = isDark ? "rgba(255,255,255,0.08)" : "rgba(0,0,0,0.08)";
+  const tickTextColor = isDark ? "#A3A3A3" : "#334155";
 
   const activeModelMeta =
     FORECAST_MODELS_META[activeState.forecastModel || forecastModel] ||
@@ -231,47 +231,47 @@ export const VisualAnalytics: React.FC<VisualAnalyticsProps> = ({
       <div
         className={`border rounded-xl p-4 flex flex-col md:flex-row md:items-center justify-between gap-3 transition-colors ${
           isDark
-            ? "bg-neutral-900/60 border-neutral-800 text-neutral-200"
-            : "bg-slate-50 border-slate-200/80 text-slate-800"
+            ? "bg-neutral-900 border-neutral-800 text-neutral-100"
+            : "bg-white border-slate-300 text-slate-900 shadow-xs"
         }`}
       >
         <div className="flex items-center gap-3">
           <div
             className={`p-2 rounded-lg shrink-0 ${
-              isDark ? "bg-neutral-800 text-neutral-200" : "bg-white border border-slate-200 text-slate-800 shadow-xs"
+              isDark ? "bg-neutral-800 text-neutral-200" : "bg-slate-100 border border-slate-200 text-slate-800 shadow-xs"
             }`}
           >
             <BrainCircuit className="w-5 h-5 text-emerald-500" />
           </div>
           <div>
             <div className="flex items-center gap-2 flex-wrap">
-              <span className="text-xs font-bold">
+              <span className="text-xs font-bold text-slate-950 dark:text-white">
                 Forecasting Engine: {activeModelMeta.name}
               </span>
-              <span className="text-[10px] px-1.5 py-0.5 rounded font-mono font-bold bg-neutral-200/60 dark:bg-neutral-800 text-slate-700 dark:text-neutral-300">
+              <span className="text-[10px] px-1.5 py-0.5 rounded font-mono font-bold bg-neutral-200/80 dark:bg-neutral-800 text-slate-800 dark:text-neutral-200">
                 {activeModelMeta.badge}
               </span>
-              <span className="text-[10px] text-slate-400 font-mono">
+              <span className="text-[10px] text-slate-600 dark:text-neutral-400 font-mono font-medium">
                 {activeModelMeta.paperReference}
               </span>
             </div>
-            <p className="text-[11px] text-slate-400 mt-0.5 line-clamp-1">
+            <p className="text-[11px] text-slate-700 dark:text-neutral-300 mt-0.5 line-clamp-1 font-medium">
               {activeModelMeta.description}
             </p>
           </div>
         </div>
         <div className="flex items-center gap-4 text-xs font-mono shrink-0 self-start md:self-auto">
           <div className="text-right">
-            <span className="text-[10px] text-slate-400 block uppercase">Inference</span>
-            <span className="font-bold text-emerald-600 dark:text-emerald-400">~{activeModelMeta.inferenceLatencyMs}ms</span>
+            <span className="text-[10px] text-slate-700 dark:text-neutral-400 block uppercase font-bold">Inference</span>
+            <span className="font-bold text-emerald-700 dark:text-emerald-400">~{activeModelMeta.inferenceLatencyMs}ms</span>
           </div>
           <div className="text-right">
-            <span className="text-[10px] text-slate-400 block uppercase">Benchmark MAE</span>
-            <span className="font-bold text-slate-700 dark:text-neutral-300">{activeModelMeta.benchmarkMae}</span>
+            <span className="text-[10px] text-slate-700 dark:text-neutral-400 block uppercase font-bold">Benchmark MAE</span>
+            <span className="font-bold text-slate-900 dark:text-neutral-100">{activeModelMeta.benchmarkMae}</span>
           </div>
           <div className="text-right">
-            <span className="text-[10px] text-slate-400 block uppercase">Live Run RMSE</span>
-            <span className="font-bold text-amber-600 dark:text-amber-400">{rmse.toFixed(1)}</span>
+            <span className="text-[10px] text-slate-700 dark:text-neutral-400 block uppercase font-bold">Live Run RMSE</span>
+            <span className="font-bold text-amber-700 dark:text-amber-400">{rmse.toFixed(1)}</span>
           </div>
         </div>
       </div>

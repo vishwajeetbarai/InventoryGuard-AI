@@ -11,6 +11,7 @@ import {
   calculateDemandCannibalization,
 } from "./engine/supplyChainEngine";
 import { Header, AppPage } from "./components/Header";
+import { Footer } from "./components/Footer";
 import { SidebarControls } from "./components/SidebarControls";
 import { KpiMetrics } from "./components/KpiMetrics";
 import { VisualAnalytics } from "./components/VisualAnalytics";
@@ -932,7 +933,7 @@ export default function App() {
                       {currentWarehouse.id}
                     </span>
                   </div>
-                  <div className="text-xs text-slate-400 mt-0.5 flex items-center gap-2">
+                  <div className="text-xs text-slate-700 dark:text-neutral-300 mt-0.5 flex items-center gap-2 font-medium">
                     <span>{currentWarehouse.city}, {currentWarehouse.region}</span>
                     <span>·</span>
                     <span>Demand Multiplier: {currentWarehouse.demandFactor.toFixed(2)}x</span>
@@ -942,12 +943,12 @@ export default function App() {
 
               <div className="flex items-center gap-4 text-xs">
                 <div className="text-right">
-                  <span className="text-[10px] text-slate-400 block uppercase font-medium">Cycle Service Level</span>
-                  <span className="font-bold text-slate-900 dark:text-white">{currentServiceLevel.label.split(" - ")[0]} (Z={selectedServiceZ})</span>
+                  <span className="text-[10px] text-slate-700 dark:text-neutral-300 block uppercase font-bold">Cycle Service Level</span>
+                  <span className="font-bold text-slate-950 dark:text-white">{currentServiceLevel.label.split(" - ")[0]} (Z={selectedServiceZ})</span>
                 </div>
-                <div className="h-7 w-[1px] bg-slate-200 dark:bg-neutral-800" />
+                <div className="h-7 w-[1px] bg-slate-300 dark:bg-neutral-800" />
                 <div className="text-right">
-                  <span className="text-[10px] text-slate-400 block uppercase font-medium">Engine Mode</span>
+                  <span className="text-[10px] text-slate-700 dark:text-neutral-300 block uppercase font-bold">Engine Mode</span>
                   <span className="font-bold text-emerald-600 dark:text-emerald-400 flex items-center gap-1.5 justify-end">
                     <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
                     Stochastic ML
@@ -969,8 +970,8 @@ export default function App() {
               <div
                 className={`p-4 rounded-xl border flex flex-col md:flex-row md:items-center justify-between gap-3 ${
                   isDark
-                    ? "bg-neutral-900/40 border-neutral-800 text-neutral-200"
-                    : "bg-slate-50 border-slate-200 text-slate-800"
+                    ? "bg-neutral-900 border-neutral-800 text-neutral-100"
+                    : "bg-white border-slate-300 text-slate-900 shadow-xs"
                 }`}
               >
                 <div className="flex items-center gap-3">
@@ -978,10 +979,10 @@ export default function App() {
                     <AlertTriangle className="w-4 h-4" />
                   </div>
                   <div>
-                    <div className="text-xs font-bold text-slate-900 dark:text-white">
+                    <div className="text-xs font-bold text-slate-950 dark:text-white">
                       {criticalSkus.length} Urgent Stockout Alerts &amp; {interTransfers.length} Rebalance Opportunities
                     </div>
-                    <div className="text-xs text-slate-400 mt-0.5">
+                    <div className="text-xs text-slate-700 dark:text-neutral-300 mt-0.5 font-medium">
                       Immediate action recommended to avoid stockout revenue leakage at {currentWarehouse.name}.
                     </div>
                   </div>
@@ -1223,17 +1224,17 @@ export default function App() {
                 {/* WMS Data Ingestion Card */}
                 <div
                   className={`p-5 rounded-xl border transition-colors ${
-                    isDark ? "bg-neutral-900/80 border-neutral-800" : "bg-white border-slate-200/90 shadow-xs"
+                    isDark ? "bg-neutral-900 border-neutral-800" : "bg-white border-slate-300 shadow-xs"
                   }`}
                 >
-                  <div className="flex items-center justify-between pb-3 border-b border-neutral-800/40 dark:border-neutral-800">
+                  <div className="flex items-center justify-between pb-3 border-b border-slate-200 dark:border-neutral-800">
                     <div className="flex items-center gap-2">
                       <div className="p-1.5 rounded-lg bg-emerald-500/10 text-emerald-500">
                         <UploadCloud className="w-4 h-4" />
                       </div>
                       <div>
-                        <h3 className="font-bold text-sm">Enterprise WMS Data Ingestion</h3>
-                        <p className="text-xs text-slate-400">Connect real customer CSV or reload baseline sandbox</p>
+                        <h3 className="font-bold text-sm text-slate-950 dark:text-white">Enterprise WMS Data Ingestion</h3>
+                        <p className="text-xs text-slate-600 dark:text-neutral-400 font-medium">Connect real customer CSV or reload baseline sandbox</p>
                       </div>
                     </div>
 
@@ -1245,14 +1246,14 @@ export default function App() {
                     </button>
                   </div>
 
-                  <div className="mt-3 flex items-center justify-between text-xs text-slate-400">
+                  <div className="mt-3 flex items-center justify-between text-xs text-slate-700 dark:text-neutral-300">
                     <div>
-                      Active Dataset: <strong className="text-slate-700 dark:text-neutral-200">{customDataset?.name || "Baseline Synthetic Sandbox"}</strong>
+                      Active Dataset: <strong className="text-slate-950 dark:text-white font-bold">{customDataset?.name || "Baseline Synthetic Sandbox"}</strong>
                     </div>
                     {customDataset && (
                       <button
                         onClick={handleResetCustomDataset}
-                        className="text-amber-500 hover:underline cursor-pointer"
+                        className="text-amber-600 dark:text-amber-400 font-bold hover:underline cursor-pointer"
                       >
                         Reset to Sandbox
                       </button>
@@ -1263,38 +1264,38 @@ export default function App() {
                 {/* Audit Trail Card */}
                 <div
                   className={`p-5 rounded-xl border transition-colors ${
-                    isDark ? "bg-neutral-900/80 border-neutral-800" : "bg-white border-slate-200/90 shadow-xs"
+                    isDark ? "bg-neutral-900 border-neutral-800" : "bg-white border-slate-300 shadow-xs"
                   }`}
                 >
-                  <div className="flex items-center justify-between pb-3 border-b border-neutral-800/40 dark:border-neutral-800">
+                  <div className="flex items-center justify-between pb-3 border-b border-slate-200 dark:border-neutral-800">
                     <div className="flex items-center gap-2">
                       <div className="p-1.5 rounded-lg bg-purple-500/10 text-purple-400">
                         <Lock className="w-4 h-4" />
                       </div>
                       <div>
-                        <h3 className="font-bold text-sm">Cryptographic Compliance Ledger</h3>
-                        <p className="text-xs text-slate-400">Immutable SHA-256 event audit trail ({auditLogs.length} entries)</p>
+                        <h3 className="font-bold text-sm text-slate-950 dark:text-white">Cryptographic Compliance Ledger</h3>
+                        <p className="text-xs text-slate-600 dark:text-neutral-400 font-medium">Immutable SHA-256 event audit trail ({auditLogs.length} entries)</p>
                       </div>
                     </div>
 
                     <div className="flex items-center gap-2">
                       <button
                         onClick={handleDownloadCsv}
-                        className="px-2.5 py-1.5 rounded-lg border text-xs font-semibold hover:bg-slate-100 dark:hover:bg-neutral-800 transition-colors cursor-pointer"
+                        className="px-2.5 py-1.5 rounded-lg border border-slate-300 dark:border-neutral-700 text-xs font-semibold hover:bg-slate-100 dark:hover:bg-neutral-800 transition-colors cursor-pointer text-slate-900 dark:text-neutral-100"
                       >
                         Export CSV
                       </button>
                       <button
                         onClick={() => setIsAuditModalOpen(true)}
-                        className="px-3 py-1.5 rounded-lg bg-slate-900 dark:bg-white text-white dark:text-neutral-950 text-xs font-semibold transition-colors cursor-pointer"
+                        className="px-3 py-1.5 rounded-lg bg-slate-950 dark:bg-white text-white dark:text-neutral-950 text-xs font-semibold transition-colors cursor-pointer"
                       >
                         View Ledger
                       </button>
                     </div>
                   </div>
 
-                  <div className="mt-3 text-xs text-slate-400">
-                    Latest Event: <span className="font-mono text-slate-600 dark:text-neutral-300">{auditLogs[0]?.details || "System initialized"}</span>
+                  <div className="mt-3 text-xs text-slate-700 dark:text-neutral-300 font-medium">
+                    Latest Event: <span className="font-mono text-slate-900 dark:text-white font-bold">{auditLogs[0]?.details || "System initialized"}</span>
                   </div>
                 </div>
 
@@ -1316,32 +1317,22 @@ export default function App() {
         )}
       </main>
 
-      {/* Clean Minimal 1-Line Footer */}
-      <footer
-        className={`border-t py-4 px-6 text-xs transition-colors ${
-          isDark
-            ? "border-neutral-800 bg-black text-neutral-400"
-            : "border-slate-200 bg-white text-slate-500"
-        }`}
-      >
-        <div className="max-w-7xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-3 text-center sm:text-left">
-          <div className="flex items-center gap-2 flex-wrap justify-center sm:justify-start">
-            <span className="font-bold text-slate-800 dark:text-white">Apex Supply Intelligence</span>
-            <span>·</span>
-            <span>Multi-Echelon Quick-Commerce Control Tower</span>
-            <span>·</span>
-            <span>Bivariate Monte Carlo Engine</span>
-          </div>
-          <div className="flex items-center gap-3">
-            <span className="flex items-center gap-1.5 text-emerald-500">
-              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-              Operational (14ms latency)
-            </span>
-            <span>·</span>
-            <span>Press <kbd className="px-1 py-0.5 rounded text-[10px] font-mono bg-neutral-100 dark:bg-neutral-800 border border-neutral-300 dark:border-neutral-700">⌘K</kbd></span>
-          </div>
-        </div>
-      </footer>
+      {/* Enterprise Multi-Tier Architectural Footer */}
+      <Footer
+        currentWarehouse={currentWarehouse}
+        currentUser={currentUser}
+        auditLogsCount={auditLogs.length}
+        currency={currency}
+        theme={theme}
+        onToggleTheme={handleToggleTheme}
+        onOpenCommandPalette={() => setIsCommandPaletteOpen(true)}
+        onOpenReportModal={() => setIsReportModalOpen(true)}
+        onOpenWmsModal={() => setIsWmsModalOpen(true)}
+        onOpenAuditModal={() => setIsAuditModalOpen(true)}
+        onTriggerSimulation={handleTriggerSimulation}
+        onSelectPage={setActivePage}
+        isSimulating={isSimulating}
+      />
 
       {/* Global Command Bar Modal (Cmd + K / Ctrl + K) */}
       <CommandPaletteModal

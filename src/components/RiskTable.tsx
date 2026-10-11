@@ -146,8 +146,8 @@ export const RiskTable: React.FC<RiskTableProps> = ({
   };
 
   const containerCls = isDark
-    ? "bg-neutral-900/80 border-neutral-800 text-neutral-100"
-    : "bg-white border-slate-200/90 text-slate-900 shadow-xs";
+    ? "bg-neutral-900 border-neutral-800 text-neutral-100"
+    : "bg-white border-slate-300 text-slate-900 shadow-xs";
 
   return (
     <div className={`border rounded-xl overflow-hidden shadow-xs transition-colors ${containerCls}`}>
@@ -160,12 +160,12 @@ export const RiskTable: React.FC<RiskTableProps> = ({
         <div>
           <h3
             className={`text-base font-bold ${
-              isDark ? "text-white" : "text-slate-900"
+              isDark ? "text-white" : "text-slate-950"
             }`}
           >
             Stockout Risk &amp; Reorder Action Prioritization
           </h3>
-          <p className="text-xs text-slate-400 mt-0.5">
+          <p className="text-xs text-slate-700 dark:text-neutral-300 mt-0.5 font-medium">
             Ranked by Monte Carlo stockout probability evaluated against usable stock (discounting perishable batch decay)
           </p>
         </div>
@@ -173,16 +173,16 @@ export const RiskTable: React.FC<RiskTableProps> = ({
         <div className="flex flex-wrap items-center gap-2.5">
           {/* Search Input */}
           <div className="relative">
-            <Search className="w-3.5 h-3.5 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+            <Search className="w-3.5 h-3.5 absolute left-3 top-1/2 -translate-y-1/2 text-slate-500" />
             <input
               type="text"
               placeholder="Filter SKU or category..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className={`pl-8 pr-3 py-1.5 rounded-lg text-xs placeholder-slate-400 focus:outline-none focus:ring-1 focus:ring-slate-400 w-48 sm:w-56 border ${
+              className={`pl-8 pr-3 py-1.5 rounded-lg text-xs placeholder-slate-500 focus:outline-none focus:ring-1 focus:ring-slate-400 w-48 sm:w-56 border ${
                 isDark
-                  ? "bg-neutral-950 border-neutral-800 text-neutral-200"
-                  : "bg-slate-50 border-slate-200 text-slate-800"
+                  ? "bg-neutral-950 border-neutral-700 text-neutral-100"
+                  : "bg-white border-slate-300 text-slate-950 font-medium"
               }`}
             />
           </div>
@@ -192,21 +192,21 @@ export const RiskTable: React.FC<RiskTableProps> = ({
             className={`flex items-center gap-1 rounded-lg p-1 border ${
               isDark
                 ? "bg-neutral-950 border-neutral-800"
-                : "bg-slate-100/80 border-slate-200"
+                : "bg-slate-100 border-slate-300"
             }`}
           >
             {["ALL", "CRITICAL REORDER NOW", "WARNING", "OPTIMAL"].map((st) => (
               <button
                 key={st}
                 onClick={() => setStatusFilter(st)}
-                className={`px-2.5 py-1 rounded text-xs font-semibold transition-all cursor-pointer ${
+                className={`px-2.5 py-1 rounded text-xs font-bold transition-all cursor-pointer ${
                   statusFilter === st
                     ? isDark
                       ? "bg-white text-neutral-950 shadow-xs"
-                      : "bg-slate-900 text-white shadow-xs"
+                      : "bg-slate-950 text-white shadow-xs"
                     : isDark
-                    ? "text-neutral-400 hover:text-white"
-                    : "text-slate-600 hover:text-slate-900"
+                    ? "text-neutral-300 hover:text-white"
+                    : "text-slate-700 hover:text-slate-950"
                 }`}
               >
                 {st === "ALL"
@@ -298,10 +298,10 @@ export const RiskTable: React.FC<RiskTableProps> = ({
         <table className="w-full text-left border-collapse text-xs">
           <thead>
             <tr
-              className={`border-b font-semibold uppercase tracking-wider ${
+              className={`border-b font-bold uppercase tracking-wider ${
                 isDark
-                  ? "bg-slate-950/60 border-slate-800 text-slate-400"
-                  : "bg-slate-100 border-slate-200 text-slate-600"
+                  ? "bg-neutral-950 border-neutral-800 text-neutral-300"
+                  : "bg-slate-100 border-slate-300 text-slate-800"
               }`}
             >
               <th className="py-3 px-3 w-10 text-center">
@@ -409,21 +409,21 @@ export const RiskTable: React.FC<RiskTableProps> = ({
                       >
                         {s.sku.name}
                       </div>
-                      <div className="text-[11px] text-slate-400 font-mono flex items-center gap-2">
+                      <div className="text-[11px] text-slate-600 dark:text-neutral-400 font-mono flex items-center gap-2 font-medium">
                         <span>{s.sku.id}</span>
                         <span>•</span>
                         <span>{s.sku.category}</span>
                       </div>
                     </td>
                     <td className="py-3 px-4">
-                      <div className="font-medium text-slate-300 truncate max-w-[130px]">
+                      <div className="font-semibold text-slate-800 dark:text-neutral-200 truncate max-w-[130px]">
                         {s.sku.supplierName}
                       </div>
                       <div className="mt-0.5">{getGradeBadge(s.supplierScorecard.grade)}</div>
                     </td>
                     <td className="py-3 px-4 font-mono font-semibold">
-                      <span className="text-sky-400 font-bold">{s.usableStock}</span>
-                      <span className="text-slate-500"> / {s.currentStock}</span>
+                      <span className="text-sky-600 dark:text-sky-400 font-bold">{s.usableStock}</span>
+                      <span className="text-slate-600 dark:text-neutral-400"> / {s.currentStock}</span>
                       {s.decayedUnits > 0 && (
                         <div className="text-[10px] text-amber-500 font-sans font-medium">
                           -{s.decayedUnits} units decayed ({s.decayRatePct}%)

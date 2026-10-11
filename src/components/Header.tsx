@@ -130,34 +130,27 @@ export const Header: React.FC<HeaderProps> = ({
                 className={`w-9 h-9 rounded-lg flex items-center justify-center font-black text-sm tracking-tight transition-transform group-hover:scale-105 ${
                   isDark
                     ? "bg-white text-black shadow-sm"
-                    : "bg-slate-900 text-white shadow-sm"
+                    : "bg-slate-950 text-white shadow-sm"
                 }`}
               >
-                ▲
+                🛡️
               </div>
               <div>
-                <div className="flex items-center gap-1.5 leading-none">
+                <div className="flex items-center gap-1 leading-none">
                   <span
-                    className={`font-extrabold text-base tracking-tight ${
+                    className={`font-extrabold text-lg tracking-tight ${
                       isDark ? "text-white" : "text-slate-950"
                     }`}
                   >
-                    Apex
-                  </span>
-                  <span
-                    className={`text-xs font-semibold uppercase tracking-wider ${
-                      isDark ? "text-neutral-400" : "text-slate-500"
-                    }`}
-                  >
-                    Supply
+                    InventoryGuard-AI
                   </span>
                 </div>
                 <div
-                  className={`text-[10px] tracking-wide mt-0.5 font-medium ${
-                    isDark ? "text-neutral-500" : "text-slate-400"
+                  className={`text-[10px] tracking-wide mt-0.5 font-bold ${
+                    isDark ? "text-neutral-300" : "text-slate-700"
                   }`}
                 >
-                  Intelligent Control Tower
+                  Supply Chain Control Tower
                 </div>
               </div>
             </div>
@@ -167,25 +160,25 @@ export const Header: React.FC<HeaderProps> = ({
               <div className="relative hidden md:block" ref={warehouseMenuRef}>
                 <button
                   onClick={() => setIsWarehouseMenuOpen(!isWarehouseMenuOpen)}
-                  className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg border text-xs font-medium transition-colors cursor-pointer ${
+                  className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg border text-xs font-bold transition-colors cursor-pointer ${
                     isDark
-                      ? "bg-neutral-900/90 hover:bg-neutral-800 border-neutral-800 text-neutral-300"
-                      : "bg-slate-50 hover:bg-slate-100 border-slate-200 text-slate-700"
+                      ? "bg-neutral-900/90 hover:bg-neutral-800 border-neutral-700 text-neutral-100"
+                      : "bg-slate-100/90 hover:bg-slate-200/90 border-slate-300 text-slate-900"
                   }`}
                   title="Switch Active Fulfillment Hub"
                 >
                   <MapPin className="w-3.5 h-3.5 text-emerald-500" />
-                  <span className="font-semibold truncate max-w-[140px]">
+                  <span className="font-bold truncate max-w-[140px]">
                     {currentWarehouse.name.split(" ")[0]}
                   </span>
                   <span
-                    className={`text-[10px] font-mono ${
-                      isDark ? "text-neutral-500" : "text-slate-400"
+                    className={`text-[10px] font-mono font-semibold ${
+                      isDark ? "text-neutral-400" : "text-slate-600"
                     }`}
                   >
                     ({currentWarehouse.city})
                   </span>
-                  <ChevronDown className="w-3 h-3 opacity-60 ml-0.5" />
+                  <ChevronDown className="w-3 h-3 opacity-80 ml-0.5" />
                 </button>
 
                 {isWarehouseMenuOpen && (
@@ -239,7 +232,11 @@ export const Header: React.FC<HeaderProps> = ({
           </div>
 
           {/* Central Clean 4-Page Navigation Tabs */}
-          <nav className="hidden lg:flex items-center gap-1 p-1 rounded-xl border transition-colors bg-opacity-50">
+          <nav
+            className={`hidden lg:flex items-center gap-1 p-1 rounded-xl border transition-colors ${
+              isDark ? "bg-neutral-900/90 border-neutral-800" : "bg-slate-100/90 border-slate-300"
+            }`}
+          >
             {navPages.map((page) => {
               const Icon = page.icon;
               const isActive = activePage === page.id;
@@ -247,25 +244,25 @@ export const Header: React.FC<HeaderProps> = ({
                 <button
                   key={page.id}
                   onClick={() => onSelectPage(page.id)}
-                  className={`flex items-center gap-2 px-3.5 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
+                  className={`flex items-center gap-2 px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
                     isActive
                       ? isDark
-                        ? "bg-neutral-800 text-white shadow-xs"
-                        : "bg-white text-slate-950 shadow-xs border border-slate-200/80"
+                        ? "bg-white text-neutral-950 shadow-sm"
+                        : "bg-slate-950 text-white shadow-sm"
                       : isDark
-                      ? "text-neutral-400 hover:text-neutral-200 hover:bg-neutral-900/60"
-                      : "text-slate-600 hover:text-slate-900 hover:bg-slate-100/70"
+                      ? "text-neutral-200 hover:text-white hover:bg-neutral-800"
+                      : "text-slate-800 hover:text-slate-950 hover:bg-white"
                   }`}
                 >
                   <Icon
                     className={`w-3.5 h-3.5 ${
                       isActive
                         ? isDark
-                          ? "text-white"
-                          : "text-slate-900"
+                          ? "text-neutral-950"
+                          : "text-white"
                         : isDark
-                        ? "text-neutral-400"
-                        : "text-slate-500"
+                        ? "text-neutral-300"
+                        : "text-slate-700"
                     }`}
                   />
                   <span>{page.label}</span>

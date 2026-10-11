@@ -92,22 +92,22 @@ export const InterTransferView: React.FC<InterTransferViewProps> = ({
         {/* Available Transfers */}
         <div
           className={`border rounded-xl p-5 shadow-xs transition-colors ${
-            isDark ? "bg-neutral-900/80 border-neutral-800" : "bg-white border-slate-200/90"
+            isDark ? "bg-neutral-900 border-neutral-800" : "bg-white border-slate-300"
           }`}
         >
-          <div className="flex items-center justify-between text-xs font-semibold uppercase tracking-wider text-slate-400">
+          <div className="flex items-center justify-between text-xs font-bold uppercase tracking-wider text-slate-800 dark:text-neutral-300">
             <span>Inter-Store Transfers</span>
             <ArrowRightLeft className="w-4 h-4 text-emerald-500" />
           </div>
           <div
             className={`mt-3 text-2xl font-extrabold ${
-              isDark ? "text-white" : "text-slate-900"
+              isDark ? "text-white" : "text-slate-950"
             }`}
           >
             {recommendations.length}{" "}
-            <span className="text-sm font-medium text-slate-400">Opportunities</span>
+            <span className="text-sm font-semibold text-slate-700 dark:text-neutral-300">Opportunities</span>
           </div>
-          <div className="mt-1 text-xs text-slate-500">
+          <div className="mt-1 text-xs text-slate-700 dark:text-neutral-300 font-medium">
             {totalUnitsTransferrable.toLocaleString()} units redeployable from surplus dark stores
           </div>
         </div>
@@ -115,19 +115,19 @@ export const InterTransferView: React.FC<InterTransferViewProps> = ({
         {/* Net Salvaged Revenue at Risk */}
         <div
           className={`border rounded-xl p-5 shadow-xs transition-colors ${
-            isDark ? "bg-neutral-900/80 border-neutral-800" : "bg-white border-slate-200/90"
+            isDark ? "bg-neutral-900 border-neutral-800" : "bg-white border-slate-300"
           }`}
         >
-          <div className="flex items-center justify-between text-xs font-semibold uppercase tracking-wider text-slate-400">
+          <div className="flex items-center justify-between text-xs font-bold uppercase tracking-wider text-slate-800 dark:text-neutral-300">
             <span>Salvaged Revenue</span>
-            <span className="p-1 px-1.5 rounded-md bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 font-bold font-mono">
+            <span className="p-1 px-1.5 rounded-md bg-emerald-500/20 text-emerald-700 dark:text-emerald-400 font-bold font-mono">
               {CURRENCIES[currency]?.symbol || "$"}
             </span>
           </div>
-          <div className="mt-3 text-2xl font-extrabold text-emerald-600 dark:text-emerald-400 font-mono">
+          <div className="mt-3 text-2xl font-extrabold text-emerald-700 dark:text-emerald-400 font-mono">
             {formatCurrency(totalSalvagedRevenueInr, currency)}
           </div>
-          <div className="mt-1 text-xs text-slate-500">
+          <div className="mt-1 text-xs text-slate-700 dark:text-neutral-300 font-medium">
             Gross stock-out penalties &amp; sales revenue preserved
           </div>
         </div>
@@ -135,39 +135,39 @@ export const InterTransferView: React.FC<InterTransferViewProps> = ({
         {/* Net Freight Cost vs Salvaged Margin */}
         <div
           className={`border rounded-xl p-5 shadow-xs transition-colors ${
-            isDark ? "bg-neutral-900/80 border-neutral-800" : "bg-white border-slate-200/90"
+            isDark ? "bg-neutral-900 border-neutral-800" : "bg-white border-slate-300"
           }`}
         >
-          <div className="flex items-center justify-between text-xs font-semibold uppercase tracking-wider text-slate-400">
+          <div className="flex items-center justify-between text-xs font-bold uppercase tracking-wider text-slate-800 dark:text-neutral-300">
             <span>Net Financial Margin</span>
-            <Scale className="w-4 h-4 text-slate-600 dark:text-neutral-300" />
+            <Scale className="w-4 h-4 text-slate-700 dark:text-neutral-300" />
           </div>
-          <div className="mt-3 text-2xl font-extrabold text-slate-900 dark:text-white font-mono">
+          <div className="mt-3 text-2xl font-extrabold text-slate-950 dark:text-white font-mono">
             +{formatCurrency(Math.max(0, netSalvagedProfitInr), currency)}
           </div>
-          <div className="mt-1 text-xs text-slate-500 flex items-center justify-between">
+          <div className="mt-1 text-xs text-slate-700 dark:text-neutral-300 font-medium flex items-center justify-between">
             <span>Freight Cost: {formatCurrency(totalFreightCostInr, currency)}</span>
-            <span className="text-emerald-600 dark:text-emerald-400 font-bold">{roiMultiplier}x ROI</span>
+            <span className="text-emerald-700 dark:text-emerald-400 font-bold">{roiMultiplier}x ROI</span>
           </div>
         </div>
 
         {/* Delivery Lead-Time Savings */}
         <div
           className={`border rounded-xl p-5 shadow-xs transition-colors ${
-            isDark ? "bg-neutral-900/80 border-neutral-800" : "bg-white border-slate-200/90"
+            isDark ? "bg-neutral-900 border-neutral-800" : "bg-white border-slate-300"
           }`}
         >
-          <div className="flex items-center justify-between text-xs font-semibold uppercase tracking-wider text-slate-400">
+          <div className="flex items-center justify-between text-xs font-bold uppercase tracking-wider text-slate-800 dark:text-neutral-300">
             <span>Delivery Time Savings</span>
             <Timer className="w-4 h-4 text-amber-500" />
           </div>
-          <div className="mt-3 text-2xl font-extrabold text-amber-600 dark:text-amber-400 font-mono">
+          <div className="mt-3 text-2xl font-extrabold text-amber-700 dark:text-amber-400 font-mono">
             ~{avgTransitHours}h{" "}
-            <span className="text-sm font-normal text-slate-400">
+            <span className="text-sm font-semibold text-slate-700 dark:text-neutral-300">
               vs {avgSupplierLeadTimeDays}d Supplier
             </span>
           </div>
-          <div className="mt-1 text-xs text-slate-500">
+          <div className="mt-1 text-xs text-slate-700 dark:text-neutral-300 font-medium">
             Instant quick-commerce fulfillment vs 60–108h vendor latency
           </div>
         </div>
@@ -176,7 +176,7 @@ export const InterTransferView: React.FC<InterTransferViewProps> = ({
       {/* Green Logistics & Carbon Footprint Score */}
       <div
         className={`border rounded-xl p-5 shadow-xs transition-colors ${
-          isDark ? "bg-neutral-900/80 border-neutral-800" : "bg-white border-slate-200/90"
+          isDark ? "bg-neutral-900 border-neutral-800" : "bg-white border-slate-300"
         }`}
       >
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-slate-800/40">

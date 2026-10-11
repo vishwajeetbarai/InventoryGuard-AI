@@ -154,8 +154,8 @@ export const NetworkTopologyMap: React.FC<NetworkTopologyMapProps> = ({
       <div
         className={`border rounded-xl p-5 shadow-xs transition-colors ${
           isDark
-            ? "bg-neutral-900/80 border-neutral-800 text-neutral-100"
-            : "bg-white border-slate-200/90 text-slate-900"
+            ? "bg-neutral-900 border-neutral-800 text-neutral-100"
+            : "bg-white border-slate-300 text-slate-900"
         }`}
       >
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
@@ -164,11 +164,11 @@ export const NetworkTopologyMap: React.FC<NetworkTopologyMapProps> = ({
               <span className="p-1.5 rounded-lg bg-neutral-100 dark:bg-neutral-800 text-slate-800 dark:text-neutral-200">
                 <Navigation className="w-4 h-4" />
               </span>
-              <h2 className="text-base sm:text-lg font-bold">
+              <h2 className="text-base sm:text-lg font-bold text-slate-950 dark:text-white">
                 Multi-Echelon Dark Store Network Topology Map
               </h2>
             </div>
-            <p className="text-xs text-slate-400 mt-1">
+            <p className="text-xs text-slate-700 dark:text-neutral-300 mt-1 font-medium">
               Geographic network telemetry across regional fulfillment hubs with active cross-dock transit corridors and dynamic stock health.
             </p>
           </div>
@@ -218,7 +218,7 @@ export const NetworkTopologyMap: React.FC<NetworkTopologyMapProps> = ({
           className={`lg:col-span-8 border rounded-xl p-5 shadow-xs relative overflow-hidden flex flex-col justify-between ${
             isDark
               ? "bg-black border-neutral-800"
-              : "bg-slate-50/70 border-slate-200/90"
+              : "bg-white border-slate-300"
           }`}
         >
           {/* Subtle grid background pattern */}

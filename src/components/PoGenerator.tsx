@@ -104,59 +104,59 @@ export const PoGenerator: React.FC<PoGeneratorProps> = ({
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
         <div
           className={`border rounded-xl p-5 shadow-xs transition-colors ${
-            isDark ? "bg-neutral-900/80 border-neutral-800" : "bg-white border-slate-200/90"
+            isDark ? "bg-neutral-900 border-neutral-800" : "bg-white border-slate-300"
           }`}
         >
-          <div className="flex items-center justify-between text-xs text-slate-400 font-semibold uppercase tracking-wider">
+          <div className="flex items-center justify-between text-xs text-slate-800 dark:text-neutral-300 font-bold uppercase tracking-wider">
             <span>PO Financial Commitment</span>
-            <span className="p-1 px-1.5 rounded-md bg-neutral-100 dark:bg-neutral-800 text-slate-800 dark:text-neutral-200 font-bold font-mono">
+            <span className="p-1 px-1.5 rounded-md bg-slate-100 dark:bg-neutral-800 text-slate-900 dark:text-neutral-100 font-bold font-mono">
               {CURRENCIES[currency]?.symbol || "$"}
             </span>
           </div>
           <div
             className={`mt-3 text-2xl font-extrabold ${
-              isDark ? "text-white" : "text-slate-900"
+              isDark ? "text-white" : "text-slate-950"
             }`}
           >
             {formatCurrency(totalPoValue, currency)}
           </div>
-          <div className="mt-1 text-xs text-slate-500">
+          <div className="mt-1 text-xs text-slate-700 dark:text-neutral-300 font-medium">
             Across {purchaseOrders.length} Replenishment Line Items
           </div>
         </div>
 
         <div
           className={`border rounded-xl p-5 shadow-xs transition-colors ${
-            isDark ? "bg-neutral-900/80 border-neutral-800" : "bg-white border-slate-200/90"
+            isDark ? "bg-neutral-900 border-neutral-800" : "bg-white border-slate-300"
           }`}
         >
-          <div className="flex items-center justify-between text-xs text-slate-400 font-semibold uppercase tracking-wider">
+          <div className="flex items-center justify-between text-xs text-slate-800 dark:text-neutral-300 font-bold uppercase tracking-wider">
             <span>Total Units to Procure</span>
             <ShoppingBag className="w-4 h-4 text-emerald-500" />
           </div>
-          <div className="mt-3 text-2xl font-extrabold text-emerald-600 dark:text-emerald-400">
+          <div className="mt-3 text-2xl font-extrabold text-emerald-700 dark:text-emerald-400">
             {totalUnits.toLocaleString("en-IN")}{" "}
-            <span className="text-sm font-medium text-slate-400">Units</span>
+            <span className="text-sm font-semibold text-slate-700 dark:text-neutral-300">Units</span>
           </div>
-          <div className="mt-1 text-xs text-slate-500">
+          <div className="mt-1 text-xs text-slate-700 dark:text-neutral-300 font-medium">
             Scaled by Vendor Reliability Risk
           </div>
         </div>
 
         <div
           className={`border rounded-xl p-5 shadow-xs transition-colors ${
-            isDark ? "bg-neutral-900/80 border-neutral-800" : "bg-white border-slate-200/90"
+            isDark ? "bg-neutral-900 border-neutral-800" : "bg-white border-slate-300"
           }`}
         >
-          <div className="flex items-center justify-between text-xs text-slate-400 font-semibold uppercase tracking-wider">
+          <div className="flex items-center justify-between text-xs text-slate-800 dark:text-neutral-300 font-bold uppercase tracking-wider">
             <span>Critical Expedite Level</span>
-            <span className="p-1 rounded-md bg-rose-500/10 text-rose-500">⚡</span>
+            <span className="p-1 rounded-md bg-rose-500/20 text-rose-700 dark:text-rose-400 font-bold">⚡</span>
           </div>
-          <div className="mt-3 text-2xl font-extrabold text-rose-500">
+          <div className="mt-3 text-2xl font-extrabold text-rose-600 dark:text-rose-400">
             {urgentCount}{" "}
-            <span className="text-sm font-medium text-slate-400">Urgent POs</span>
+            <span className="text-sm font-semibold text-slate-700 dark:text-neutral-300">Urgent POs</span>
           </div>
-          <div className="mt-1 text-xs text-slate-500">
+          <div className="mt-1 text-xs text-slate-700 dark:text-neutral-300 font-medium">
             Immediate Vendor EDI Notification Required
           </div>
         </div>
@@ -165,7 +165,7 @@ export const PoGenerator: React.FC<PoGeneratorProps> = ({
       {/* PO Batch Action Header & Dispatch Section */}
       <div
         className={`border rounded-xl p-5 shadow-xs transition-colors ${
-          isDark ? "bg-neutral-900/80 border-neutral-800" : "bg-white border-slate-200/90"
+          isDark ? "bg-neutral-900 border-neutral-800" : "bg-white border-slate-300"
         }`}
       >
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-4 border-b border-neutral-800/40 dark:border-neutral-800">

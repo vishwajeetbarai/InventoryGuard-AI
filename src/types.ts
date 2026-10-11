@@ -1,3 +1,5 @@
+export type AppPage = "overview" | "inventory" | "procurement" | "operations";
+
 export interface Warehouse {
   id: string;
   name: string;

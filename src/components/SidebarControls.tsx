@@ -87,27 +87,27 @@ export const SidebarControls: React.FC<SidebarControlsProps> = ({
   const isDark = theme === "dark";
 
   const asideCls = isDark
-    ? "bg-neutral-900/80 border-neutral-800 text-neutral-100"
-    : "bg-white border-slate-200/90 text-slate-900 shadow-xs";
+    ? "bg-neutral-900 border-neutral-800 text-neutral-100"
+    : "bg-white border-slate-300 text-slate-900 shadow-xs";
 
-  const labelCls = isDark ? "text-neutral-300" : "text-slate-700";
-  const subTextCls = isDark ? "text-neutral-400" : "text-slate-500";
-  const borderCls = isDark ? "border-neutral-800" : "border-slate-200";
+  const labelCls = isDark ? "text-neutral-100 font-bold" : "text-slate-900 font-bold";
+  const subTextCls = isDark ? "text-neutral-300 font-medium" : "text-slate-700 font-medium";
+  const borderCls = isDark ? "border-neutral-800" : "border-slate-300";
   const inputBgCls = isDark
-    ? "bg-neutral-950 border-neutral-800 text-white"
-    : "bg-slate-50 border-slate-200 text-slate-900";
+    ? "bg-neutral-950 border-neutral-700 text-white font-medium"
+    : "bg-white border-slate-300 text-slate-950 font-medium";
 
   return (
     <div className={`p-5 space-y-6 transition-colors rounded-xl border ${asideCls} ${className}`}>
       <div className={`flex items-center justify-between pb-3 border-b ${borderCls}`}>
-        <div className="flex items-center gap-2 font-bold text-sm">
+        <div className="flex items-center gap-2 font-bold text-sm text-slate-950 dark:text-white">
           <Sliders className="w-4 h-4 text-emerald-500" />
           <span>Control Tower Parameters</span>
         </div>
         <button
           onClick={onTriggerSimulation}
           disabled={isSimulating}
-          className="text-emerald-600 dark:text-emerald-400 hover:opacity-80 text-xs font-semibold flex items-center gap-1 cursor-pointer"
+          className="text-emerald-700 dark:text-emerald-400 hover:opacity-80 text-xs font-bold flex items-center gap-1 cursor-pointer"
         >
           <RefreshCw className={`w-3 h-3 ${isSimulating ? "animate-spin" : ""}`} />
           <span>Recompute</span>
@@ -116,74 +116,74 @@ export const SidebarControls: React.FC<SidebarControlsProps> = ({
 
       {/* Crisis Scenario Presets (1-Click Stress Tests) */}
       <div className="space-y-2">
-        <div className="flex items-center justify-between text-xs font-semibold uppercase tracking-wider text-amber-500">
+        <div className="flex items-center justify-between text-xs font-bold uppercase tracking-wider text-amber-600 dark:text-amber-400">
           <span className="flex items-center gap-1.5">
             <Flame className="w-3.5 h-3.5" />
             <span>Crisis Stress Presets</span>
           </span>
-          <span className="text-[10px] text-slate-400 lowercase font-normal">1-click test</span>
+          <span className="text-[10px] text-slate-600 dark:text-neutral-400 lowercase font-medium">1-click test</span>
         </div>
         <div className="grid grid-cols-2 gap-1.5">
           <button
             onClick={() => onApplyPreset && onApplyPreset("MONSOON")}
-            className={`p-2 rounded-lg text-left text-xs transition-all border cursor-pointer ${
+            className={`p-2.5 rounded-lg text-left text-xs transition-all border cursor-pointer ${
               isDark
-                ? "bg-slate-950/70 border-slate-800 hover:border-sky-500/50 hover:bg-sky-950/20 text-slate-200"
-                : "bg-slate-50 border-slate-200 hover:border-sky-400 hover:bg-sky-50 text-slate-800"
+                ? "bg-neutral-950 border-neutral-800 hover:border-sky-500 hover:bg-neutral-900 text-neutral-100"
+                : "bg-slate-50 border-slate-300 hover:border-sky-500 hover:bg-sky-50/50 text-slate-950"
             }`}
           >
-            <div className="font-bold flex items-center gap-1 text-[11px] text-sky-400">
+            <div className="font-bold flex items-center gap-1 text-[11px] text-sky-700 dark:text-sky-400">
               🌧️ Monsoon Deluge
             </div>
-            <div className="text-[10px] text-slate-400 mt-0.5 leading-tight">
+            <div className="text-[10px] text-slate-700 dark:text-neutral-300 mt-0.5 leading-tight font-medium">
               +40% Rain, +2.5d Delay
             </div>
           </button>
 
           <button
             onClick={() => onApplyPreset && onApplyPreset("FLASH_SALE")}
-            className={`p-2 rounded-lg text-left text-xs transition-all border cursor-pointer ${
+            className={`p-2.5 rounded-lg text-left text-xs transition-all border cursor-pointer ${
               isDark
-                ? "bg-slate-950/70 border-slate-800 hover:border-amber-500/50 hover:bg-amber-950/20 text-slate-200"
-                : "bg-slate-50 border-slate-200 hover:border-amber-400 hover:bg-amber-50 text-slate-800"
+                ? "bg-neutral-950 border-neutral-800 hover:border-amber-500 hover:bg-neutral-900 text-neutral-100"
+                : "bg-slate-50 border-slate-300 hover:border-amber-500 hover:bg-amber-50/50 text-slate-950"
             }`}
           >
-            <div className="font-bold flex items-center gap-1 text-[11px] text-amber-400">
+            <div className="font-bold flex items-center gap-1 text-[11px] text-amber-700 dark:text-amber-400">
               🔥 Midnight Flash
             </div>
-            <div className="text-[10px] text-slate-400 mt-0.5 leading-tight">
+            <div className="text-[10px] text-slate-700 dark:text-neutral-300 mt-0.5 leading-tight font-medium">
               +65% Surge, 99.5% CSL
             </div>
           </button>
 
           <button
             onClick={() => onApplyPreset && onApplyPreset("LOGISTICS_STRIKE")}
-            className={`p-2 rounded-lg text-left text-xs transition-all border cursor-pointer ${
+            className={`p-2.5 rounded-lg text-left text-xs transition-all border cursor-pointer ${
               isDark
-                ? "bg-slate-950/70 border-slate-800 hover:border-red-500/50 hover:bg-red-950/20 text-slate-200"
-                : "bg-slate-50 border-slate-200 hover:border-red-400 hover:bg-red-50 text-slate-800"
+                ? "bg-neutral-950 border-neutral-800 hover:border-red-500 hover:bg-neutral-900 text-neutral-100"
+                : "bg-slate-50 border-slate-300 hover:border-red-500 hover:bg-red-50/50 text-slate-950"
             }`}
           >
-            <div className="font-bold flex items-center gap-1 text-[11px] text-red-400">
+            <div className="font-bold flex items-center gap-1 text-[11px] text-red-700 dark:text-red-400">
               🚢 Freight Strike
             </div>
-            <div className="text-[10px] text-slate-400 mt-0.5 leading-tight">
+            <div className="text-[10px] text-slate-700 dark:text-neutral-300 mt-0.5 leading-tight font-medium">
               +4.0d Lead Time Shock
             </div>
           </button>
 
           <button
             onClick={() => onApplyPreset && onApplyPreset("NORMAL")}
-            className={`p-2 rounded-lg text-left text-xs transition-all border cursor-pointer ${
+            className={`p-2.5 rounded-lg text-left text-xs transition-all border cursor-pointer ${
               isDark
-                ? "bg-slate-950/70 border-slate-800 hover:border-emerald-500/50 hover:bg-emerald-950/20 text-slate-200"
-                : "bg-slate-50 border-slate-200 hover:border-emerald-400 hover:bg-emerald-50 text-slate-800"
+                ? "bg-neutral-950 border-neutral-800 hover:border-emerald-500 hover:bg-neutral-900 text-neutral-100"
+                : "bg-slate-50 border-slate-300 hover:border-emerald-500 hover:bg-emerald-50/50 text-slate-950"
             }`}
           >
-            <div className="font-bold flex items-center gap-1 text-[11px] text-emerald-400">
+            <div className="font-bold flex items-center gap-1 text-[11px] text-emerald-700 dark:text-emerald-400">
               ⚖️ Normal Base
             </div>
-            <div className="text-[10px] text-slate-400 mt-0.5 leading-tight">
+            <div className="text-[10px] text-slate-700 dark:text-neutral-300 mt-0.5 leading-tight font-medium">
               Reset Baseline Ops
             </div>
           </button>

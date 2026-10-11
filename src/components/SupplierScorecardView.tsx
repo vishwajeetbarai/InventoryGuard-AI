@@ -79,28 +79,28 @@ export const SupplierScorecardView: React.FC<SupplierScorecardViewProps> = ({
   };
 
   const containerCls = isDark
-    ? "bg-neutral-900/80 border-neutral-800 text-neutral-100"
-    : "bg-white border-slate-200/90 text-slate-900 shadow-xs";
+    ? "bg-neutral-900 border-neutral-800 text-neutral-100"
+    : "bg-white border-slate-300 text-slate-900 shadow-xs";
 
   return (
     <div className="space-y-6">
       {/* Intro Header */}
       <div className={`border rounded-xl p-5 shadow-xs transition-colors ${containerCls}`}>
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-neutral-800/40 dark:border-neutral-800">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-slate-200 dark:border-neutral-800">
           <div>
             <h3
               className={`text-base font-bold flex items-center gap-2 ${
-                isDark ? "text-white" : "text-slate-900"
+                isDark ? "text-white" : "text-slate-950"
               }`}
             >
               <Award className="w-5 h-5 text-emerald-500" />
               Supplier Reliability Matrix &amp; Risk Scaling Scorecard
             </h3>
-            <p className="text-xs text-slate-400 mt-0.5">
+            <p className="text-xs text-slate-700 dark:text-neutral-300 mt-0.5 font-medium">
               Vendor reliability directly scales the lead-time variance ($\sigma_L$) and safety stock buffers via Silver-Pyke-Peterson variance propagation.
             </p>
           </div>
-          <span className="text-xs px-2.5 py-1 rounded-lg bg-neutral-100 dark:bg-neutral-800 text-slate-700 dark:text-neutral-300 font-medium self-start sm:self-auto">
+          <span className="text-xs px-2.5 py-1 rounded-lg bg-slate-100 dark:bg-neutral-800 text-slate-800 dark:text-neutral-200 font-bold self-start sm:self-auto">
             Dynamic Safety Buffer Integration
           </span>
         </div>
@@ -115,12 +115,12 @@ export const SupplierScorecardView: React.FC<SupplierScorecardViewProps> = ({
                 className={`border rounded-xl p-4 transition-all ${
                   isDark
                     ? "bg-neutral-950 border-neutral-800 hover:border-neutral-700"
-                    : "bg-slate-50 border-slate-200 hover:border-slate-300"
+                    : "bg-slate-50 border-slate-300 hover:border-slate-400"
                 }`}
               >
                 <div className="flex items-start justify-between gap-2">
                   <div>
-                    <span className="text-[11px] font-mono font-semibold text-slate-400">
+                    <span className="text-[11px] font-mono font-bold text-slate-700 dark:text-neutral-300">
                       {s.sku.id} • {s.sku.category}
                     </span>
                     <h4
