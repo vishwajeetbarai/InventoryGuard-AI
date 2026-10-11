@@ -1,5 +1,6 @@
 import React, { useState } from "react";
-import { SkuSimulationState } from "../types";
+import { SkuSimulationState, CurrencyCode } from "../types";
+import { formatCurrency, CURRENCIES } from "../utils/currency";
 import { calculateSupplierChargebacks } from "../engine/supplyChainEngine";
 import {
   ShieldCheck,
@@ -10,7 +11,6 @@ import {
   Award,
   Scale,
   FileText,
-  IndianRupee,
   CheckCircle2,
   AlertOctagon,
   Send,
@@ -19,12 +19,14 @@ import {
 interface SupplierScorecardViewProps {
   simulationStates: SkuSimulationState[];
   onIssueDebitNote?: (supplierName: string, amountInr: number) => void;
+  currency?: CurrencyCode;
   theme?: "dark" | "light";
 }
 
 export const SupplierScorecardView: React.FC<SupplierScorecardViewProps> = ({
   simulationStates,
   onIssueDebitNote,
+  currency = "INR",
   theme = "dark",
 }) => {
   const isDark = theme === "dark";
@@ -188,7 +190,7 @@ export const SupplierScorecardView: React.FC<SupplierScorecardViewProps> = ({
             <div className="text-right">
               <span className="text-[10px] text-slate-400 uppercase font-semibold">Total SLA Debit Note Value</span>
               <div className="font-mono text-base font-extrabold text-amber-400">
-                ₹{totalPenaltiesInr.toLocaleString("en-IN")}
+                {formatCurrency(totalPenaltiesInr, currency)}
               </div>
             </div>
           </div>
@@ -253,10 +255,10 @@ export const SupplierScorecardView: React.FC<SupplierScorecardViewProps> = ({
                       <span className="text-rose-500 text-[10px]">(+{c.breachHours}h)</span>
                     </td>
                     <td className="py-3 px-3 font-mono text-slate-300">
-                      ₹{c.hourlyPenaltyRateInr}/hr
+                      {formatCurrency(c.hourlyPenaltyRateInr, currency)}/hr
                     </td>
                     <td className="py-3 px-3 font-mono font-bold text-amber-400">
-                      ₹{c.totalChargebackInr.toLocaleString("en-IN")}
+                      {formatCurrency(c.totalChargebackInr, currency)}
                     </td>
                     <td className="py-3 px-3 text-right">
                       {isIssued ? (

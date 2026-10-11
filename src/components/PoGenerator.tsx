@@ -1,5 +1,6 @@
 import React, { useState } from "react";
-import { PurchaseOrder, DispatchedPoRecord, Warehouse } from "../types";
+import { PurchaseOrder, DispatchedPoRecord, Warehouse, CurrencyCode } from "../types";
+import { formatCurrency, CURRENCIES } from "../utils/currency";
 import {
   Download,
   ShoppingBag,
@@ -24,6 +25,7 @@ interface PoGeneratorProps {
   warehouse: Warehouse;
   dispatchedLedger: DispatchedPoRecord[];
   onDispatchPo: (newRecord: DispatchedPoRecord) => void;
+  currency?: CurrencyCode;
   theme?: "dark" | "light";
 }
 
@@ -32,6 +34,7 @@ export const PoGenerator: React.FC<PoGeneratorProps> = ({
   warehouse,
   dispatchedLedger,
   onDispatchPo,
+  currency = "INR",
   theme = "dark",
 }) => {
   const isDark = theme === "dark";
@@ -106,14 +109,16 @@ export const PoGenerator: React.FC<PoGeneratorProps> = ({
         >
           <div className="flex items-center justify-between text-xs text-slate-400 font-semibold uppercase tracking-wider">
             <span>PO Financial Commitment</span>
-            <span className="p-1 rounded-md bg-indigo-500/10 text-indigo-400 font-bold">₹</span>
+            <span className="p-1 px-1.5 rounded-md bg-indigo-500/10 text-indigo-400 font-bold font-mono">
+              {CURRENCIES[currency]?.symbol || "$"}
+            </span>
           </div>
           <div
             className={`mt-3 text-2xl font-extrabold ${
               isDark ? "text-white" : "text-slate-900"
             }`}
           >
-            ₹{totalPoValue.toLocaleString("en-IN")}
+            {formatCurrency(totalPoValue, currency)}
           </div>
           <div className="mt-1 text-xs text-slate-500">
             Across {purchaseOrders.length} Replenishment Line Items
@@ -306,14 +311,14 @@ export const PoGenerator: React.FC<PoGeneratorProps> = ({
                       +{po.recommendedOrderQty.toLocaleString()} units
                     </td>
                     <td className="py-2.5 px-4 font-mono text-slate-400">
-                      ₹{po.unitCostInr.toFixed(2)}
+                      {formatCurrency(po.unitCostInr, currency, { decimals: 2 })}
                     </td>
                     <td
                       className={`py-2.5 px-4 font-mono font-bold ${
                         isDark ? "text-white" : "text-slate-900"
                       }`}
                     >
-                      ₹{po.totalPoValueInr.toLocaleString("en-IN")}
+                      {formatCurrency(po.totalPoValueInr, currency)}
                     </td>
                     <td className="py-2.5 px-4 font-mono text-slate-400">
                       {po.expectedDeliveryDate}
@@ -422,7 +427,7 @@ export const PoGenerator: React.FC<PoGeneratorProps> = ({
                     {rec.totalUnits.toLocaleString()}
                   </td>
                   <td className="py-2 px-3 font-mono font-bold text-slate-200">
-                    ₹{rec.totalValueInr.toLocaleString("en-IN")}
+                    {formatCurrency(rec.totalValueInr, currency)}
                   </td>
                   <td className="py-2 px-3">
                     <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[11px] font-bold bg-emerald-500/10 text-emerald-400 border border-emerald-500/30">

@@ -1,16 +1,19 @@
 import React from "react";
-import { AlertTriangle, IndianRupee, ShieldAlert, Clock } from "lucide-react";
-import { SkuSimulationState } from "../types";
+import { AlertTriangle, ShieldAlert, Clock, Coins } from "lucide-react";
+import { SkuSimulationState, CurrencyCode } from "../types";
+import { formatCurrency, CURRENCIES } from "../utils/currency";
 
 interface KpiMetricsProps {
   simulationStates: SkuSimulationState[];
   selectedCslLabel: string;
+  currency?: CurrencyCode;
   theme?: "dark" | "light";
 }
 
 export const KpiMetrics: React.FC<KpiMetricsProps> = ({
   simulationStates,
   selectedCslLabel,
+  currency = "INR",
   theme = "dark",
 }) => {
   const isDark = theme === "dark";
@@ -77,13 +80,13 @@ export const KpiMetrics: React.FC<KpiMetricsProps> = ({
           <span className="text-xs font-semibold uppercase tracking-wider text-slate-400">
             Projected Revenue at Risk
           </span>
-          <div className="p-2 rounded-lg bg-amber-500/10 text-amber-500">
-            <IndianRupee className="w-4 h-4" />
+          <div className="p-1.5 px-2 rounded-lg bg-amber-500/10 text-amber-500 font-mono font-bold text-sm">
+            {CURRENCIES[currency]?.symbol || "$"}
           </div>
         </div>
         <div className="mt-3 flex items-baseline gap-1">
           <span className="text-2xl font-extrabold tracking-tight text-amber-500">
-            ₹{totalRevenueAtRisk.toLocaleString("en-IN")}
+            {formatCurrency(totalRevenueAtRisk, currency)}
           </span>
         </div>
         <div className="mt-2 flex items-center justify-between text-xs text-slate-400">

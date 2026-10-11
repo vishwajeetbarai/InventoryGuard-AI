@@ -1,5 +1,6 @@
 import React, { useState } from "react";
-import { Warehouse, InterTransferRecommendation, SkuSimulationState } from "../types";
+import { Warehouse, InterTransferRecommendation, SkuSimulationState, CurrencyCode } from "../types";
+import { formatCurrency } from "../utils/currency";
 import {
   MapPin,
   ArrowRightLeft,
@@ -22,6 +23,7 @@ interface NetworkTopologyMapProps {
   interTransfers: InterTransferRecommendation[];
   simulationStates: SkuSimulationState[];
   onApproveTransfer: (id: string) => void;
+  currency?: CurrencyCode;
   theme: "dark" | "light";
 }
 
@@ -99,6 +101,7 @@ export const NetworkTopologyMap: React.FC<NetworkTopologyMapProps> = ({
   interTransfers,
   simulationStates,
   onApproveTransfer,
+  currency = "INR",
   theme,
 }) => {
   const isDark = theme === "dark";
@@ -640,7 +643,7 @@ export const NetworkTopologyMap: React.FC<NetworkTopologyMapProps> = ({
                       </div>
                       <div className="mt-2 flex items-center justify-between pt-1 border-t border-slate-700/40 text-[10px]">
                         <span className="text-sky-400 font-semibold">
-                          Net Profit: +₹{xfer.netProfitabilityInr?.toLocaleString() || "1,200"}
+                          Net Profit: +{formatCurrency(xfer.netProfitabilityInr || 1200, currency)}
                         </span>
                         {isApproved ? (
                           <span className="text-emerald-400 font-bold flex items-center gap-1">

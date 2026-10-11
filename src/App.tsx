@@ -31,7 +31,16 @@ import { StorageService, CustomDatasetPayload } from "./services/storageService"
 import { UserProfile, TenantOrganization, UserRole, AuditLogEntry } from "./types/auth";
 import { USER_ROLES, DEMO_USERS, TENANT_ORGANIZATIONS } from "./services/authService";
 import { generateSupplyChainAuditCsv, triggerCsvDownload } from "./utils/exportCsv";
-import { DispatchedPoRecord, ReorderPolicy, SkuMetadata, DailyRecord, Warehouse } from "./types";
+import {
+  DispatchedPoRecord,
+  ReorderPolicy,
+  SkuMetadata,
+  DailyRecord,
+  Warehouse,
+  ForecastModel,
+  CurrencyCode,
+} from "./types";
+import { getStoredCurrency, setStoredCurrency, formatCurrency } from "./utils/currency";
 import {
   TrendingUp,
   Table,
@@ -136,6 +145,8 @@ export default function App() {
   const [weatherSurgePct, setWeatherSurgePct] = useState<number>(0);
   const [supplierDelayDays, setSupplierDelayDays] = useState<number>(0);
   const [reorderPolicy, setReorderPolicy] = useState<ReorderPolicy>("DYNAMIC_AI");
+  const [forecastModel, setForecastModel] = useState<ForecastModel>("META_PROPHET");
+  const [currency, setCurrency] = useState<CurrencyCode>(() => getStoredCurrency());
 
   // Tabs & Persistent Ledger State
   const [activeTab, setActiveTab] = useState<
@@ -173,6 +184,10 @@ export default function App() {
   useEffect(() => {
     StorageService.setCurrentTenant(currentTenant);
   }, [currentTenant]);
+
+  useEffect(() => {
+    setStoredCurrency(currency);
+  }, [currency]);
 
   const addToast = (
     toast: Omit<ToastItem, "id" | "timestamp"> & { id?: string; timestamp?: string }
@@ -236,7 +251,8 @@ export default function App() {
       promoSurgePct,
       supplierDelayDays,
       weatherSurgePct,
-      reorderPolicy
+      reorderPolicy,
+      forecastModel
     );
   }, [
     allHistoricalRecords,
@@ -249,6 +265,7 @@ export default function App() {
     supplierDelayDays,
     weatherSurgePct,
     reorderPolicy,
+    forecastModel,
   ]);
 
   // Current Warehouse Metadata
@@ -785,6 +802,8 @@ export default function App() {
       return;
     }
 
+    const formattedAmount = formatCurrency(amountInr, currency);
+
     const log = StorageService.appendAuditLog({
       tenantId: currentTenant.id,
       userId: currentUser.id,
@@ -792,14 +811,14 @@ export default function App() {
       userRole: currentUser.role,
       actionType: "SLA_DEBIT_NOTE_ISSUED",
       targetEntity: supplierName,
-      details: `Dispatched SLA breach debit note for ₹${amountInr.toLocaleString("en-IN")} to ERP Accounts Payable for persistent delivery delays.`,
+      details: `Dispatched SLA breach debit note for ${formattedAmount} to ERP Accounts Payable for persistent delivery delays.`,
     });
     setAuditLogs(StorageService.getAuditLogs());
 
     addToast({
       type: "dispatch",
       title: "SLA Debit Note Dispatched",
-      message: `Formal liquidated damages debit note for ₹${amountInr.toLocaleString("en-IN")} dispatched to ERP Accounts Payable for ${supplierName}.`,
+      message: `Formal liquidated damages debit note for ${formattedAmount} dispatched to ERP Accounts Payable for ${supplierName}.`,
       meta: {
         code: `DBN-${Date.now().toString().slice(-4)}`,
         hash: log.cryptoHash,
@@ -863,6 +882,8 @@ export default function App() {
         onSelectTenant={handleSelectTenant}
         customDatasetName={customDataset?.name}
         onResetCustomDataset={handleResetCustomDataset}
+        currentCurrency={currency}
+        onSelectCurrency={setCurrency}
       />
 
       {/* Main Content Layout */}
@@ -912,6 +933,12 @@ export default function App() {
           onApplyPreset={handleApplyPreset}
           reorderPolicy={reorderPolicy}
           onSelectReorderPolicy={handleSelectReorderPolicy}
+          forecastModel={forecastModel}
+          onSelectForecastModel={(model) => {
+            setForecastModel(model);
+            handleTriggerSimulation();
+          }}
+          currency={currency}
           theme={theme}
         />
 
@@ -921,6 +948,7 @@ export default function App() {
           <KpiMetrics
             simulationStates={simulationStates}
             selectedCslLabel={currentServiceLevel.label.split(" - ")[0]}
+            currency={currency}
             theme={theme}
           />
 
@@ -1055,6 +1083,7 @@ export default function App() {
               interTransfers={interTransfers}
               simulationStates={simulationStates}
               onApproveTransfer={handleApproveTransfer}
+              currency={currency}
               theme={theme}
             />
           )}
@@ -1066,6 +1095,8 @@ export default function App() {
               onSelectSkuId={setActiveSkuId}
               monteCarloIterations={monteCarloRuns}
               weatherSurgePct={weatherSurgePct}
+              currency={currency}
+              forecastModel={forecastModel}
               theme={theme}
             />
           )}
@@ -1077,11 +1108,13 @@ export default function App() {
                 onSelectSku={handleSelectSkuDeepDive}
                 onBulkDispatchCriticalPos={handleBulkDispatchCriticalPos}
                 onAutoApproveTransfers={handleAutoApproveAllTransfers}
+                currency={currency}
                 theme={theme}
               />
               <DynamicMarkdownCard
                 items={markdownItems}
                 onApplyMarkdown={handleApplyMarkdown}
+                currency={currency}
                 theme={theme}
               />
               <SubstitutionCard
@@ -1095,6 +1128,7 @@ export default function App() {
             <InterTransferView
               recommendations={interTransfers}
               onApproveTransfer={handleApproveTransfer}
+              currency={currency}
               theme={theme}
             />
           )}
@@ -1103,6 +1137,7 @@ export default function App() {
             <SupplierScorecardView
               simulationStates={simulationStates}
               onIssueDebitNote={handleIssueDebitNote}
+              currency={currency}
               theme={theme}
             />
           )}
@@ -1113,6 +1148,7 @@ export default function App() {
               warehouse={currentWarehouse}
               dispatchedLedger={dispatchedLedger}
               onDispatchPo={handleDispatchPo}
+              currency={currency}
               theme={theme}
             />
           )}
@@ -1186,6 +1222,7 @@ export default function App() {
         interTransfers={interTransfers}
         dispatchedLedger={dispatchedLedger}
         onDownloadCsv={handleDownloadCsv}
+        currency={currency}
         theme={theme}
       />
 

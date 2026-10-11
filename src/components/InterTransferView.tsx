@@ -1,5 +1,6 @@
 import React, { useState } from "react";
-import { InterTransferRecommendation } from "../types";
+import { InterTransferRecommendation, CurrencyCode } from "../types";
+import { formatCurrency, CURRENCIES } from "../utils/currency";
 import { calculateGreenLogistics } from "../engine/supplyChainEngine";
 import {
   ArrowRightLeft,
@@ -7,7 +8,6 @@ import {
   ShieldCheck,
   CheckCircle2,
   Clock,
-  IndianRupee,
   AlertCircle,
   Building2,
   Sparkles,
@@ -15,7 +15,6 @@ import {
   Zap,
   Timer,
   Scale,
-  DollarSign,
   PackageCheck,
   Leaf,
   Trees,
@@ -24,12 +23,14 @@ import {
 interface InterTransferViewProps {
   recommendations: InterTransferRecommendation[];
   onApproveTransfer: (id: string) => void;
+  currency?: CurrencyCode;
   theme: "dark" | "light";
 }
 
 export const InterTransferView: React.FC<InterTransferViewProps> = ({
   recommendations,
   onApproveTransfer,
+  currency = "INR",
   theme,
 }) => {
   const isDark = theme === "dark";
@@ -119,10 +120,12 @@ export const InterTransferView: React.FC<InterTransferViewProps> = ({
         >
           <div className="flex items-center justify-between text-xs font-semibold uppercase tracking-wider text-slate-400">
             <span>Salvaged Revenue</span>
-            <IndianRupee className="w-4 h-4 text-emerald-400" />
+            <span className="p-1 px-1.5 rounded-md bg-emerald-500/10 text-emerald-400 font-bold font-mono">
+              {CURRENCIES[currency]?.symbol || "$"}
+            </span>
           </div>
           <div className="mt-3 text-2xl font-extrabold text-emerald-500 font-mono">
-            ₹{totalSalvagedRevenueInr.toLocaleString("en-IN")}
+            {formatCurrency(totalSalvagedRevenueInr, currency)}
           </div>
           <div className="mt-1 text-xs text-slate-500">
             Gross stock-out penalties &amp; sales revenue preserved
@@ -140,10 +143,10 @@ export const InterTransferView: React.FC<InterTransferViewProps> = ({
             <Scale className="w-4 h-4 text-sky-400" />
           </div>
           <div className="mt-3 text-2xl font-extrabold text-sky-400 font-mono">
-            +₹{Math.max(0, netSalvagedProfitInr).toLocaleString("en-IN")}
+            +{formatCurrency(Math.max(0, netSalvagedProfitInr), currency)}
           </div>
           <div className="mt-1 text-xs text-slate-500 flex items-center justify-between">
-            <span>Freight Cost: ₹{totalFreightCostInr.toLocaleString("en-IN")}</span>
+            <span>Freight Cost: {formatCurrency(totalFreightCostInr, currency)}</span>
             <span className="text-emerald-400 font-bold">{roiMultiplier}x ROI</span>
           </div>
         </div>
@@ -489,10 +492,10 @@ export const InterTransferView: React.FC<InterTransferViewProps> = ({
                       <div className="text-right">
                         <div className="text-xs text-slate-400">Net Profitability</div>
                         <div className="text-xs font-bold text-emerald-400 font-mono mt-0.5">
-                          +₹{netProfit.toLocaleString("en-IN")}
+                          +{formatCurrency(netProfit, currency)}
                         </div>
                         <div className="text-[10px] text-slate-500">
-                          Freight: ₹{rec.transitCostInr}
+                          Freight: {formatCurrency(rec.transitCostInr, currency)}
                         </div>
                       </div>
 

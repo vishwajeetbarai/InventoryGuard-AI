@@ -4,7 +4,9 @@ import {
   SkuSimulationState,
   InterTransferRecommendation,
   DispatchedPoRecord,
+  CurrencyCode,
 } from "../types";
+import { formatCurrency } from "../utils/currency";
 import {
   Printer,
   Download,
@@ -25,6 +27,7 @@ interface ExecutiveReportModalProps {
   interTransfers: InterTransferRecommendation[];
   dispatchedLedger: DispatchedPoRecord[];
   onDownloadCsv: () => void;
+  currency?: CurrencyCode;
   theme: "dark" | "light";
 }
 
@@ -36,6 +39,7 @@ export const ExecutiveReportModal: React.FC<ExecutiveReportModalProps> = ({
   interTransfers,
   dispatchedLedger,
   onDownloadCsv,
+  currency = "INR",
   theme,
 }) => {
   const isDark = theme === "dark";
@@ -184,7 +188,7 @@ export const ExecutiveReportModal: React.FC<ExecutiveReportModalProps> = ({
                 Revenue at Risk
               </span>
               <div className="text-xl font-black text-emerald-400 font-mono mt-1">
-                ₹{Math.round(totalRevenueAtRisk).toLocaleString()}
+                {formatCurrency(totalRevenueAtRisk, currency)}
               </div>
               <span className="text-[10px] text-slate-500">
                 Stockout penalties &amp; sales loss
@@ -203,7 +207,7 @@ export const ExecutiveReportModal: React.FC<ExecutiveReportModalProps> = ({
                 {interTransfers.length} Transfers
               </div>
               <span className="text-[10px] text-slate-500">
-                Net Profit: +₹{Math.round(totalTransferProfit).toLocaleString()}
+                Net Profit: +{formatCurrency(totalTransferProfit, currency)}
               </span>
             </div>
 
@@ -337,9 +341,9 @@ export const ExecutiveReportModal: React.FC<ExecutiveReportModalProps> = ({
                           {t.recommendedTransferQty}
                         </td>
                         <td className="py-2 px-3 text-right">~{t.transitHours}h</td>
-                        <td className="py-2 px-3 text-right">₹{t.transitCostInr}</td>
+                        <td className="py-2 px-3 text-right">{formatCurrency(t.transitCostInr, currency)}</td>
                         <td className="py-2 px-3 text-right text-emerald-400">
-                          ₹{t.stockoutLossPreventedInr}
+                          {formatCurrency(t.stockoutLossPreventedInr, currency)}
                         </td>
                         <td className="py-2 px-3 font-sans font-bold">
                           <span
@@ -379,7 +383,7 @@ export const ExecutiveReportModal: React.FC<ExecutiveReportModalProps> = ({
                       <th className="py-2 px-3">Batch PO Number</th>
                       <th className="py-2 px-3">ERP Target</th>
                       <th className="py-2 px-3 text-right">Items</th>
-                      <th className="py-2 px-3 text-right">Amount (INR)</th>
+                      <th className="py-2 px-3 text-right">Amount</th>
                       <th className="py-2 px-3">Dispatched Timestamp</th>
                       <th className="py-2 px-3">SHA-256 HMAC Signature</th>
                     </tr>
@@ -395,7 +399,7 @@ export const ExecutiveReportModal: React.FC<ExecutiveReportModalProps> = ({
                         </td>
                         <td className="py-2 px-3 text-right">{d.itemCount}</td>
                         <td className="py-2 px-3 text-right font-bold text-emerald-400">
-                          ₹{d.totalValueInr.toLocaleString()}
+                          {formatCurrency(d.totalValueInr, currency)}
                         </td>
                         <td className="py-2 px-3 text-slate-400">
                           {d.timestamp.slice(0, 19).replace("T", " ")}

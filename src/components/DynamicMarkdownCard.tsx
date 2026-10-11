@@ -1,5 +1,6 @@
 import React, { useState } from "react";
-import { MarkdownLiquidationItem } from "../types";
+import { MarkdownLiquidationItem, CurrencyCode } from "../types";
+import { formatCurrency } from "../utils/currency";
 import {
   Sparkles,
   Timer,
@@ -7,7 +8,6 @@ import {
   Percent,
   CheckCircle2,
   Trash2,
-  IndianRupee,
   Flame,
   Zap,
   ArrowRight,
@@ -17,12 +17,14 @@ import {
 interface DynamicMarkdownCardProps {
   items: MarkdownLiquidationItem[];
   onApplyMarkdown: (skuId: string, discountPct: number) => void;
+  currency?: CurrencyCode;
   theme?: "dark" | "light";
 }
 
 export const DynamicMarkdownCard: React.FC<DynamicMarkdownCardProps> = ({
   items,
   onApplyMarkdown,
+  currency = "INR",
   theme = "dark",
 }) => {
   const isDark = theme === "dark";
@@ -93,7 +95,7 @@ export const DynamicMarkdownCard: React.FC<DynamicMarkdownCardProps> = ({
               Total Waste Avoided
             </div>
             <div className="font-mono text-sm font-extrabold text-emerald-400">
-              ₹{totalWasteAvoidedRevenue.toLocaleString("en-IN")}
+              {formatCurrency(totalWasteAvoidedRevenue, currency)}
             </div>
           </div>
           <div className="h-7 w-[1px] bg-slate-800 hidden sm:block" />
@@ -102,7 +104,7 @@ export const DynamicMarkdownCard: React.FC<DynamicMarkdownCardProps> = ({
               Discard Loss At Risk
             </div>
             <div className="font-mono text-sm font-extrabold text-rose-400">
-              ₹{totalDiscardLossAtRisk.toLocaleString("en-IN")}
+              {formatCurrency(totalDiscardLossAtRisk, currency)}
             </div>
           </div>
         </div>
@@ -149,10 +151,10 @@ export const DynamicMarkdownCard: React.FC<DynamicMarkdownCardProps> = ({
                     </div>
                     <div className="flex items-baseline gap-2 mt-0.5">
                       <span className="font-mono text-lg font-black text-amber-400">
-                        ₹{item.discountedPrice}
+                        {formatCurrency(item.discountedPrice, currency, { decimals: 0 })}
                       </span>
                       <span className="font-mono text-xs text-slate-500 line-through">
-                        ₹{item.basePrice}
+                        {formatCurrency(item.basePrice, currency, { decimals: 0 })}
                       </span>
                     </div>
                   </div>
@@ -184,7 +186,7 @@ export const DynamicMarkdownCard: React.FC<DynamicMarkdownCardProps> = ({
                   <div className="flex justify-between text-slate-400">
                     <span>Discard Loss Prevented:</span>
                     <span className="font-mono font-bold text-emerald-400">
-                      +₹{item.wasteAvoidedRevenueInr.toLocaleString("en-IN")}
+                      +{formatCurrency(item.wasteAvoidedRevenueInr, currency)}
                     </span>
                   </div>
                 </div>
