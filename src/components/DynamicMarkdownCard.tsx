@@ -27,7 +27,7 @@ export const DynamicMarkdownCard: React.FC<DynamicMarkdownCardProps> = ({
   items,
   onApplyMarkdown,
   currency = "INR",
-  theme = "dark",
+  theme = "light",
 }) => {
   const isDark = theme === "dark";
   const [deployedSkuIds, setDeployedSkuIds] = useState<string[]>([]);
@@ -164,25 +164,31 @@ export const DynamicMarkdownCard: React.FC<DynamicMarkdownCardProps> = ({
                 </div>
 
                 {/* Pricing & Discount Card */}
-                <div className="mt-3 p-3 rounded-lg bg-slate-900/60 border border-slate-800/60 flex items-center justify-between">
+                <div
+                  className={`mt-3 p-3 rounded-lg border flex items-center justify-between ${
+                    isDark
+                      ? "bg-slate-900/60 border-slate-800/60"
+                      : "bg-amber-50/60 border-amber-200/80"
+                  }`}
+                >
                   <div>
-                    <div className="text-[10px] text-slate-400 uppercase font-medium">
+                    <div className="text-[10px] text-slate-700 dark:text-neutral-400 uppercase font-bold">
                       Flash Markdown
                     </div>
                     <div className="flex items-baseline gap-2 mt-0.5">
-                      <span className="font-mono text-lg font-black text-amber-400">
+                      <span className="font-mono text-lg font-black text-amber-700 dark:text-amber-400">
                         {formatCurrency(item.discountedPrice, currency, { decimals: 0 })}
                       </span>
-                      <span className="font-mono text-xs text-slate-500 line-through">
+                      <span className="font-mono text-xs text-slate-500 dark:text-neutral-400 line-through">
                         {formatCurrency(item.basePrice, currency, { decimals: 0 })}
                       </span>
                     </div>
                   </div>
                   <div className="text-right">
-                    <span className="px-2 py-1 rounded-md text-xs font-black bg-rose-500/20 text-rose-400 border border-rose-500/30 font-mono">
+                    <span className="px-2 py-1 rounded-md text-xs font-black bg-rose-500/20 text-rose-700 dark:text-rose-400 border border-rose-500/30 font-mono">
                       -{item.recommendedDiscountPct}% OFF
                     </span>
-                    <div className="text-[10px] text-emerald-400 font-medium mt-1 flex items-center gap-0.5 justify-end">
+                    <div className="text-[10px] text-emerald-700 dark:text-emerald-400 font-bold mt-1 flex items-center gap-0.5 justify-end">
                       <TrendingUp className="w-2.5 h-2.5" />
                       <span>{item.expectedSalesVelocityMultiplier}x Sales Velocity</span>
                     </div>
@@ -191,21 +197,21 @@ export const DynamicMarkdownCard: React.FC<DynamicMarkdownCardProps> = ({
 
                 {/* Metrics Matrix */}
                 <div className="mt-3 space-y-1.5 text-xs">
-                  <div className="flex justify-between text-slate-400">
+                  <div className="flex justify-between text-slate-700 dark:text-neutral-400 font-medium">
                     <span>Batch Stock Units:</span>
-                    <span className="font-mono text-slate-200">
+                    <span className="font-mono font-bold text-slate-900 dark:text-slate-200">
                       {item.currentStock} units
                     </span>
                   </div>
-                  <div className="flex justify-between text-slate-400">
+                  <div className="flex justify-between text-slate-700 dark:text-neutral-400 font-medium">
                     <span>Projected Salvaged Units:</span>
-                    <span className="font-mono font-bold text-emerald-400">
+                    <span className="font-mono font-bold text-emerald-700 dark:text-emerald-400">
                       {item.projectedUnitsSalvaged} units ({item.salvageEfficiencyPct}% efficiency)
                     </span>
                   </div>
-                  <div className="flex justify-between text-slate-400">
+                  <div className="flex justify-between text-slate-700 dark:text-neutral-400 font-medium">
                     <span>Discard Loss Prevented:</span>
-                    <span className="font-mono font-bold text-emerald-400">
+                    <span className="font-mono font-bold text-emerald-700 dark:text-emerald-400">
                       +{formatCurrency(item.wasteAvoidedRevenueInr, currency)}
                     </span>
                   </div>
@@ -213,7 +219,7 @@ export const DynamicMarkdownCard: React.FC<DynamicMarkdownCardProps> = ({
               </div>
 
               {/* Action Button */}
-              <div className="mt-4 pt-3 border-t border-slate-800/60">
+              <div className="mt-4 pt-3 border-t border-slate-200 dark:border-neutral-800">
                 {isDeployed ? (
                   <div className="w-full py-2 px-3 rounded-lg bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 text-xs font-bold flex items-center justify-center gap-1.5">
                     <CheckCircle2 className="w-3.5 h-3.5" />

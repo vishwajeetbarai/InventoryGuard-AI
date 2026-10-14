@@ -37,7 +37,7 @@ interface NodePosition {
   region: string;
 }
 
-const NODE_POSITIONS: Record<string, NodePosition> = {
+const DEFAULT_NODE_POSITIONS: Record<string, NodePosition> = {
   "WH-DEL-03": {
     id: "WH-DEL-03",
     x: 400,
@@ -49,7 +49,7 @@ const NODE_POSITIONS: Record<string, NodePosition> = {
   },
   "WH-BOM-01": {
     id: "WH-BOM-01",
-    x: 230,
+    x: 220,
     y: 310,
     label: "Mumbai Central",
     city: "Mumbai",
@@ -58,7 +58,7 @@ const NODE_POSITIONS: Record<string, NodePosition> = {
   },
   "WH-BLR-02": {
     id: "WH-BLR-02",
-    x: 340,
+    x: 350,
     y: 490,
     label: "Bengaluru Indiranagar",
     city: "Bengaluru",
@@ -67,14 +67,14 @@ const NODE_POSITIONS: Record<string, NodePosition> = {
   },
 };
 
-const CORRIDOR_ROUTES = [
+const BASE_CORRIDORS = [
   {
     from: "WH-DEL-03",
     to: "WH-BOM-01",
     label: "Delhi ⇄ Mumbai Freight Corridor",
     distanceKm: 1410,
     transitHours: 6,
-    path: "M 400 110 Q 300 200 230 310",
+    path: "M 400 110 Q 290 200 220 310",
   },
   {
     from: "WH-BOM-01",
@@ -82,7 +82,7 @@ const CORRIDOR_ROUTES = [
     label: "Mumbai ⇄ Bengaluru Express Link",
     distanceKm: 980,
     transitHours: 4,
-    path: "M 230 310 Q 280 410 340 490",
+    path: "M 220 310 Q 275 410 350 490",
   },
   {
     from: "WH-DEL-03",
@@ -90,7 +90,7 @@ const CORRIDOR_ROUTES = [
     label: "Delhi ⇄ Bengaluru High-Speed Spine",
     distanceKm: 2150,
     transitHours: 6.5,
-    path: "M 400 110 Q 420 300 340 490",
+    path: "M 400 110 Q 420 300 350 490",
   },
 ];
 
@@ -101,16 +101,34 @@ export const NetworkTopologyMap: React.FC<NetworkTopologyMapProps> = ({
   interTransfers,
   simulationStates,
   onApproveTransfer,
-  currency = "INR",
+  currency = "USD",
   theme,
 }) => {
   const isDark = theme === "dark";
   const [hoveredNode, setHoveredNode] = useState<string | null>(null);
   const [animationSpeed, setAnimationSpeed] = useState<"normal" | "fast">("normal");
 
+  // Dynamically resolve node coordinates, supporting arbitrary uploaded warehouses
+  const getNodePos = (wh: Warehouse, idx: number, total: number): NodePosition => {
+    if (DEFAULT_NODE_POSITIONS[wh.id]) {
+      return DEFAULT_NODE_POSITIONS[wh.id];
+    }
+    const angle = (idx / Math.max(1, total)) * 2 * Math.PI - Math.PI / 2;
+    const radiusX = 180;
+    const radiusY = 160;
+    return {
+      id: wh.id,
+      x: Math.round(320 + radiusX * Math.cos(angle)),
+      y: Math.round(270 + radiusY * Math.sin(angle)),
+      label: wh.name,
+      city: wh.city,
+      state: wh.city,
+      region: wh.region,
+    };
+  };
+
   // Determine health per warehouse
   const getNodeHealth = (whId: string) => {
-    // If it is the active warehouse, we can evaluate current simulationStates
     if (whId === selectedWarehouseId) {
       const hasCritical = simulationStates.some(
         (s) => s.mcResult.urgency === "CRITICAL REORDER NOW"
@@ -123,7 +141,6 @@ export const NetworkTopologyMap: React.FC<NetworkTopologyMapProps> = ({
       return { status: "optimal", color: "emerald", label: "Optimal Stock" };
     }
 
-    // For other warehouses, check if they are acting as donor or recipient in transfer proposals
     const isDonor = interTransfers.some((t) => t.originWarehouseId === whId);
     const isRecipient = interTransfers.some((t) => t.destWarehouseId === whId);
 
@@ -149,7 +166,7 @@ export const NetworkTopologyMap: React.FC<NetworkTopologyMapProps> = ({
   );
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4">
       {/* Topology Header Banner */}
       <div
         className={`border rounded-xl p-5 shadow-xs transition-colors ${
@@ -162,29 +179,29 @@ export const NetworkTopologyMap: React.FC<NetworkTopologyMapProps> = ({
           <div>
             <div className="flex items-center gap-2">
               <span className="p-1.5 rounded-lg bg-neutral-100 dark:bg-neutral-800 text-slate-800 dark:text-neutral-200">
-                <Navigation className="w-4 h-4" />
+                <Navigation className="w-4 h-4 text-emerald-500" />
               </span>
               <h2 className="text-base sm:text-lg font-bold text-slate-950 dark:text-white">
                 Multi-Echelon Dark Store Network Topology Map
               </h2>
             </div>
-            <p className="text-xs text-slate-700 dark:text-neutral-300 mt-1 font-medium">
+            <p className="text-xs text-slate-600 dark:text-neutral-400 mt-1 font-medium">
               Geographic network telemetry across regional fulfillment hubs with active cross-dock transit corridors and dynamic stock health.
             </p>
           </div>
 
           <div className="flex items-center gap-3">
-            <div className="flex items-center gap-2 text-xs">
+            <div className="flex items-center gap-2 text-xs text-slate-600 dark:text-neutral-400">
               <span className="flex items-center gap-1.5 text-rose-500 font-semibold">
                 <span className="w-2 h-2 rounded-full bg-rose-500 animate-ping inline-block" />
                 Deficit
               </span>
-              <span className="text-slate-400">·</span>
+              <span>·</span>
               <span className="flex items-center gap-1.5 text-amber-500 font-semibold">
                 <span className="w-2 h-2 rounded-full bg-amber-500 inline-block" />
                 Surplus Donor
               </span>
-              <span className="text-slate-400">·</span>
+              <span>·</span>
               <span className="flex items-center gap-1.5 text-emerald-500 font-semibold">
                 <span className="w-2 h-2 rounded-full bg-emerald-500 inline-block" />
                 Optimal
@@ -192,20 +209,21 @@ export const NetworkTopologyMap: React.FC<NetworkTopologyMapProps> = ({
             </div>
 
             <button
+              type="button"
               onClick={() =>
                 setAnimationSpeed((prev) => (prev === "normal" ? "fast" : "normal"))
               }
               className={`px-2.5 py-1 text-[11px] rounded-lg border font-semibold transition-colors cursor-pointer ${
                 animationSpeed === "fast"
                   ? isDark
-                    ? "bg-white text-neutral-950 border-white"
-                    : "bg-slate-900 text-white border-slate-900"
+                    ? "bg-white text-neutral-950 border-white font-bold"
+                    : "bg-slate-900 text-white border-slate-900 font-bold"
                   : isDark
                   ? "bg-neutral-900 text-neutral-300 border-neutral-800 hover:bg-neutral-800"
                   : "bg-slate-100 text-slate-700 border-slate-200 hover:bg-slate-200"
               }`}
             >
-              {animationSpeed === "fast" ? "⚡ Fast Pulse" : "Pulse: Normal"}
+              {animationSpeed === "fast" ? "Fast Pulse" : "Pulse: Normal"}
             </button>
           </div>
         </div>
@@ -238,7 +256,6 @@ export const NetworkTopologyMap: React.FC<NetworkTopologyMapProps> = ({
               style={{ overflow: "visible" }}
             >
               <defs>
-                {/* Gradient for links */}
                 <linearGradient id="linkGrad1" x1="0%" y1="0%" x2="100%" y2="100%">
                   <stop offset="0%" stopColor="#818CF8" stopOpacity="0.8" />
                   <stop offset="100%" stopColor="#38BDF8" stopOpacity="0.8" />
@@ -250,116 +267,145 @@ export const NetworkTopologyMap: React.FC<NetworkTopologyMapProps> = ({
                 </filter>
               </defs>
 
-              {/* Corridor Route Paths */}
-              {CORRIDOR_ROUTES.map((route, idx) => {
+              {/* Background Geometry Outline / Map Reference Rings */}
+              <circle
+                cx="320"
+                cy="290"
+                r="220"
+                fill="none"
+                stroke={isDark ? "#1E293B" : "#F1F5F9"}
+                strokeWidth="1.5"
+                strokeDasharray="6,6"
+              />
+              <circle
+                cx="320"
+                cy="290"
+                r="140"
+                fill="none"
+                stroke={isDark ? "#1E293B" : "#F1F5F9"}
+                strokeWidth="1"
+                strokeDasharray="4,4"
+              />
+
+              {/* Base Corridor Routes */}
+              {BASE_CORRIDORS.map((route, i) => {
                 const hasActiveTransfer = interTransfers.some(
                   (t) =>
-                    (t.originWarehouseId === route.from &&
-                      t.destWarehouseId === route.to) ||
-                    (t.originWarehouseId === route.to &&
-                      t.destWarehouseId === route.from)
+                    (t.originWarehouseId === route.from && t.destWarehouseId === route.to) ||
+                    (t.originWarehouseId === route.to && t.destWarehouseId === route.from)
                 );
 
-                const pulseDuration =
-                  animationSpeed === "fast" ? "2.5s" : "4.5s";
+                const dur = animationSpeed === "fast" ? "2.5s" : "5s";
 
                 return (
-                  <g key={idx}>
-                    {/* Background route glow line */}
+                  <g key={i}>
+                    {/* Background wide trail */}
                     <path
                       d={route.path}
                       fill="none"
-                      stroke={
-                        hasActiveTransfer
-                          ? "#F59E0B"
-                          : isDark
-                          ? "#1E293B"
-                          : "#CBD5E1"
-                      }
-                      strokeWidth={hasActiveTransfer ? 3 : 1.5}
-                      strokeDasharray={hasActiveTransfer ? "none" : "5,5"}
-                      strokeLinecap="round"
+                      stroke={hasActiveTransfer ? "#F59E0B" : isDark ? "#334155" : "#CBD5E1"}
+                      strokeWidth={hasActiveTransfer ? "3" : "1.8"}
+                      strokeOpacity={hasActiveTransfer ? "0.6" : "0.35"}
                     />
 
-                    {/* Animated moving pulse dots along the route */}
-                    <circle r="4.5" fill={hasActiveTransfer ? "#F59E0B" : "#818CF8"}>
-                      <animateMotion
-                        path={route.path}
-                        dur={pulseDuration}
-                        repeatCount="indefinite"
-                        rotate="auto"
-                      />
-                    </circle>
-
-                    {/* Return pulse in opposite direction */}
-                    <circle r="3" fill="#38BDF8" opacity="0.75">
-                      <animateMotion
-                        path={route.path}
-                        dur={animationSpeed === "fast" ? "3.2s" : "5.8s"}
-                        repeatCount="indefinite"
-                        keyPoints="1;0"
-                        keyTimes="0;1"
-                        rotate="auto"
-                      />
-                    </circle>
-
-                    {/* Distance / Latency pill badge in mid-path */}
-                    <g
-                      transform={`translate(${
-                        idx === 0
-                          ? 290
-                          : idx === 1
-                          ? 285
-                          : 405
-                      }, ${idx === 0 ? 210 : idx === 1 ? 400 : 310})`}
+                    {/* Animated corridor pulse */}
+                    <path
+                      d={route.path}
+                      fill="none"
+                      stroke={hasActiveTransfer ? "#F59E0B" : isDark ? "#60A5FA" : "#3B82F6"}
+                      strokeWidth={hasActiveTransfer ? "2.5" : "1.5"}
+                      strokeDasharray="8,12"
+                      strokeOpacity="0.9"
                     >
-                      <rect
-                        x="-48"
-                        y="-10"
-                        width="96"
-                        height="20"
-                        rx="10"
-                        fill={isDark ? "#0F172A" : "#FFFFFF"}
-                        stroke={
-                          hasActiveTransfer
-                            ? "#F59E0B"
-                            : isDark
-                            ? "#334155"
-                            : "#E2E8F0"
-                        }
-                        strokeWidth="1"
+                      <animate
+                        attributeName="stroke-dashoffset"
+                        from="200"
+                        to="0"
+                        dur={dur}
+                        repeatCount="indefinite"
                       />
-                      <text
-                        x="0"
-                        y="3"
-                        textAnchor="middle"
-                        fontSize="9"
-                        fontWeight="600"
-                        fill={
-                          hasActiveTransfer
-                            ? "#F59E0B"
-                            : isDark
-                            ? "#94A3B8"
-                            : "#475569"
-                        }
-                      >
-                        {route.transitHours}h · {route.distanceKm} km
-                      </text>
-                    </g>
+                    </path>
+
+                    {/* Midpoint Corridor Annotation */}
+                    {i === 0 && (
+                      <g transform="translate(290, 195)">
+                        <rect
+                          x="-45"
+                          y="-10"
+                          width="90"
+                          height="20"
+                          rx="4"
+                          fill={isDark ? "#0F172A" : "#FFFFFF"}
+                          stroke={isDark ? "#334155" : "#E2E8F0"}
+                          strokeWidth="1"
+                        />
+                        <text
+                          x="0"
+                          y="4"
+                          textAnchor="middle"
+                          fontSize="9"
+                          fontWeight="600"
+                          fill={isDark ? "#94A3B8" : "#475569"}
+                        >
+                          1,410 km · ~6h
+                        </text>
+                      </g>
+                    )}
+                    {i === 1 && (
+                      <g transform="translate(270, 400)">
+                        <rect
+                          x="-42"
+                          y="-10"
+                          width="84"
+                          height="20"
+                          rx="4"
+                          fill={isDark ? "#0F172A" : "#FFFFFF"}
+                          stroke={isDark ? "#334155" : "#E2E8F0"}
+                          strokeWidth="1"
+                        />
+                        <text
+                          x="0"
+                          y="4"
+                          textAnchor="middle"
+                          fontSize="9"
+                          fontWeight="600"
+                          fill={isDark ? "#94A3B8" : "#475569"}
+                        >
+                          980 km · ~4h
+                        </text>
+                      </g>
+                    )}
+                    {i === 2 && (
+                      <g transform="translate(425, 300)">
+                        <rect
+                          x="-48"
+                          y="-10"
+                          width="96"
+                          height="20"
+                          rx="4"
+                          fill={isDark ? "#0F172A" : "#FFFFFF"}
+                          stroke={isDark ? "#334155" : "#E2E8F0"}
+                          strokeWidth="1"
+                        />
+                        <text
+                          x="0"
+                          y="4"
+                          textAnchor="middle"
+                          fontSize="9"
+                          fontWeight="600"
+                          fill={isDark ? "#94A3B8" : "#475569"}
+                        >
+                          2,150 km · ~6.5h
+                        </text>
+                      </g>
+                    )}
                   </g>
                 );
               })}
 
               {/* Warehouse Nodes */}
-              {warehouses.map((wh) => {
-                const pos = NODE_POSITIONS[wh.id] || {
-                  x: 300,
-                  y: 300,
-                  label: wh.name,
-                  city: wh.city,
-                  state: wh.city,
-                  region: wh.region,
-                };
+              {warehouses.map((wh, idx) => {
+                const pos = getNodePos(wh, idx, warehouses.length);
                 const health = getNodeHealth(wh.id);
                 const isSelected = wh.id === selectedWarehouseId;
                 const isHovered = wh.id === hoveredNode;
@@ -454,15 +500,15 @@ export const NetworkTopologyMap: React.FC<NetworkTopologyMapProps> = ({
 
                     {/* Active live badge */}
                     {isSelected && (
-                      <g transform={`translate(${pos.x - 30}, ${pos.y - 42})`}>
+                      <g transform={`translate(${pos.x - 36}, ${pos.y - 44})`}>
                         <rect
-                          width="60"
+                          width="72"
                           height="18"
                           rx="4"
-                          fill="#4F46E5"
+                          fill="#10B981"
                         />
                         <text
-                          x="30"
+                          x="36"
                           y="12"
                           textAnchor="middle"
                           fontSize="9"
@@ -487,10 +533,10 @@ export const NetworkTopologyMap: React.FC<NetworkTopologyMapProps> = ({
           >
             <div className="flex items-center gap-2">
               <Radio className="w-3.5 h-3.5 text-emerald-400 animate-pulse" />
-              <span>Click any node disc to switch executive command context</span>
+              <span>Click any node disc to switch command context</span>
             </div>
             <span className="font-mono text-[11px]">
-              Active Corridor Links: {CORRIDOR_ROUTES.length} · Live Dark Stores: 3
+              Active Corridors: {BASE_CORRIDORS.length} · Dark Store Hubs: {warehouses.length}
             </span>
           </div>
         </div>
@@ -510,7 +556,7 @@ export const NetworkTopologyMap: React.FC<NetworkTopologyMapProps> = ({
                 </h3>
               </div>
               <span
-                className={`text-[10px] px-2 py-0.5 rounded font-bold uppercase tracking-wider ${
+                className={`text-[10px] px-2 py-0.5 rounded font-mono font-bold uppercase tracking-wider ${
                   focusedHealth.status === "critical"
                     ? "bg-rose-500/15 text-rose-500 dark:text-rose-400 border border-rose-500/30"
                     : focusedHealth.status === "surplus"
@@ -533,6 +579,12 @@ export const NetworkTopologyMap: React.FC<NetworkTopologyMapProps> = ({
                 <span className="text-slate-700 dark:text-neutral-300 font-medium">Geographic Region:</span>
                 <span className="font-bold text-slate-950 dark:text-white">
                   {focusedWh.region} ({focusedWh.city})
+                </span>
+              </div>
+              <div className="flex justify-between items-center py-1 border-b border-slate-200 dark:border-neutral-800">
+                <span className="text-slate-700 dark:text-neutral-300 font-medium">Demand Multiplier:</span>
+                <span className="font-mono font-bold text-slate-950 dark:text-white">
+                  {focusedWh.demandFactor.toFixed(2)}x regional baseline
                 </span>
               </div>
               <div className="flex justify-between items-center py-1 border-b border-slate-200 dark:border-neutral-800">
@@ -573,8 +625,9 @@ export const NetworkTopologyMap: React.FC<NetworkTopologyMapProps> = ({
               <div className="pt-2">
                 {focusedWh.id !== selectedWarehouseId ? (
                   <button
+                    type="button"
                     onClick={() => onSelectWarehouse(focusedWh.id)}
-                    className="w-full py-2 px-3 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white font-semibold text-xs transition-colors flex items-center justify-center gap-1.5 cursor-pointer"
+                    className="w-full py-2 px-3 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white font-semibold text-xs transition-colors flex items-center justify-center gap-1.5 cursor-pointer"
                   >
                     <Radio className="w-3.5 h-3.5" />
                     <span>Switch Command View to this Node</span>
@@ -600,14 +653,14 @@ export const NetworkTopologyMap: React.FC<NetworkTopologyMapProps> = ({
                 <Truck className="w-4 h-4 text-amber-500" />
                 <span>Inter-Node Transit Operations</span>
               </h3>
-              <span className="text-[11px] font-mono text-indigo-600 dark:text-indigo-400 font-bold">
+              <span className="text-[11px] font-mono text-emerald-600 dark:text-emerald-400 font-bold">
                 {interTransfers.length} Active
               </span>
             </div>
 
             <div className="mt-3 space-y-2.5 max-h-[220px] overflow-y-auto pr-1">
               {interTransfers.length === 0 ? (
-                <div className="text-xs text-slate-700 dark:text-neutral-300 text-center py-4 font-medium">
+                <div className="text-xs text-slate-600 dark:text-neutral-400 text-center py-4 font-medium">
                   No emergency transfers required across corridors.
                 </div>
               ) : (
@@ -630,31 +683,32 @@ export const NetworkTopologyMap: React.FC<NetworkTopologyMapProps> = ({
                       }`}
                     >
                       <div className="flex items-center justify-between">
-                        <span className="font-bold text-indigo-600 dark:text-indigo-400">
+                        <span className="font-bold text-slate-950 dark:text-white">
                           {xfer.skuName}
                         </span>
                         <span className="font-mono text-emerald-600 dark:text-emerald-400 font-semibold">
                           +{xfer.recommendedTransferQty} Units
                         </span>
                       </div>
-                      <div className="text-[11px] text-slate-700 dark:text-neutral-300 mt-1 flex items-center justify-between font-medium">
+                      <div className="text-[11px] text-slate-600 dark:text-neutral-400 mt-1 flex items-center justify-between font-medium">
                         <span>
                           {originWh.split(" ")[0]} ➔ {destWh.split(" ")[0]}
                         </span>
                         <span>~{xfer.transitHours}h van</span>
                       </div>
                       <div className="mt-2 flex items-center justify-between pt-1 border-t border-slate-200 dark:border-neutral-800 text-[10px]">
-                        <span className="text-sky-600 dark:text-sky-400 font-semibold">
+                        <span className="text-emerald-700 dark:text-emerald-400 font-semibold">
                           Net Profit: +{formatCurrency(xfer.netProfitabilityInr || 1200, currency)}
                         </span>
                         {isApproved ? (
-                          <span className="text-emerald-600 dark:text-emerald-400 font-bold flex items-center gap-1">
+                          <span className="text-emerald-600 dark:text-emerald-400 font-bold flex items-center gap-1 font-mono">
                             <CheckCircle2 className="w-3 h-3" /> In Transit
                           </span>
                         ) : (
                           <button
+                            type="button"
                             onClick={() => onApproveTransfer(xfer.id)}
-                            className="px-2 py-0.5 rounded bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold cursor-pointer transition-colors"
+                            className="px-2.5 py-0.5 rounded bg-emerald-600 hover:bg-emerald-700 text-white font-bold cursor-pointer transition-colors"
                           >
                             Approve
                           </button>

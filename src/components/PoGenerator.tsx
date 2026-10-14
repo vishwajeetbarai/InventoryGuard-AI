@@ -35,7 +35,7 @@ export const PoGenerator: React.FC<PoGeneratorProps> = ({
   dispatchedLedger,
   onDispatchPo,
   currency = "INR",
-  theme = "dark",
+  theme = "light",
 }) => {
   const isDark = theme === "dark";
   const [selectedErp, setSelectedErp] = useState<string>("SAP S/4HANA Cloud (EDI 850)");
@@ -178,8 +178,8 @@ export const PoGenerator: React.FC<PoGeneratorProps> = ({
               <FileSpreadsheet className="w-5 h-5 text-emerald-500" />
               Automated Procurement Purchase Orders (PO Batch)
             </h3>
-            <p className="text-xs text-slate-400 mt-0.5">
-              Node: <strong className={isDark ? "text-slate-200" : "text-slate-800"}>{warehouse.name}</strong> • Dynamic ROP with Expiry Decay Discount
+            <p className="text-xs text-slate-600 dark:text-neutral-400 mt-0.5 font-medium">
+              Node: <strong className={isDark ? "text-neutral-100" : "text-slate-950 font-bold"}>{warehouse.name}</strong> • Dynamic ROP with Expiry Decay Discount
             </p>
           </div>
 
@@ -352,21 +352,21 @@ export const PoGenerator: React.FC<PoGeneratorProps> = ({
 
       {/* Interactive ERP Webhook & Dispatched PO Ledger Section */}
       <div
-        className={`border rounded-xl p-5 shadow-sm transition-colors ${
-          isDark ? "bg-slate-900/80 border-slate-800" : "bg-white border-slate-200"
+        className={`border rounded-xl p-5 shadow-xs transition-colors ${
+          isDark ? "bg-neutral-900 border-neutral-800 text-neutral-100" : "bg-white border-slate-300 text-slate-900"
         }`}
       >
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-slate-800/60">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-slate-200 dark:border-neutral-800">
           <div className="flex items-center gap-2">
-            <Database className="w-4 h-4 text-sky-400" />
+            <Database className="w-4 h-4 text-sky-600 dark:text-sky-400" />
             <h4
               className={`text-sm font-bold ${
-                isDark ? "text-white" : "text-slate-900"
+                isDark ? "text-white" : "text-slate-950"
               }`}
             >
               Enterprise Audit Ledger: <code>dispatched_po_ledger</code>
             </h4>
-            <span className="text-[11px] px-2 py-0.5 rounded bg-sky-500/10 text-sky-400 border border-sky-500/20 font-mono">
+            <span className="text-[11px] px-2 py-0.5 rounded bg-sky-500/10 text-sky-700 dark:text-sky-400 border border-sky-500/30 font-mono font-semibold">
               Click Inspect to View JSON &amp; EDI 850
             </span>
           </div>
@@ -374,9 +374,13 @@ export const PoGenerator: React.FC<PoGeneratorProps> = ({
           <button
             onClick={handleDownloadLedgerCsv}
             disabled={dispatchedLedger.length === 0}
-            className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold cursor-pointer transition-colors self-start sm:self-auto"
+            className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border text-xs font-bold cursor-pointer transition-colors self-start sm:self-auto ${
+              isDark
+                ? "bg-neutral-800 hover:bg-neutral-700 text-neutral-200 border-neutral-700"
+                : "bg-slate-100 hover:bg-slate-200 text-slate-800 border-slate-300 shadow-xs"
+            }`}
           >
-            <Download className="w-3 h-3" />
+            <Download className="w-3.5 h-3.5" />
             <span>Export Ledger CSV</span>
           </button>
         </div>
@@ -385,67 +389,67 @@ export const PoGenerator: React.FC<PoGeneratorProps> = ({
           <table className="w-full text-left border-collapse text-xs">
             <thead>
               <tr
-                className={`border-b font-semibold uppercase tracking-wider ${
+                className={`border-b font-bold uppercase tracking-wider ${
                   isDark
-                    ? "bg-slate-950/60 border-slate-800 text-slate-400"
-                    : "bg-slate-100 border-slate-200 text-slate-600"
+                    ? "bg-neutral-950 border-neutral-800 text-neutral-300"
+                    : "bg-slate-100 border-slate-300 text-slate-800"
                 }`}
               >
-                <th className="py-2 px-3">Dispatch ID</th>
-                <th className="py-2 px-3">Timestamp</th>
-                <th className="py-2 px-3">PO Batch</th>
-                <th className="py-2 px-3">Warehouse</th>
-                <th className="py-2 px-3">Target ERP</th>
-                <th className="py-2 px-3">Units</th>
-                <th className="py-2 px-3">Total Value</th>
-                <th className="py-2 px-3">Webhook Status</th>
-                <th className="py-2 px-3 text-right">Inspect Payload</th>
+                <th className="py-2.5 px-3">Dispatch ID</th>
+                <th className="py-2.5 px-3">Timestamp</th>
+                <th className="py-2.5 px-3">PO Batch</th>
+                <th className="py-2.5 px-3">Warehouse</th>
+                <th className="py-2.5 px-3">Target ERP</th>
+                <th className="py-2.5 px-3">Units</th>
+                <th className="py-2.5 px-3">Total Value</th>
+                <th className="py-2.5 px-3">Webhook Status</th>
+                <th className="py-2.5 px-3 text-right">Inspect Payload</th>
               </tr>
             </thead>
             <tbody
               className={`divide-y ${
-                isDark ? "divide-slate-800/60" : "divide-slate-200"
+                isDark ? "divide-neutral-800" : "divide-slate-200"
               }`}
             >
               {dispatchedLedger.map((rec) => (
                 <tr
                   key={rec.dispatchId}
                   className={`transition-colors ${
-                    isDark ? "hover:bg-slate-800/40" : "hover:bg-slate-50"
+                    isDark ? "hover:bg-neutral-800/40" : "hover:bg-slate-50"
                   }`}
                 >
-                  <td className="py-2 px-3 font-mono font-bold text-indigo-400">
+                  <td className="py-2.5 px-3 font-mono font-bold text-indigo-700 dark:text-indigo-400">
                     {rec.dispatchId}
                   </td>
-                  <td className="py-2 px-3 text-slate-400 font-mono">
+                  <td className="py-2.5 px-3 text-slate-700 dark:text-neutral-400 font-mono font-medium">
                     {new Date(rec.timestamp).toLocaleTimeString([], {
                       hour: "2-digit",
                       minute: "2-digit",
                       second: "2-digit",
                     })}
                   </td>
-                  <td className="py-2 px-3 font-mono text-slate-400">
+                  <td className="py-2.5 px-3 font-mono font-semibold text-slate-800 dark:text-neutral-300">
                     {rec.poBatchNumber}
                   </td>
-                  <td className="py-2 px-3 text-slate-300 font-medium truncate max-w-[140px]">
+                  <td className="py-2.5 px-3 text-slate-900 dark:text-neutral-200 font-medium truncate max-w-[140px]">
                     {rec.warehouseName.split(" ")[0]}
                   </td>
-                  <td className="py-2 px-3 text-slate-300">{rec.erpSystem}</td>
-                  <td className="py-2 px-3 font-mono font-semibold text-emerald-500">
+                  <td className="py-2.5 px-3 text-slate-800 dark:text-neutral-200 font-medium">{rec.erpSystem}</td>
+                  <td className="py-2.5 px-3 font-mono font-bold text-emerald-700 dark:text-emerald-400">
                     {rec.totalUnits.toLocaleString()}
                   </td>
-                  <td className="py-2 px-3 font-mono font-bold text-slate-200">
+                  <td className="py-2.5 px-3 font-mono font-bold text-slate-950 dark:text-white">
                     {formatCurrency(rec.totalValueInr, currency)}
                   </td>
-                  <td className="py-2 px-3">
-                    <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[11px] font-bold bg-emerald-500/10 text-emerald-400 border border-emerald-500/30">
+                  <td className="py-2.5 px-3">
+                    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[11px] font-bold bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border border-emerald-500/30">
                       HTTP {rec.httpStatus} ({rec.latencyMs}ms)
                     </span>
                   </td>
-                  <td className="py-2 px-3 text-right">
+                  <td className="py-2.5 px-3 text-right">
                     <button
                       onClick={() => setInspectingRecord(rec)}
-                      className="inline-flex items-center gap-1 px-2.5 py-1 rounded bg-indigo-600 hover:bg-indigo-500 text-white text-[11px] font-semibold cursor-pointer transition-colors shadow-sm"
+                      className="inline-flex items-center gap-1 px-2.5 py-1 rounded bg-indigo-600 hover:bg-indigo-700 text-white text-[11px] font-semibold cursor-pointer transition-colors shadow-xs"
                     >
                       <FileCode className="w-3 h-3" />
                       <span>Inspect</span>

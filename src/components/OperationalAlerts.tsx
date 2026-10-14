@@ -59,9 +59,19 @@ export const OperationalAlerts: React.FC<OperationalAlertsProps> = ({
       s.mcResult.stockoutProbabilityPct >= 50
   );
 
+  const totalCriticalRevenueAtRisk = criticalSkus.reduce(
+    (acc, s) => acc + s.revenueAtRisk,
+    0
+  );
+
   // 2. High Perishable Shelf-Life Decay SKUs
   const decayingSkus = simulationStates.filter(
     (s) => s.decayedUnits > 0 || (s.sku.shelfLifeDays <= 7 && s.decayRatePct > 0.05)
+  );
+
+  const totalDecayCost = decayingSkus.reduce(
+    (acc, s) => acc + s.decayedUnits * s.sku.basePrice,
+    0
   );
 
   // 3. Supplier Jitter / Risk (Grade D or F, or buffer multiplier >= 1.25)
@@ -95,10 +105,10 @@ export const OperationalAlerts: React.FC<OperationalAlertsProps> = ({
               criticalSkus.length > 0
                 ? isDark
                   ? "bg-rose-500/15 text-rose-400"
-                  : "bg-rose-100 text-rose-700"
+                  : "bg-rose-50 text-rose-700 border border-rose-200"
                 : isDark
                 ? "bg-emerald-500/15 text-emerald-400"
-                : "bg-emerald-100 text-emerald-700"
+                : "bg-emerald-50 text-emerald-700 border border-emerald-200"
             }`}
           >
             {criticalSkus.length > 0 ? (
@@ -109,18 +119,12 @@ export const OperationalAlerts: React.FC<OperationalAlertsProps> = ({
           </div>
           <div>
             <div className="flex items-center gap-2">
-              <h2 className="text-sm font-bold text-slate-950 dark:text-white">
-                Operational Alerts &amp; Recommended Actions
+              <h2 className="text-base font-bold text-slate-950 dark:text-white">
+                Operational Risk Matrix &amp; High-Priority Action Queue
               </h2>
-              {totalAlertsCount > 0 ? (
-                <span className="px-2 py-0.2 rounded-full text-[10px] font-mono font-bold bg-amber-500/15 text-amber-700 dark:text-amber-400 border border-amber-500/30">
-                  {totalAlertsCount} Actionable Issues
-                </span>
-              ) : (
-                <span className="px-2 py-0.2 rounded-full text-[10px] font-mono font-bold bg-emerald-500/15 text-emerald-700 dark:text-emerald-400 border border-emerald-500/30">
-                  Network Optimal
-                </span>
-              )}
+              <span className="text-xs text-slate-500 dark:text-neutral-400 font-mono">
+                {totalAlertsCount > 0 ? `${totalAlertsCount} Actionable Events` : "All Clear"}
+              </span>
             </div>
             <p className="text-xs text-slate-600 dark:text-neutral-400 mt-0.5 font-medium">
               Real-time actionable events prioritized by financial revenue leakage and fulfillment urgency at {currentWarehouse.name}.
@@ -132,8 +136,9 @@ export const OperationalAlerts: React.FC<OperationalAlertsProps> = ({
         <div className="flex items-center gap-2 self-start sm:self-auto flex-wrap">
           {criticalSkus.length > 0 && (
             <button
+              type="button"
               onClick={() => onNavigateToPo()}
-              className="px-3 py-1.5 rounded-lg text-xs font-semibold bg-rose-600 hover:bg-rose-500 text-white transition-colors cursor-pointer flex items-center gap-1.5 shadow-xs"
+              className="px-3 py-1.5 rounded-lg text-xs font-semibold bg-rose-600 hover:bg-rose-700 text-white transition-colors cursor-pointer flex items-center gap-1.5 shadow-xs"
             >
               <FileCheck2 className="w-3.5 h-3.5" />
               <span>Review {criticalSkus.length} Urgent POs</span>
@@ -142,6 +147,7 @@ export const OperationalAlerts: React.FC<OperationalAlertsProps> = ({
 
           {interTransfers.length > 0 && (
             <button
+              type="button"
               onClick={onNavigateToTransfers}
               className={`px-3 py-1.5 rounded-lg text-xs font-semibold border transition-colors cursor-pointer flex items-center gap-1.5 ${
                 isDark
@@ -161,37 +167,42 @@ export const OperationalAlerts: React.FC<OperationalAlertsProps> = ({
         {/* ALERT 1: CRITICAL STOCK-OUT RISKS */}
         {criticalSkus.length > 0 && (
           <div
-            className={`p-3.5 rounded-xl border flex flex-col md:flex-row md:items-center justify-between gap-3 ${
+            className={`p-4 rounded-xl border flex flex-col md:flex-row md:items-center justify-between gap-4 ${
               isDark
-                ? "bg-rose-950/20 border-rose-900/60 text-neutral-200"
-                : "bg-rose-50/80 border-rose-200 text-slate-900"
+                ? "bg-neutral-950/70 border-rose-900/60 text-neutral-200"
+                : "bg-rose-50/50 border-rose-200 text-slate-900"
             }`}
           >
             <div className="flex items-start gap-3">
               <span className="w-2 h-2 rounded-full bg-rose-500 mt-1.5 shrink-0 animate-pulse" />
               <div>
-                <div className="flex items-center gap-2 flex-wrap">
-                  <span className="text-[10px] uppercase font-bold tracking-wider px-2 py-0.2 rounded bg-rose-600 text-white">
-                    Critical Stockout Risk
+                <div className="flex items-center gap-2 flex-wrap text-xs">
+                  <span className="font-bold text-rose-600 dark:text-rose-400">
+                    Critical Stockout Deficit
                   </span>
-                  <span className="text-xs font-bold text-slate-950 dark:text-white">
-                    {criticalSkus.length} SKU{criticalSkus.length > 1 ? "s" : ""} Breaching Safety Stock &amp; Approaching Depletion
+                  <span className="text-slate-400">·</span>
+                  <span className="font-bold text-slate-950 dark:text-white">
+                    {criticalSkus.length} SKU{criticalSkus.length > 1 ? "s" : ""} Below Safety Stock Threshold
+                  </span>
+                  <span className="text-slate-400">·</span>
+                  <span className="font-mono text-rose-600 dark:text-rose-400 font-semibold">
+                    {formatCurrency(totalCriticalRevenueAtRisk, currency)} revenue at risk
                   </span>
                 </div>
-                <div className="text-xs text-slate-700 dark:text-neutral-300 mt-1 flex flex-wrap items-center gap-2 font-medium">
+                <div className="text-xs text-slate-600 dark:text-neutral-400 mt-1.5 flex flex-wrap items-center gap-2 font-medium">
                   {criticalSkus.slice(0, 3).map((skuState) => (
                     <span
                       key={skuState.sku.id}
-                      className="inline-flex items-center gap-1 font-mono text-[11px] px-1.5 py-0.5 rounded bg-white/70 dark:bg-neutral-900/80 border border-rose-200 dark:border-rose-900/60"
+                      className="inline-flex items-center gap-1 font-mono text-[11px] px-2 py-0.5 rounded bg-white dark:bg-neutral-900 border border-slate-200 dark:border-neutral-800"
                     >
-                      <strong className="text-slate-950 dark:text-white">{skuState.sku.name}</strong>
-                      <span className="text-rose-600 dark:text-rose-400 font-bold">
-                        ({skuState.usableStock} left · ROP {skuState.mcResult.dynamicSafetyStock + 10})
+                      <strong className="text-slate-900 dark:text-white font-sans">{skuState.sku.name}</strong>
+                      <span className="text-rose-600 dark:text-rose-400 font-semibold">
+                        {skuState.usableStock} left (ROP: {skuState.mcResult.dynamicRop})
                       </span>
                     </span>
                   ))}
                   {criticalSkus.length > 3 && (
-                    <span className="text-[11px] text-slate-600 dark:text-neutral-400">
+                    <span className="text-[11px] text-slate-500 dark:text-neutral-400">
                       +{criticalSkus.length - 3} more
                     </span>
                   )}
@@ -201,8 +212,9 @@ export const OperationalAlerts: React.FC<OperationalAlertsProps> = ({
 
             <div className="flex items-center gap-2 shrink-0 self-end md:self-auto">
               <button
+                type="button"
                 onClick={() => onNavigateToPo(criticalSkus[0]?.sku.id)}
-                className="px-3 py-1.5 rounded-lg text-xs font-semibold bg-rose-600 hover:bg-rose-700 text-white transition-colors cursor-pointer flex items-center gap-1"
+                className="px-3 py-1.5 rounded-lg text-xs font-semibold bg-rose-600 hover:bg-rose-700 text-white transition-colors cursor-pointer flex items-center gap-1 shadow-xs"
               >
                 <span>Generate PO Batch</span>
                 <ArrowRight className="w-3.5 h-3.5" />
@@ -214,43 +226,45 @@ export const OperationalAlerts: React.FC<OperationalAlertsProps> = ({
         {/* ALERT 2: INTER-DARK STORE REBALANCE RECOMMENDATION */}
         {interTransfers.length > 0 && (
           <div
-            className={`p-3.5 rounded-xl border flex flex-col md:flex-row md:items-center justify-between gap-3 ${
+            className={`p-4 rounded-xl border flex flex-col md:flex-row md:items-center justify-between gap-4 ${
               isDark
-                ? "bg-amber-950/20 border-amber-900/60 text-neutral-200"
-                : "bg-amber-50/80 border-amber-200 text-slate-900"
+                ? "bg-neutral-950/70 border-amber-900/60 text-neutral-200"
+                : "bg-amber-50/50 border-amber-200 text-slate-900"
             }`}
           >
             <div className="flex items-start gap-3">
               <span className="w-2 h-2 rounded-full bg-amber-500 mt-1.5 shrink-0" />
               <div>
-                <div className="flex items-center gap-2 flex-wrap">
-                  <span className="text-[10px] uppercase font-bold tracking-wider px-2 py-0.2 rounded bg-amber-600 text-white">
-                    Cross-Store Rebalance Available
+                <div className="flex items-center gap-2 flex-wrap text-xs">
+                  <span className="font-bold text-amber-600 dark:text-amber-400">
+                    Cross-Hub Transfer Opportunity
                   </span>
-                  <span className="text-xs font-bold text-slate-950 dark:text-white">
+                  <span className="text-slate-400">·</span>
+                  <span className="font-bold text-slate-950 dark:text-white">
                     {interTransfers[0].originWarehouseName} has surplus stock for {interTransfers[0].destWarehouseName}
                   </span>
+                  <span className="text-slate-400">·</span>
+                  <span className="font-mono text-emerald-600 dark:text-emerald-400 font-semibold">
+                    +{formatCurrency(interTransfers[0].netProfitabilityInr, currency)} net gain
+                  </span>
                 </div>
-                <div className="text-xs text-slate-700 dark:text-neutral-300 mt-1 font-medium">
-                  Transfer <strong>{interTransfers[0].recommendedTransferQty} units</strong> of {interTransfers[0].skuName}.
-                  Transit duration: <strong>{interTransfers[0].transitHours} hours</strong>. Saves{" "}
-                  <strong className="text-emerald-700 dark:text-emerald-400">
-                    {formatCurrency(interTransfers[0].netProfitabilityInr, currency)}
-                  </strong>{" "}
-                  in net profitability &amp; stockout prevention.
+                <div className="text-xs text-slate-600 dark:text-neutral-400 mt-1.5 font-medium">
+                  Transfer <strong>{interTransfers[0].recommendedTransferQty} units</strong> of {interTransfers[0].skuName} via high-speed corridor (~{interTransfers[0].transitHours}h transit). Eliminates stockout risk without placing an external vendor purchase order.
                 </div>
               </div>
             </div>
 
             <div className="flex items-center gap-2 shrink-0 self-end md:self-auto">
               <button
+                type="button"
                 onClick={() => onApproveTransfer(interTransfers[0].id)}
-                className="px-3 py-1.5 rounded-lg text-xs font-semibold bg-emerald-600 hover:bg-emerald-700 text-white transition-colors cursor-pointer flex items-center gap-1"
+                className="px-3 py-1.5 rounded-lg text-xs font-semibold bg-emerald-600 hover:bg-emerald-700 text-white transition-colors cursor-pointer flex items-center gap-1 shadow-xs"
               >
                 <CheckCircle2 className="w-3.5 h-3.5" />
                 <span>Approve Transfer</span>
               </button>
               <button
+                type="button"
                 onClick={onNavigateToTransfers}
                 className={`px-3 py-1.5 rounded-lg text-xs font-semibold border transition-colors cursor-pointer ${
                   isDark
@@ -267,33 +281,41 @@ export const OperationalAlerts: React.FC<OperationalAlertsProps> = ({
         {/* ALERT 3: PERISHABLE SHELF-LIFE DECAY WARNING */}
         {decayingSkus.length > 0 && (
           <div
-            className={`p-3.5 rounded-xl border flex flex-col md:flex-row md:items-center justify-between gap-3 ${
+            className={`p-4 rounded-xl border flex flex-col md:flex-row md:items-center justify-between gap-4 ${
               isDark
-                ? "bg-neutral-950 border-neutral-800 text-neutral-200"
-                : "bg-slate-50 border-slate-300 text-slate-900"
+                ? "bg-neutral-950/70 border-neutral-800 text-neutral-200"
+                : "bg-slate-50/70 border-slate-300 text-slate-900"
             }`}
           >
             <div className="flex items-start gap-3">
               <span className="w-2 h-2 rounded-full bg-blue-500 mt-1.5 shrink-0" />
               <div>
-                <div className="flex items-center gap-2 flex-wrap">
-                  <span className="text-[10px] uppercase font-bold tracking-wider px-2 py-0.2 rounded bg-blue-600 text-white">
-                    Perishable Shelf-Life Decay
+                <div className="flex items-center gap-2 flex-wrap text-xs">
+                  <span className="font-bold text-blue-600 dark:text-blue-400">
+                    Shelf-Life Decay Monitoring
                   </span>
-                  <span className="text-xs font-bold text-slate-950 dark:text-white">
-                    {decayingSkus.length} Perishable Item{decayingSkus.length > 1 ? "s" : ""} Approaching Expiration
+                  <span className="text-slate-400">·</span>
+                  <span className="font-bold text-slate-950 dark:text-white">
+                    {decayingSkus.length} Perishable Item{decayingSkus.length > 1 ? "s" : ""} Approaching Spoilage
                   </span>
+                  {totalDecayCost > 0 && (
+                    <>
+                      <span className="text-slate-400">·</span>
+                      <span className="font-mono text-slate-700 dark:text-neutral-300">
+                        {formatCurrency(totalDecayCost, currency)} potential spoilage
+                      </span>
+                    </>
+                  )}
                 </div>
-                <div className="text-xs text-slate-700 dark:text-neutral-300 mt-1 font-medium">
-                  {decayingSkus[0].sku.name} has{" "}
-                  <strong>{decayingSkus[0].decayedUnits} units</strong> degraded ({(decayingSkus[0].decayRatePct * 100).toFixed(1)}% decay rate).
-                  Usable stock is adjusted to avoid shipping expired product to quick-commerce buyers.
+                <div className="text-xs text-slate-600 dark:text-neutral-400 mt-1.5 font-medium">
+                  {decayingSkus[0].sku.name} has <strong>{decayingSkus[0].decayedUnits} units</strong> degraded ({(decayingSkus[0].decayRatePct * 100).toFixed(1)}% decay rate). Usable stock adjusted dynamically to avoid dispatching stale product to quick-commerce buyers.
                 </div>
               </div>
             </div>
 
             <div className="flex items-center gap-2 shrink-0 self-end md:self-auto">
               <button
+                type="button"
                 onClick={() => onNavigateToInventory(decayingSkus[0].sku.id)}
                 className={`px-3 py-1.5 rounded-lg text-xs font-semibold border transition-colors cursor-pointer flex items-center gap-1 ${
                   isDark
@@ -311,32 +333,37 @@ export const OperationalAlerts: React.FC<OperationalAlertsProps> = ({
         {/* ALERT 4: SUPPLIER RELIABILITY JITTER */}
         {supplierRiskSkus.length > 0 && (
           <div
-            className={`p-3.5 rounded-xl border flex flex-col md:flex-row md:items-center justify-between gap-3 ${
+            className={`p-4 rounded-xl border flex flex-col md:flex-row md:items-center justify-between gap-4 ${
               isDark
-                ? "bg-neutral-950 border-neutral-800 text-neutral-200"
-                : "bg-slate-50 border-slate-300 text-slate-900"
+                ? "bg-neutral-950/70 border-neutral-800 text-neutral-200"
+                : "bg-slate-50/70 border-slate-300 text-slate-900"
             }`}
           >
             <div className="flex items-start gap-3">
               <span className="w-2 h-2 rounded-full bg-amber-500 mt-1.5 shrink-0" />
               <div>
-                <div className="flex items-center gap-2 flex-wrap">
-                  <span className="text-[10px] uppercase font-bold tracking-wider px-2 py-0.2 rounded bg-neutral-800 text-neutral-200 dark:bg-neutral-700">
-                    Vendor Lead-Time Drag
+                <div className="flex items-center gap-2 flex-wrap text-xs">
+                  <span className="font-bold text-amber-600 dark:text-amber-400">
+                    Vendor Lead-Time Volatility
                   </span>
-                  <span className="text-xs font-bold text-slate-950 dark:text-white">
-                    {supplierRiskSkus[0].supplierScorecard.supplierName} (Grade {supplierRiskSkus[0].supplierScorecard.grade}) Delivery Variance
+                  <span className="text-slate-400">·</span>
+                  <span className="font-bold text-slate-950 dark:text-white">
+                    {supplierRiskSkus[0].supplierScorecard.supplierName} (Grade {supplierRiskSkus[0].supplierScorecard.grade})
+                  </span>
+                  <span className="text-slate-400">·</span>
+                  <span className="font-mono text-slate-700 dark:text-neutral-300">
+                    {supplierRiskSkus[0].supplierScorecard.onTimeDeliveryPct}% on-time
                   </span>
                 </div>
-                <div className="text-xs text-slate-700 dark:text-neutral-300 mt-1 font-medium">
-                  On-time delivery: <strong>{supplierRiskSkus[0].supplierScorecard.onTimeDeliveryPct}%</strong>.
-                  Dual-variance engine expanded safety buffer by <strong>{supplierRiskSkus[0].supplierScorecard.bufferMultiplier}x</strong> to prevent line-down stockouts.
+                <div className="text-xs text-slate-600 dark:text-neutral-400 mt-1.5 font-medium">
+                  Dual-variance engine expanded safety buffer by <strong>{supplierRiskSkus[0].supplierScorecard.bufferMultiplier}x</strong> to prevent lead-time delivery jitter from triggering stockouts.
                 </div>
               </div>
             </div>
 
             <div className="flex items-center gap-2 shrink-0 self-end md:self-auto">
               <button
+                type="button"
                 onClick={onNavigateToSuppliers}
                 className={`px-3 py-1.5 rounded-lg text-xs font-semibold border transition-colors cursor-pointer flex items-center gap-1 ${
                   isDark

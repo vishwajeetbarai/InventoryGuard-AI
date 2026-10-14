@@ -7,9 +7,10 @@ import {
   ArrowUpRight,
   ShieldAlert,
   CheckCircle2,
+  Activity,
 } from "lucide-react";
 import { SkuSimulationState, CurrencyCode } from "../types";
-import { formatCurrency, CURRENCIES } from "../utils/currency";
+import { formatCurrency } from "../utils/currency";
 
 interface KpiMetricsProps {
   simulationStates: SkuSimulationState[];
@@ -90,21 +91,27 @@ export const KpiMetrics: React.FC<KpiMetricsProps> = ({
 
           <div className="mt-3 flex items-baseline">
             <span
-              className={`text-2xl sm:text-3xl font-extrabold tracking-tight ${
+              className={`text-2xl sm:text-3xl font-extrabold tracking-tight font-mono ${
                 isDark ? "text-white" : "text-slate-950"
               }`}
             >
               {formatCurrency(totalInventoryValue, currency)}
             </span>
           </div>
+
+          <div className="mt-1 text-xs text-slate-500 dark:text-neutral-400 flex items-center gap-1.5 font-medium">
+            <span>On-hand stock valuation</span>
+            <span>·</span>
+            <span>Active catalog</span>
+          </div>
         </div>
 
         <div className="mt-4 pt-3 border-t border-slate-200 dark:border-neutral-800 flex items-center justify-between text-xs text-slate-700 dark:text-neutral-300">
-          <span className="font-medium">
-            {totalUnits.toLocaleString()} units on hand
+          <span className="font-medium font-mono">
+            {totalUnits.toLocaleString()} units
           </span>
           <span className="text-slate-900 dark:text-white font-bold flex items-center gap-1">
-            {simulationStates.length} SKUs
+            {simulationStates.length} SKUs Monitored
             {onDrillDown && (
               <ArrowUpRight className="w-3 h-3 opacity-0 group-hover:opacity-100 transition-opacity" />
             )}
@@ -145,7 +152,7 @@ export const KpiMetrics: React.FC<KpiMetricsProps> = ({
 
           <div className="mt-3 flex items-baseline gap-2">
             <span
-              className={`text-2xl sm:text-3xl font-extrabold tracking-tight ${
+              className={`text-2xl sm:text-3xl font-extrabold tracking-tight font-mono ${
                 criticalCount > 0
                   ? isDark
                     ? "text-rose-400"
@@ -164,6 +171,12 @@ export const KpiMetrics: React.FC<KpiMetricsProps> = ({
             <span className="text-xs text-slate-600 dark:text-neutral-400 font-semibold">
               of {simulationStates.length} SKUs
             </span>
+          </div>
+
+          <div className="mt-1 text-xs text-slate-500 dark:text-neutral-400 flex items-center gap-1.5 font-medium">
+            <span>Stochastic ROP breached</span>
+            <span>·</span>
+            <span>Demand surge risk</span>
           </div>
         </div>
 
@@ -221,7 +234,7 @@ export const KpiMetrics: React.FC<KpiMetricsProps> = ({
 
           <div className="mt-3 flex items-baseline">
             <span
-              className={`text-2xl sm:text-3xl font-extrabold tracking-tight ${
+              className={`text-2xl sm:text-3xl font-extrabold tracking-tight font-mono ${
                 totalRevenueAtRisk > 0
                   ? isDark
                     ? "text-amber-400"
@@ -234,14 +247,20 @@ export const KpiMetrics: React.FC<KpiMetricsProps> = ({
               {formatCurrency(totalRevenueAtRisk, currency)}
             </span>
           </div>
+
+          <div className="mt-1 text-xs text-slate-500 dark:text-neutral-400 flex items-center gap-1.5 font-medium">
+            <span>Potential revenue leakage</span>
+            <span>·</span>
+            <span>Unserved orders</span>
+          </div>
         </div>
 
         <div className="mt-4 pt-3 border-t border-slate-200 dark:border-neutral-800 flex items-center justify-between text-xs text-slate-700 dark:text-neutral-300">
-          <span className="font-medium">
-            Avg {avgStockOutRisk.toFixed(1)}% stock-out risk
+          <span className="font-medium font-mono">
+            Avg {avgStockOutRisk.toFixed(1)}% probability
           </span>
           <span className="text-amber-700 dark:text-amber-400 font-bold flex items-center gap-1">
-            {totalRevenueAtRisk > 0 ? "Revenue Leakage" : "Protected"}
+            {totalRevenueAtRisk > 0 ? "Review POs" : "Protected"}
             {onDrillDown && (
               <ArrowUpRight className="w-3 h-3 opacity-0 group-hover:opacity-100 transition-opacity" />
             )}
@@ -274,7 +293,7 @@ export const KpiMetrics: React.FC<KpiMetricsProps> = ({
 
           <div className="mt-3 flex items-baseline gap-2">
             <span
-              className={`text-2xl sm:text-3xl font-extrabold tracking-tight ${
+              className={`text-2xl sm:text-3xl font-extrabold tracking-tight font-mono ${
                 isDark ? "text-white" : "text-slate-950"
               }`}
             >
@@ -284,6 +303,12 @@ export const KpiMetrics: React.FC<KpiMetricsProps> = ({
               CSL Target
             </span>
           </div>
+
+          <div className="mt-1 text-xs text-slate-500 dark:text-neutral-400 flex items-center gap-1.5 font-medium">
+            <span>Dynamic normal safety buffer</span>
+            <span>·</span>
+            <span>Dual-variance</span>
+          </div>
         </div>
 
         <div className="mt-4 pt-3 border-t border-slate-200 dark:border-neutral-800 flex items-center justify-between text-xs text-slate-700 dark:text-neutral-300">
@@ -291,7 +316,7 @@ export const KpiMetrics: React.FC<KpiMetricsProps> = ({
             Z = {selectedServiceZ.toFixed(3)}
           </span>
           <span className="font-bold text-emerald-700 dark:text-emerald-400 flex items-center gap-1">
-            Dual-Variance Buffer
+            Calibrate Model
             {onDrillDown && (
               <ArrowUpRight className="w-3 h-3 opacity-0 group-hover:opacity-100 transition-opacity" />
             )}

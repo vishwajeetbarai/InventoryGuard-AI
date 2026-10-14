@@ -37,6 +37,7 @@ interface FooterProps {
   onTriggerSimulation: () => void;
   onSelectPage: (page: AppPage) => void;
   isSimulating: boolean;
+  onGoToLanding?: () => void;
 }
 
 export const Footer: React.FC<FooterProps> = ({
@@ -53,6 +54,7 @@ export const Footer: React.FC<FooterProps> = ({
   onTriggerSimulation,
   onSelectPage,
   isSimulating,
+  onGoToLanding,
 }) => {
   const isDark = theme === "dark";
   const roleDef = USER_ROLES[currentUser.role];
@@ -219,6 +221,17 @@ export const Footer: React.FC<FooterProps> = ({
               Core Modules
             </h4>
             <ul className="space-y-2.5 text-xs">
+              {onGoToLanding && (
+                <li>
+                  <button
+                    onClick={onGoToLanding}
+                    className="font-bold text-emerald-600 hover:text-emerald-700 dark:text-emerald-400 dark:hover:text-emerald-300 transition-colors flex items-center gap-1.5 cursor-pointer text-left"
+                  >
+                    <ChevronRight className="w-3 h-3 text-emerald-500" />
+                    <span>Product Landing &amp; ROI Model</span>
+                  </button>
+                </li>
+              )}
               <li>
                 <button
                   onClick={() => onSelectPage("overview")}

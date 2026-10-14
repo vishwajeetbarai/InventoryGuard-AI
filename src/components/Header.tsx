@@ -23,6 +23,7 @@ import {
   MapPin,
   Menu,
   X,
+  Globe2,
 } from "lucide-react";
 
 interface HeaderProps {
@@ -47,6 +48,7 @@ interface HeaderProps {
   onResetCustomDataset?: () => void;
   currentCurrency?: CurrencyCode;
   onSelectCurrency?: (curr: CurrencyCode) => void;
+  onGoToLanding?: () => void;
 }
 
 export const Header: React.FC<HeaderProps> = ({
@@ -67,6 +69,7 @@ export const Header: React.FC<HeaderProps> = ({
   onSelectRole,
   currentCurrency = "USD",
   onSelectCurrency,
+  onGoToLanding,
 }) => {
   const isDark = theme === "dark";
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
@@ -117,7 +120,14 @@ export const Header: React.FC<HeaderProps> = ({
           {/* Brand & Warehouse Quick Switcher */}
           <div className="flex items-center gap-3 shrink-0">
             <button
-              onClick={() => onSelectPage("overview")}
+              onClick={() => {
+                if (onGoToLanding) {
+                  onGoToLanding();
+                } else {
+                  onSelectPage("overview");
+                }
+              }}
+              title="Return to Product Landing Page"
               className="flex items-center gap-2.5 cursor-pointer select-none group text-left focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 rounded-lg p-1"
             >
               <div className="w-8 h-8 rounded-lg bg-emerald-600 flex items-center justify-center text-white shadow-xs font-bold transition-transform group-hover:scale-105">
@@ -217,6 +227,20 @@ export const Header: React.FC<HeaderProps> = ({
               isDark ? "bg-neutral-900 border-neutral-800" : "bg-slate-100/90 border-slate-200"
             }`}
           >
+            {onGoToLanding && (
+              <button
+                onClick={onGoToLanding}
+                className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
+                  isDark
+                    ? "text-emerald-400 hover:text-emerald-300 hover:bg-neutral-800"
+                    : "text-emerald-700 hover:text-emerald-800 hover:bg-slate-200/60"
+                }`}
+                title="Return to Product Landing Page & Financial Model"
+              >
+                <Globe2 className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
+                <span>Landing</span>
+              </button>
+            )}
             {navPages.map((page) => {
               const Icon = page.icon;
               const isActive = activePage === page.id;
@@ -499,6 +523,22 @@ export const Header: React.FC<HeaderProps> = ({
         {/* Mobile Navigation Dropdown Menu (No horizontal overflow) */}
         {isMobileMenuOpen && (
           <div className="lg:hidden py-3 border-t border-slate-200 dark:border-neutral-800 animate-in fade-in duration-100 space-y-1">
+            {onGoToLanding && (
+              <button
+                onClick={() => {
+                  onGoToLanding();
+                  setIsMobileMenuOpen(false);
+                }}
+                className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-xs font-bold transition-colors cursor-pointer ${
+                  isDark
+                    ? "bg-emerald-950/40 text-emerald-400 hover:bg-emerald-900/50"
+                    : "bg-emerald-50 text-emerald-900 hover:bg-emerald-100"
+                }`}
+              >
+                <Globe2 className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
+                <span>Product Landing Page &amp; ROI Model</span>
+              </button>
+            )}
             {navPages.map((page) => {
               const Icon = page.icon;
               const isActive = activePage === page.id;

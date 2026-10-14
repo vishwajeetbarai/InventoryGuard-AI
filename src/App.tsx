@@ -26,12 +26,14 @@ import { SupplierScorecardView } from "./components/SupplierScorecardView";
 import { SourceCodeViewer } from "./components/SourceCodeViewer";
 import { NetworkTopologyMap } from "./components/NetworkTopologyMap";
 import { OperationalAlerts } from "./components/OperationalAlerts";
+import { FacilityPerformanceMatrix } from "./components/FacilityPerformanceMatrix";
 import { InventoryToolbar } from "./components/InventoryToolbar";
 import { ToastContainer, ToastItem } from "./components/ToastContainer";
 import { CommandPaletteModal } from "./components/CommandPaletteModal";
 import { ExecutiveReportModal } from "./components/ExecutiveReportModal";
 import { WmsDataIngestionModal } from "./components/WmsDataIngestionModal";
 import { AuditLedgerModal } from "./components/AuditLedgerModal";
+import { LandingPage } from "./components/LandingPage";
 import { StorageService, CustomDatasetPayload } from "./services/storageService";
 import { UserProfile, TenantOrganization, UserRole, AuditLogEntry } from "./types/auth";
 import { USER_ROLES, DEMO_USERS, TENANT_ORGANIZATIONS } from "./services/authService";
@@ -60,6 +62,7 @@ import {
   Lock,
   UploadCloud,
   Activity,
+  CheckCircle2,
   Sparkles,
   Sliders,
   Database,
@@ -113,7 +116,13 @@ streamlit run app.py
 
 export default function App() {
   // Theme State: 'light' (Crisp Clean Light Mode by Default) or 'dark' (Pitch-Black Obsidian Dark Mode)
-  const [theme, setTheme] = useState<"dark" | "light">("light");
+  const [theme, setTheme] = useState<"dark" | "light">(() => {
+    if (typeof window !== "undefined") {
+      const saved = localStorage.getItem("inventoryguard_theme");
+      if (saved === "dark" || saved === "light") return saved;
+    }
+    return "light";
+  });
 
   // Multi-Tenant Authentication & Session State
   const [currentUser, setCurrentUser] = useState<UserProfile>(() =>
@@ -161,6 +170,15 @@ export default function App() {
   const [forecastModel, setForecastModel] = useState<ForecastModel>("META_PROPHET");
   const [currency, setCurrency] = useState<CurrencyCode>(() => getStoredCurrency());
 
+  // View mode: Public Enterprise Landing Page vs Internal Enterprise Workspace
+  const [viewMode, setViewMode] = useState<"landing" | "app">(() => {
+    if (typeof window !== "undefined") {
+      const hash = window.location.hash;
+      if (hash === "#app" || hash.startsWith("#app/")) return "app";
+    }
+    return "landing";
+  });
+
   // 4 Dedicated Core Pages & Tab State
   const [activePage, setActivePage] = useState<AppPage>("overview");
   const [procurementTab, setProcurementTab] = useState<"po" | "transfer" | "suppliers">("po");
@@ -207,6 +225,22 @@ export default function App() {
     setStoredCurrency(currency);
   }, [currency]);
 
+  useEffect(() => {
+    const root = document.documentElement;
+    if (theme === "dark") {
+      root.classList.add("dark");
+      root.setAttribute("data-theme", "dark");
+    } else {
+      root.classList.remove("dark");
+      root.setAttribute("data-theme", "light");
+    }
+    try {
+      localStorage.setItem("inventoryguard_theme", theme);
+    } catch {
+      // ignore storage error
+    }
+  }, [theme]);
+
   const addToast = (
     toast: Omit<ToastItem, "id" | "timestamp"> & { id?: string; timestamp?: string }
   ) => {
@@ -235,6 +269,50 @@ export default function App() {
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, []);
+
+  // Synchronize viewMode with browser hash navigation
+  useEffect(() => {
+    const handleHashChange = () => {
+      const hash = window.location.hash;
+      if (hash === "#app" || hash.startsWith("#app/")) {
+        setViewMode("app");
+        if (hash === "#app/inventory") setActivePage("inventory");
+        else if (hash === "#app/procurement") setActivePage("procurement");
+        else if (hash === "#app/operations") setActivePage("operations");
+        else if (hash === "#app/overview") setActivePage("overview");
+      } else if (hash === "" || hash === "#" || hash === "#landing") {
+        setViewMode("landing");
+      }
+    };
+    window.addEventListener("hashchange", handleHashChange);
+    return () => window.removeEventListener("hashchange", handleHashChange);
+  }, []);
+
+  const handleEnterApp = (targetPage: AppPage = "overview", targetTab?: string) => {
+    setActivePage(targetPage);
+    if (targetTab) {
+      if (
+        targetPage === "procurement" &&
+        (targetTab === "po" || targetTab === "transfer" || targetTab === "suppliers")
+      ) {
+        setProcurementTab(targetTab as any);
+      } else if (
+        targetPage === "operations" &&
+        (targetTab === "simulation" || targetTab === "datahub" || targetTab === "code")
+      ) {
+        setOperationsTab(targetTab as any);
+      }
+    }
+    setViewMode("app");
+    window.location.hash = `app/${targetPage}`;
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  };
+
+  const handleGoToLanding = () => {
+    setViewMode("landing");
+    window.location.hash = "";
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  };
 
   // Fetch /app.py content for code viewer
   useEffect(() => {
@@ -885,85 +963,127 @@ export default function App() {
   return (
     <div
       className={`min-h-screen flex flex-col font-sans transition-colors duration-150 ${
-        isDark ? "bg-[#09090B] text-neutral-100" : "bg-[#F8FAFC] text-slate-900"
+        isDark ? "dark bg-[#09090B] text-neutral-100" : "bg-[#F8FAFC] text-slate-900"
       }`}
     >
-      {/* Sleek Top Navigation Header */}
-      <Header
-        currentWarehouse={currentWarehouse}
-        warehouses={effectiveWarehouses}
-        onSelectWarehouse={handleSelectWarehouse}
-        activePage={activePage}
-        onSelectPage={setActivePage}
-        onRefreshData={handleTriggerSimulation}
-        isSimulating={isSimulating}
-        theme={theme}
-        onToggleTheme={handleToggleTheme}
-        onOpenCommandPalette={() => setIsCommandPaletteOpen(true)}
-        onOpenExportReport={() => setIsReportModalOpen(true)}
-        onOpenWmsIngestion={() => setIsWmsModalOpen(true)}
-        onOpenAuditLedger={() => setIsAuditModalOpen(true)}
-        currentUser={currentUser}
-        onSelectRole={handleSelectRole}
-        currentTenant={currentTenant}
-        onSelectTenant={handleSelectTenant}
-        customDatasetName={customDataset?.name}
-        onResetCustomDataset={handleResetCustomDataset}
-        currentCurrency={currency}
-        onSelectCurrency={setCurrency}
-      />
+      {viewMode === "landing" ? (
+        <LandingPage
+          theme={theme}
+          onToggleTheme={handleToggleTheme}
+          currency={currency}
+          onSelectCurrency={setCurrency}
+          onEnterApp={handleEnterApp}
+        />
+      ) : (
+        <>
+          {/* Sleek Top Navigation Header */}
+          <Header
+            currentWarehouse={currentWarehouse}
+            warehouses={effectiveWarehouses}
+            onSelectWarehouse={handleSelectWarehouse}
+            activePage={activePage}
+            onSelectPage={setActivePage}
+            onRefreshData={handleTriggerSimulation}
+            isSimulating={isSimulating}
+            theme={theme}
+            onToggleTheme={handleToggleTheme}
+            onOpenCommandPalette={() => setIsCommandPaletteOpen(true)}
+            onOpenExportReport={() => setIsReportModalOpen(true)}
+            onOpenWmsIngestion={() => setIsWmsModalOpen(true)}
+            onOpenAuditLedger={() => setIsAuditModalOpen(true)}
+            currentUser={currentUser}
+            onSelectRole={handleSelectRole}
+            currentTenant={currentTenant}
+            onSelectTenant={handleSelectTenant}
+            customDatasetName={customDataset?.name}
+            onResetCustomDataset={handleResetCustomDataset}
+            currentCurrency={currency}
+            onSelectCurrency={setCurrency}
+            onGoToLanding={handleGoToLanding}
+          />
 
       {/* Main Spacious Content Canvas with Generous Footer Spacing */}
       <main className="flex-1 max-w-7xl w-full mx-auto p-4 sm:p-6 lg:p-8 pb-28 sm:pb-36 space-y-6">
         {/* PAGE 1: OVERVIEW & NETWORK TOPOLOGY */}
         {activePage === "overview" && (
           <div className="space-y-6 animate-in fade-in duration-150">
-            {/* A. Executive Page Header */}
-            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-1">
+            {/* A. Executive Control Tower Header */}
+            <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 pb-1">
               <div>
-                <div className="flex items-center gap-2.5">
+                <div className="flex items-center gap-3 flex-wrap">
                   <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-slate-950 dark:text-white">
-                    Supply Chain Overview
+                    Supply Chain Control Tower
                   </h1>
-                  <span className="px-2.5 py-0.5 rounded-md text-[11px] font-mono font-bold bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border border-emerald-500/20 flex items-center gap-1.5">
-                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-                    Live Control Tower
-                  </span>
+                  <div className="flex items-center gap-2 text-xs font-mono font-medium">
+                    {criticalSkus.length > 0 ? (
+                      <span className="flex items-center gap-1.5 text-rose-600 dark:text-rose-400 font-semibold">
+                        <span className="w-2 h-2 rounded-full bg-rose-500 animate-pulse inline-block" />
+                        {criticalSkus.length} Critical Stockouts Detected
+                      </span>
+                    ) : (
+                      <span className="flex items-center gap-1.5 text-emerald-600 dark:text-emerald-400 font-semibold">
+                        <span className="w-2 h-2 rounded-full bg-emerald-500 inline-block" />
+                        Network Operating at Equilibrium
+                      </span>
+                    )}
+                    <span className="text-slate-300 dark:text-neutral-700">·</span>
+                    <span className="text-slate-500 dark:text-neutral-400">
+                      {effectiveWarehouses.length} Active Dark Stores
+                    </span>
+                    <span className="text-slate-300 dark:text-neutral-700">·</span>
+                    <span className="text-slate-500 dark:text-neutral-400">
+                      Target CSL: {currentServiceLevel.label.split(" - ")[0]}
+                    </span>
+                  </div>
                 </div>
-                <p className="text-xs sm:text-sm text-slate-600 dark:text-neutral-400 mt-1 font-medium">
-                  Real-time network health, multi-echelon stock levels, and stochastic stock-out risk across 4 dark stores.
+                <p className="text-xs sm:text-sm text-slate-600 dark:text-neutral-400 mt-1 font-medium max-w-3xl">
+                  Real-time network health, multi-echelon stock levels, stochastic stock-out mitigation, and cross-dock balancing across regional dark store hubs.
                 </p>
               </div>
 
               {/* Current warehouse/network context & Run Engine Action */}
               <div className="flex items-center gap-3 flex-wrap">
+                {/* Quick Facility Node Switcher */}
                 <div
-                  className={`px-3.5 py-2 rounded-xl border flex items-center gap-3 ${
+                  className={`px-3 py-1.5 rounded-xl border flex items-center gap-2.5 ${
                     isDark
                       ? "bg-neutral-900 border-neutral-800"
                       : "bg-white border-slate-300 shadow-xs"
                   }`}
                 >
                   <div
-                    className={`w-8 h-8 rounded-lg flex items-center justify-center font-bold text-xs shrink-0 ${
+                    className={`w-7 h-7 rounded-lg flex items-center justify-center font-bold text-xs shrink-0 ${
                       isDark
                         ? "bg-neutral-800 text-emerald-400"
                         : "bg-emerald-50 text-emerald-700 border border-emerald-200"
                     }`}
                   >
-                    <Building2 className="w-4 h-4" />
+                    <Building2 className="w-3.5 h-3.5" />
                   </div>
                   <div>
                     <div className="flex items-center gap-1.5">
-                      <span className="text-xs font-bold text-slate-950 dark:text-white">
-                        {currentWarehouse.name}
-                      </span>
-                      <span className="text-[10px] font-mono px-1.5 py-0.2 rounded bg-slate-100 dark:bg-neutral-800 text-slate-700 dark:text-neutral-300">
+                      <select
+                        value={selectedWarehouseId}
+                        onChange={(e) => handleSelectWarehouse(e.target.value)}
+                        className="text-xs font-bold bg-transparent text-slate-950 dark:text-white cursor-pointer focus:outline-none pr-1"
+                        aria-label="Select command node"
+                      >
+                        {effectiveWarehouses.map((w) => (
+                          <option
+                            key={w.id}
+                            value={w.id}
+                            className={isDark ? "bg-neutral-900 text-white" : "bg-white text-slate-900"}
+                          >
+                            {w.name} ({w.city})
+                          </option>
+                        ))}
+                      </select>
+                      <span className="text-[10px] font-mono px-1 py-0.2 rounded bg-slate-100 dark:bg-neutral-800 text-slate-600 dark:text-neutral-400">
                         {currentWarehouse.id}
                       </span>
                     </div>
-                    <div className="text-[11px] text-slate-600 dark:text-neutral-400 font-medium flex items-center gap-1.5">
-                      <span>{currentWarehouse.city}</span>
+                    <div className="text-[10px] text-slate-500 dark:text-neutral-400 font-medium flex items-center gap-1.5">
+                      <span>{currentWarehouse.region}</span>
                       <span>·</span>
                       <span>{currentWarehouse.demandFactor.toFixed(2)}x factor</span>
                     </div>
@@ -971,9 +1091,10 @@ export default function App() {
                 </div>
 
                 <button
+                  type="button"
                   onClick={handleTriggerSimulation}
                   disabled={isSimulating}
-                  className={`px-3.5 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-2 cursor-pointer shadow-xs ${
+                  className={`px-4 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-2 cursor-pointer shadow-xs ${
                     isDark
                       ? "bg-emerald-600 hover:bg-emerald-500 text-white"
                       : "bg-emerald-600 hover:bg-emerald-700 text-white"
@@ -984,12 +1105,12 @@ export default function App() {
                       isSimulating ? "animate-spin" : ""
                     }`}
                   />
-                  <span>{isSimulating ? "Computing Forecast..." : "Run Engine"}</span>
+                  <span>{isSimulating ? "Computing Engine..." : "Run Engine"}</span>
                 </button>
               </div>
             </div>
 
-            {/* B. Executive KPI Row (4 Compact, Consistently Sized Cards) */}
+            {/* B. Executive KPI Row (4 High-Density, Anti-Slop Cards) */}
             <KpiMetrics
               simulationStates={simulationStates}
               selectedCslLabel={currentServiceLevel.label.split(" - ")[0]}
@@ -1004,7 +1125,7 @@ export default function App() {
                   setProcurementTab("po");
                 } else if (target === "controls") {
                   setActivePage("operations");
-                  setOperationsTab("controls");
+                  setOperationsTab("simulation");
                 }
               }}
             />
@@ -1051,6 +1172,26 @@ export default function App() {
                 }
               }}
               onApproveTransfer={handleApproveTransfer}
+            />
+
+            {/* E. Facility Comparative Performance & Multi-Echelon Benchmarking Matrix */}
+            <FacilityPerformanceMatrix
+              warehouses={effectiveWarehouses}
+              selectedWarehouseId={selectedWarehouseId}
+              onSelectWarehouse={handleSelectWarehouse}
+              simulationStates={simulationStates}
+              allHistoricalRecords={allHistoricalRecords}
+              allSkus={effectiveSkus}
+              interTransfers={interTransfers}
+              purchaseOrders={purchaseOrders}
+              currency={currency}
+              theme={theme}
+              onNavigateToInventory={(whId) => {
+                if (whId) {
+                  handleSelectWarehouse(whId);
+                }
+                setActivePage("inventory");
+              }}
             />
           </div>
         )}
@@ -1416,7 +1557,10 @@ export default function App() {
         onTriggerSimulation={handleTriggerSimulation}
         onSelectPage={setActivePage}
         isSimulating={isSimulating}
+        onGoToLanding={handleGoToLanding}
       />
+    </>
+  )}
 
       {/* Global Command Bar Modal (Cmd + K / Ctrl + K) */}
       <CommandPaletteModal
@@ -1480,6 +1624,7 @@ export default function App() {
         onExportCsv={handleDownloadCsv}
         onOpenPdfReport={() => setIsReportModalOpen(true)}
         theme={theme}
+        onGoToLanding={handleGoToLanding}
       />
 
       {/* Executive Printable / PDF Audit Dossier Modal */}

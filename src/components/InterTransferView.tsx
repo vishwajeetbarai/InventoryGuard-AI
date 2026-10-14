@@ -31,7 +31,7 @@ export const InterTransferView: React.FC<InterTransferViewProps> = ({
   recommendations,
   onApproveTransfer,
   currency = "INR",
-  theme,
+  theme = "light",
 }) => {
   const isDark = theme === "dark";
   const [approvedIds, setApprovedIds] = useState<string[]>([]);

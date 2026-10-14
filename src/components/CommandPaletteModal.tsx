@@ -18,6 +18,7 @@ import {
   Printer,
   X,
   Navigation,
+  Globe,
 } from "lucide-react";
 
 export interface CommandItem {
@@ -46,6 +47,7 @@ interface CommandPaletteModalProps {
   onExportCsv: () => void;
   onOpenPdfReport: () => void;
   theme: "dark" | "light";
+  onGoToLanding?: () => void;
 }
 
 export const CommandPaletteModal: React.FC<CommandPaletteModalProps> = ({
@@ -64,6 +66,7 @@ export const CommandPaletteModal: React.FC<CommandPaletteModalProps> = ({
   onExportCsv,
   onOpenPdfReport,
   theme,
+  onGoToLanding,
 }) => {
   const isDark = theme === "dark";
   const [query, setQuery] = useState("");
@@ -82,6 +85,22 @@ export const CommandPaletteModal: React.FC<CommandPaletteModalProps> = ({
 
   // Construct all available commands
   const commands: CommandItem[] = [
+    ...(onGoToLanding
+      ? [
+          {
+            id: "nav-landing",
+            category: "Navigation" as const,
+            title: "Product Landing Page & Financial ROI Model",
+            subtitle: "Switch to executive overview, interactive calculator & architecture",
+            icon: <Globe className="w-4 h-4 text-emerald-400" />,
+            action: () => {
+              onGoToLanding();
+              onClose();
+            },
+            keywords: ["landing", "home", "product", "roi", "calculator", "overview", "marketing"],
+          },
+        ]
+      : []),
     // 1. Navigation tabs
     {
       id: "tab-network",
@@ -367,7 +386,9 @@ export const CommandPaletteModal: React.FC<CommandPaletteModalProps> = ({
               <X className="w-4 h-4" />
             </button>
           )}
-          <span className="hidden sm:inline-flex items-center px-2 py-0.5 rounded text-[10px] font-mono text-slate-400 bg-slate-800/60 ml-2">
+          <span className={`hidden sm:inline-flex items-center px-2 py-0.5 rounded text-[10px] font-mono ml-2 ${
+            isDark ? "text-neutral-400 bg-neutral-800" : "text-slate-700 bg-slate-100 border border-slate-300 font-medium"
+          }`}>
             ESC to close
           </span>
         </div>
@@ -375,10 +396,10 @@ export const CommandPaletteModal: React.FC<CommandPaletteModalProps> = ({
         {/* Command List */}
         <div
           ref={listRef}
-          className="max-h-[380px] overflow-y-auto p-2 divide-y divide-slate-800/20"
+          className="max-h-[380px] overflow-y-auto p-2 divide-y divide-slate-200 dark:divide-neutral-800"
         >
           {filteredCommands.length === 0 ? (
-            <div className="py-12 text-center text-xs text-slate-400">
+            <div className="py-12 text-center text-xs text-slate-600 dark:text-neutral-400 font-medium">
               No matching commands or SKUs found for &ldquo;{query}&rdquo;
             </div>
           ) : (
@@ -451,8 +472,8 @@ export const CommandPaletteModal: React.FC<CommandPaletteModalProps> = ({
         <div
           className={`px-4 py-2.5 border-t flex flex-wrap items-center justify-between text-[11px] font-mono ${
             isDark
-              ? "border-slate-800 bg-slate-900/40 text-slate-400"
-              : "border-slate-200 bg-slate-50 text-slate-500"
+              ? "border-neutral-800 bg-neutral-900/60 text-neutral-300"
+              : "border-slate-200 bg-slate-50 text-slate-700 font-medium"
           }`}
         >
           <div className="flex items-center gap-3">
