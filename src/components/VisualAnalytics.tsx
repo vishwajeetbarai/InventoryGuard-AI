@@ -17,6 +17,9 @@ import {
   Calendar,
   BrainCircuit,
   Zap,
+  Layers,
+  TrendingDown,
+  Info,
 } from "lucide-react";
 
 interface VisualAnalyticsProps {
@@ -36,11 +39,12 @@ export const VisualAnalytics: React.FC<VisualAnalyticsProps> = ({
   onSelectSkuId,
   monteCarloIterations,
   weatherSurgePct = 0,
-  currency = "INR",
+  currency = "USD",
   forecastModel = "META_PROPHET",
-  theme = "dark",
+  theme = "light",
 }) => {
   const isDark = theme === "dark";
+  const [hoveredPointIdx, setHoveredPointIdx] = useState<number | null>(null);
 
   const activeState =
     simulationStates.find((s) => s.sku.id === selectedSkuId) ||
@@ -61,6 +65,12 @@ export const VisualAnalytics: React.FC<VisualAnalyticsProps> = ({
     mcResult,
     supplierScorecard,
   } = activeState;
+
+  // D. Supporting Inventory Metrics
+  const totalForecastDemand = forecastPoints.reduce(
+    (acc, p) => acc + p.demand,
+    0
+  );
 
   // Chart 1: Historical Sales (last 30 days) + Forecast (horizon)
   const recentHist = historicalSales.slice(-30);
@@ -83,17 +93,20 @@ export const VisualAnalytics: React.FC<VisualAnalyticsProps> = ({
     })),
   ];
 
-  // Chart 1 Dimensions
-  const c1Width = 560;
-  const c1Height = 220;
-  const c1Padding = { top: 20, right: 20, bottom: 30, left: 45 };
+  // Full-width Prominent Dimensions for Main Forecast
+  const c1Width = 1000;
+  const c1Height = 280;
+  const c1Padding = { top: 25, right: 35, bottom: 40, left: 55 };
   const innerW1 = c1Width - c1Padding.left - c1Padding.right;
   const innerH1 = c1Height - c1Padding.top - c1Padding.bottom;
 
   const maxVal1 =
     Math.max(
-      ...allChart1Points.map((p) => Math.max(p.actual ?? 0, p.upper ?? p.pred ?? 0))
-    ) * 1.15 || 100;
+      ...allChart1Points.map((p) => Math.max(p.actual ?? 0, p.upper ?? p.pred ?? 0)),
+      mcResult.dynamicRop,
+      mcResult.dynamicSafetyStock,
+      50
+    ) * 1.15;
 
   const getX1 = (idx: number) =>
     c1Padding.left + (idx / Math.max(1, allChart1Points.length - 1)) * innerW1;
@@ -142,7 +155,7 @@ export const VisualAnalytics: React.FC<VisualAnalyticsProps> = ({
         ].join(" ")
       : "";
 
-  // Chart 2: Inventory Depletion vs ROP (Starts from Usable Stock to discount expired batches)
+  // Chart 2: Inventory Depletion vs ROP
   let runningStock = usableStock;
   const depletionData = forecastPoints.map((f, i) => {
     runningStock = Math.max(0, runningStock - f.demand);
@@ -205,9 +218,9 @@ export const VisualAnalytics: React.FC<VisualAnalyticsProps> = ({
   }
 
   const maxBinCount = Math.max(...bins.map((b) => b.count), 1);
-  const c3Width = 1140;
-  const c3Height = 210;
-  const c3Padding = { top: 25, right: 30, bottom: 35, left: 55 };
+  const c3Width = 560;
+  const c3Height = 220;
+  const c3Padding = { top: 20, right: 25, bottom: 30, left: 45 };
   const innerW3 = c3Width - c3Padding.left - c3Padding.right;
   const innerH3 = c3Height - c3Padding.top - c3Padding.bottom;
 
@@ -225,284 +238,526 @@ export const VisualAnalytics: React.FC<VisualAnalyticsProps> = ({
     FORECAST_MODELS_META[activeState.forecastModel || forecastModel] ||
     FORECAST_MODELS_META.META_PROPHET;
 
+  const activeHoveredPoint =
+    hoveredPointIdx !== null ? allChart1Points[hoveredPointIdx] : null;
+
   return (
     <div className="space-y-6">
-      {/* Enterprise Time-Series Model Benchmark Banner */}
-      <div
-        className={`border rounded-xl p-4 flex flex-col md:flex-row md:items-center justify-between gap-3 transition-colors ${
-          isDark
-            ? "bg-neutral-900 border-neutral-800 text-neutral-100"
-            : "bg-white border-slate-300 text-slate-900 shadow-xs"
-        }`}
-      >
-        <div className="flex items-center gap-3">
-          <div
-            className={`p-2 rounded-lg shrink-0 ${
-              isDark ? "bg-neutral-800 text-neutral-200" : "bg-slate-100 border border-slate-200 text-slate-800 shadow-xs"
-            }`}
-          >
-            <BrainCircuit className="w-5 h-5 text-emerald-500" />
-          </div>
+      {/* SECTION D: Supporting Inventory Metrics Row (5 compact cards) */}
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3.5">
+        {/* Metric 1: Available Stock */}
+        <div
+          className={`border rounded-xl p-4 transition-colors flex flex-col justify-between ${
+            isDark
+              ? "bg-neutral-900 border-neutral-800 text-neutral-100"
+              : "bg-white border-slate-300 text-slate-900 shadow-xs"
+          }`}
+        >
           <div>
-            <div className="flex items-center gap-2 flex-wrap">
-              <span className="text-xs font-bold text-slate-950 dark:text-white">
-                Forecasting Engine: {activeModelMeta.name}
+            <span className="text-[10px] font-bold uppercase tracking-wider text-slate-600 dark:text-neutral-400 block">
+              Available Stock
+            </span>
+            <div className="mt-2 flex items-baseline gap-1.5">
+              <span className="text-xl sm:text-2xl font-extrabold text-slate-950 dark:text-white">
+                {usableStock.toLocaleString()}
               </span>
-              <span className="text-[10px] px-1.5 py-0.5 rounded font-mono font-bold bg-neutral-200/80 dark:bg-neutral-800 text-slate-800 dark:text-neutral-200">
-                {activeModelMeta.badge}
-              </span>
-              <span className="text-[10px] text-slate-600 dark:text-neutral-400 font-mono font-medium">
-                {activeModelMeta.paperReference}
+              <span className="text-xs text-slate-600 dark:text-neutral-400 font-semibold">
+                usable
               </span>
             </div>
-            <p className="text-[11px] text-slate-700 dark:text-neutral-300 mt-0.5 line-clamp-1 font-medium">
-              {activeModelMeta.description}
+          </div>
+          <div className="mt-2 pt-2 border-t border-slate-200 dark:border-neutral-800 text-[11px] text-slate-600 dark:text-neutral-400 font-medium flex items-center justify-between">
+            <span>{currentStock.toLocaleString()} gross</span>
+            {decayedUnits > 0 ? (
+              <span className="text-amber-600 dark:text-amber-400 font-bold">
+                -{decayedUnits} decay
+              </span>
+            ) : (
+              <span className="text-emerald-600 dark:text-emerald-400 font-bold">100% fresh</span>
+            )}
+          </div>
+        </div>
+
+        {/* Metric 2: Forecast Demand */}
+        <div
+          className={`border rounded-xl p-4 transition-colors flex flex-col justify-between ${
+            isDark
+              ? "bg-neutral-900 border-neutral-800 text-neutral-100"
+              : "bg-white border-slate-300 text-slate-900 shadow-xs"
+          }`}
+        >
+          <div>
+            <span className="text-[10px] font-bold uppercase tracking-wider text-slate-600 dark:text-neutral-400 block">
+              Forecast Demand
+            </span>
+            <div className="mt-2 flex items-baseline gap-1.5">
+              <span className="text-xl sm:text-2xl font-extrabold text-slate-950 dark:text-white">
+                {Math.round(totalForecastDemand).toLocaleString()}
+              </span>
+              <span className="text-xs text-slate-600 dark:text-neutral-400 font-semibold">
+                units
+              </span>
+            </div>
+          </div>
+          <div className="mt-2 pt-2 border-t border-slate-200 dark:border-neutral-800 text-[11px] text-slate-600 dark:text-neutral-400 font-medium flex items-center justify-between">
+            <span>{forecastPoints.length}d horizon</span>
+            <span className="text-indigo-600 dark:text-indigo-400 font-bold">
+              ~{(totalForecastDemand / Math.max(1, forecastPoints.length)).toFixed(1)}/day
+            </span>
+          </div>
+        </div>
+
+        {/* Metric 3: Dynamic Reorder Point */}
+        <div
+          className={`border rounded-xl p-4 transition-colors flex flex-col justify-between ${
+            isDark
+              ? "bg-neutral-900 border-neutral-800 text-neutral-100"
+              : "bg-white border-slate-300 text-slate-900 shadow-xs"
+          }`}
+        >
+          <div>
+            <span className="text-[10px] font-bold uppercase tracking-wider text-slate-600 dark:text-neutral-400 block">
+              Dynamic ROP
+            </span>
+            <div className="mt-2 flex items-baseline gap-1.5">
+              <span className="text-xl sm:text-2xl font-extrabold text-slate-950 dark:text-white">
+                {mcResult.dynamicRop.toLocaleString()}
+              </span>
+              <span className="text-xs text-slate-600 dark:text-neutral-400 font-semibold">
+                units
+              </span>
+            </div>
+          </div>
+          <div className="mt-2 pt-2 border-t border-slate-200 dark:border-neutral-800 text-[11px] text-slate-600 dark:text-neutral-400 font-medium flex items-center justify-between">
+            <span>Trigger threshold</span>
+            <span
+              className={`font-bold ${
+                usableStock <= mcResult.dynamicRop
+                  ? "text-rose-600 dark:text-rose-400"
+                  : "text-emerald-600 dark:text-emerald-400"
+              }`}
+            >
+              {usableStock <= mcResult.dynamicRop ? "Breached" : "Safe"}
+            </span>
+          </div>
+        </div>
+
+        {/* Metric 4: Dynamic Safety Stock */}
+        <div
+          className={`border rounded-xl p-4 transition-colors flex flex-col justify-between ${
+            isDark
+              ? "bg-neutral-900 border-neutral-800 text-neutral-100"
+              : "bg-white border-slate-300 text-slate-900 shadow-xs"
+          }`}
+        >
+          <div>
+            <span className="text-[10px] font-bold uppercase tracking-wider text-slate-600 dark:text-neutral-400 block">
+              Safety Stock
+            </span>
+            <div className="mt-2 flex items-baseline gap-1.5">
+              <span className="text-xl sm:text-2xl font-extrabold text-slate-950 dark:text-white">
+                {mcResult.dynamicSafetyStock.toLocaleString()}
+              </span>
+              <span className="text-xs text-slate-600 dark:text-neutral-400 font-semibold">
+                buffer
+              </span>
+            </div>
+          </div>
+          <div className="mt-2 pt-2 border-t border-slate-200 dark:border-neutral-800 text-[11px] text-slate-600 dark:text-neutral-400 font-medium flex items-center justify-between">
+            <span>Dual-Variance</span>
+            <span className="text-emerald-600 dark:text-emerald-400 font-bold">
+              Buffered
+            </span>
+          </div>
+        </div>
+
+        {/* Metric 5: Stock-Out Probability */}
+        <div
+          className={`border rounded-xl p-4 transition-colors flex flex-col justify-between col-span-2 sm:col-span-1 ${
+            isDark
+              ? "bg-neutral-900 border-neutral-800 text-neutral-100"
+              : "bg-white border-slate-300 text-slate-900 shadow-xs"
+          }`}
+        >
+          <div>
+            <span className="text-[10px] font-bold uppercase tracking-wider text-slate-600 dark:text-neutral-400 block">
+              Stock-Out Risk
+            </span>
+            <div className="mt-2 flex items-baseline gap-1.5">
+              <span
+                className={`text-xl sm:text-2xl font-extrabold ${
+                  mcResult.stockoutProbabilityPct > 25
+                    ? "text-rose-600 dark:text-rose-400"
+                    : mcResult.stockoutProbabilityPct > 10
+                    ? "text-amber-600 dark:text-amber-400"
+                    : "text-emerald-600 dark:text-emerald-400"
+                }`}
+              >
+                {mcResult.stockoutProbabilityPct.toFixed(1)}%
+              </span>
+            </div>
+          </div>
+          <div className="mt-2 pt-2 border-t border-slate-200 dark:border-neutral-800 text-[11px] text-slate-600 dark:text-neutral-400 font-medium flex items-center justify-between">
+            <span>Monte Carlo</span>
+            <span
+              className={`font-bold ${
+                mcResult.urgency === "CRITICAL REORDER NOW"
+                  ? "text-rose-600 dark:text-rose-400"
+                  : mcResult.urgency === "WARNING"
+                  ? "text-amber-600 dark:text-amber-400"
+                  : "text-emerald-600 dark:text-emerald-400"
+              }`}
+            >
+              {mcResult.urgency === "CRITICAL REORDER NOW"
+                ? "Reorder Now"
+                : mcResult.urgency === "WARNING"
+                ? "Warning"
+                : "Optimal"}
+            </span>
+          </div>
+        </div>
+      </div>
+
+      {/* SECTION C: Main Demand Forecast Visualization (Spacious Full-Width Display) */}
+      <div className={`border rounded-xl p-5 shadow-sm transition-colors ${cardCls}`}>
+        {/* Header with Title, Architecture, and Accuracy Metrics */}
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4 border-b border-slate-200 dark:border-neutral-800">
+          <div>
+            <div className="flex items-center gap-2">
+              <div className="p-1.5 rounded-lg bg-emerald-500/10 text-emerald-500">
+                <TrendingUp className="w-4 h-4" />
+              </div>
+              <h3 className="text-base font-bold text-slate-950 dark:text-white">
+                Multi-Step Demand Forecast vs. Historical Actuals: {sku.name}
+              </h3>
+            </div>
+            <p className="text-xs text-slate-600 dark:text-neutral-400 mt-1 font-medium">
+              30-day historical actuals combined with {forecastPoints.length}-day forward {activeModelMeta.name} projections, 95% confidence bounds, and dynamic inventory thresholds.
             </p>
           </div>
-        </div>
-        <div className="flex items-center gap-4 text-xs font-mono shrink-0 self-start md:self-auto">
-          <div className="text-right">
-            <span className="text-[10px] text-slate-700 dark:text-neutral-400 block uppercase font-bold">Inference</span>
-            <span className="font-bold text-emerald-700 dark:text-emerald-400">~{activeModelMeta.inferenceLatencyMs}ms</span>
-          </div>
-          <div className="text-right">
-            <span className="text-[10px] text-slate-700 dark:text-neutral-400 block uppercase font-bold">Benchmark MAE</span>
-            <span className="font-bold text-slate-900 dark:text-neutral-100">{activeModelMeta.benchmarkMae}</span>
-          </div>
-          <div className="text-right">
-            <span className="text-[10px] text-slate-700 dark:text-neutral-400 block uppercase font-bold">Live Run RMSE</span>
-            <span className="font-bold text-amber-700 dark:text-amber-400">{rmse.toFixed(1)}</span>
-          </div>
-        </div>
-      </div>
 
-      {/* Active SKU Selector Bar with Perishable & Supplier Matrix badges */}
-      <div
-        className={`border rounded-xl p-4 flex flex-col md:flex-row md:items-center justify-between gap-4 transition-colors ${cardCls}`}
-      >
-        <div className="flex items-center gap-3">
-          <div className="p-2 rounded-lg bg-indigo-500/10 text-indigo-400">
-            <Activity className="w-5 h-5" />
-          </div>
-          <div>
-            <span className="text-xs text-slate-400 uppercase tracking-wider font-semibold">
-              Selected SKU Deep-Dive &amp; Audit Profile
+          <div className="flex items-center gap-3 self-start sm:self-auto flex-wrap">
+            <span className="text-xs font-mono px-2.5 py-1 rounded-lg bg-indigo-500/10 text-indigo-700 dark:text-indigo-400 border border-indigo-500/20 font-bold">
+              RMSE: {rmse.toFixed(1)} · MAE: {mae.toFixed(1)}
             </span>
-            <div className="flex flex-wrap items-center gap-2 mt-0.5">
-              <h3
-                className={`text-base font-bold ${
-                  isDark ? "text-white" : "text-slate-900"
-                }`}
-              >
-                {sku.name} ({sku.id})
-              </h3>
-              <span
-                className={`text-xs px-2 py-0.5 rounded border ${
-                  isDark
-                    ? "bg-slate-800 text-slate-300 border-slate-700"
-                    : "bg-slate-100 text-slate-700 border-slate-300"
-                }`}
-              >
-                {sku.category}
-              </span>
-
-              {sku.isPerishable ? (
-                <span className="text-xs px-2 py-0.5 rounded font-bold bg-amber-500/10 text-amber-500 border border-amber-500/30 flex items-center gap-1">
-                  <Leaf className="w-3 h-3 text-amber-500" />
-                  <span>Perishable Shelf Life: {sku.shelfLifeDays}d</span>
-                  <span>•</span>
-                  <span>Decay: -{decayRatePct}%</span>
-                </span>
-              ) : (
-                <span className="text-xs px-2 py-0.5 rounded font-medium bg-emerald-500/10 text-emerald-500 border border-emerald-500/30">
-                  Ambient Shelf-Stable ({sku.shelfLifeDays}d)
-                </span>
-              )}
-
-              {activeState.weatherDemandUpliftPct > 0 && (
-                <span className="text-xs px-2 py-0.5 rounded font-bold bg-sky-500/15 text-sky-400 border border-sky-500/30 flex items-center gap-1">
-                  <CloudRain className="w-3 h-3 text-sky-400" />
-                  <span>Rain Shock: +{activeState.weatherDemandUpliftPct}%</span>
-                  <span className="opacity-75">({sku.weatherSensitivity}x)</span>
-                </span>
-              )}
-
-              <span className="text-xs px-2 py-0.5 rounded font-bold bg-sky-500/10 text-sky-400 border border-sky-500/30">
-                Vendor: {supplierScorecard.grade} ({supplierScorecard.bufferMultiplier}x Buffer)
-              </span>
-            </div>
+            <span className="text-xs font-mono px-2.5 py-1 rounded-lg bg-slate-100 dark:bg-neutral-800 text-slate-800 dark:text-neutral-200 border border-slate-200 dark:border-neutral-700 font-semibold">
+              Latency: {activeModelMeta.inferenceLatencyMs}ms
+            </span>
           </div>
         </div>
 
-        {/* SKU Selector Tabs */}
-        <div className="flex flex-wrap items-center gap-1.5">
-          {simulationStates.map((s) => {
-            const isSelected = s.sku.id === selectedSkuId;
-            const isCrit = s.mcResult.urgency === "CRITICAL REORDER NOW";
-            return (
-              <button
-                key={s.sku.id}
-                onClick={() => onSelectSkuId(s.sku.id)}
-                className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer flex items-center gap-1.5 ${
-                  isSelected
-                    ? isDark
-                      ? "bg-white text-neutral-950 shadow-xs"
-                      : "bg-slate-900 text-white shadow-xs"
-                    : isDark
-                    ? "bg-neutral-900 hover:bg-neutral-800 text-neutral-300 border border-neutral-800"
-                    : "bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-200"
-                }`}
-              >
-                <span>{s.sku.name.split(" ")[0]}</span>
-                {isCrit && (
-                  <span className="w-2 h-2 rounded-full bg-red-500 animate-pulse" />
-                )}
-              </button>
-            );
-          })}
-        </div>
-      </div>
+        {/* Spacious Interactive SVG Canvas */}
+        <div className="relative w-full mt-4 overflow-hidden">
+          <svg
+            viewBox={`0 0 ${c1Width} ${c1Height}`}
+            className="w-full h-auto select-none"
+            onMouseLeave={() => setHoveredPointIdx(null)}
+          >
+            {/* Horizontal Gridlines & Y-Axis Labels */}
+            {[0, 0.25, 0.5, 0.75, 1].map((pct, i) => {
+              const y = c1Padding.top + innerH1 * (1 - pct);
+              const val = Math.round(maxVal1 * pct);
+              return (
+                <g key={i}>
+                  <line
+                    x1={c1Padding.left}
+                    y1={y}
+                    x2={c1Width - c1Padding.right}
+                    y2={y}
+                    stroke={gridLineColor}
+                    strokeDasharray="4 4"
+                  />
+                  <text
+                    x={c1Padding.left - 10}
+                    y={y + 4}
+                    fill={tickTextColor}
+                    fontSize="10"
+                    textAnchor="end"
+                    fontFamily="sans-serif"
+                    fontWeight="500"
+                  >
+                    {val}
+                  </text>
+                </g>
+              );
+            })}
 
-      {/* Grid of Two Core Charts */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* CHART 1: Historical Sales vs Predicted Demand Curve */}
-        <div className={`border rounded-xl p-5 shadow-sm transition-colors ${cardCls}`}>
-          <div className="flex items-center justify-between mb-3">
-            <div>
-              <h4
-                className={`text-sm font-bold flex items-center gap-2 ${
-                  isDark ? "text-white" : "text-slate-900"
-                }`}
-              >
-                <TrendingUp className="w-4 h-4 text-indigo-400" />
-                Historical Sales vs. {activeModelMeta.name} Forecast
-              </h4>
-              <p className="text-xs text-slate-400 mt-0.5">
-                30-Day Actuals + {forecastPoints.length}-Day {activeModelMeta.name} ({activeModelMeta.architecture})
-              </p>
-            </div>
-            <div className="text-right">
-              <span className="text-xs font-semibold px-2 py-0.5 rounded bg-indigo-500/10 text-indigo-400 border border-indigo-500/20">
-                RMSE: {rmse.toFixed(1)} | MAE: {mae.toFixed(1)}
-              </span>
-            </div>
-          </div>
+            {/* Threshold Reference Line: Dynamic ROP */}
+            {mcResult.dynamicRop <= maxVal1 && (
+              <g>
+                <line
+                  x1={c1Padding.left}
+                  y1={getY1(mcResult.dynamicRop)}
+                  x2={c1Width - c1Padding.right}
+                  y2={getY1(mcResult.dynamicRop)}
+                  stroke="#D97706"
+                  strokeWidth="1.5"
+                  strokeDasharray="5 3"
+                />
+                <text
+                  x={c1Width - c1Padding.right}
+                  y={getY1(mcResult.dynamicRop) - 6}
+                  fill="#D97706"
+                  fontSize="10"
+                  fontWeight="bold"
+                  textAnchor="end"
+                >
+                  ROP Trigger: {mcResult.dynamicRop} units
+                </text>
+              </g>
+            )}
 
-          {/* SVG Chart 1 */}
-          <div className="relative w-full overflow-hidden">
-            <svg
-              viewBox={`0 0 ${c1Width} ${c1Height}`}
-              className="w-full h-auto select-none"
+            {/* Threshold Reference Line: Safety Stock */}
+            {mcResult.dynamicSafetyStock <= maxVal1 && (
+              <g>
+                <line
+                  x1={c1Padding.left}
+                  y1={getY1(mcResult.dynamicSafetyStock)}
+                  x2={c1Width - c1Padding.right}
+                  y2={getY1(mcResult.dynamicSafetyStock)}
+                  stroke="#059669"
+                  strokeWidth="1.5"
+                  strokeDasharray="5 3"
+                />
+                <text
+                  x={c1Width - c1Padding.right}
+                  y={getY1(mcResult.dynamicSafetyStock) + 14}
+                  fill="#059669"
+                  fontSize="10"
+                  fontWeight="bold"
+                  textAnchor="end"
+                >
+                  Safety Buffer: {mcResult.dynamicSafetyStock} units
+                </text>
+              </g>
+            )}
+
+            {/* 95% Confidence Interval Band */}
+            {confidenceBandPath && (
+              <path
+                d={confidenceBandPath}
+                fill={isDark ? "rgba(99, 102, 241, 0.2)" : "rgba(99, 102, 241, 0.12)"}
+              />
+            )}
+
+            {/* Historical Actual Sales Path */}
+            {histPath && (
+              <path
+                d={histPath}
+                fill="none"
+                stroke={isDark ? "#94A3B8" : "#64748B"}
+                strokeWidth="2.2"
+                strokeLinecap="round"
+              />
+            )}
+
+            {/* Projected Forecast Demand Path */}
+            {forePath && (
+              <path
+                d={forePath}
+                fill="none"
+                stroke="#6366F1"
+                strokeWidth="3"
+                strokeLinecap="round"
+              />
+            )}
+
+            {/* Forecast Start Vertical Divider */}
+            <line
+              x1={getX1(foreIdxOffset - 1)}
+              y1={c1Padding.top}
+              x2={getX1(foreIdxOffset - 1)}
+              y2={c1Padding.top + innerH1}
+              stroke="#6366F1"
+              strokeDasharray="4 4"
+              strokeWidth="1.5"
+            />
+            <text
+              x={getX1(foreIdxOffset - 1) + 6}
+              y={c1Padding.top + 14}
+              fill="#6366F1"
+              fontSize="10"
+              fontWeight="bold"
             >
-              {[0, 0.25, 0.5, 0.75, 1].map((pct, i) => {
-                const y = c1Padding.top + innerH1 * (1 - pct);
-                const val = Math.round(maxVal1 * pct);
-                return (
-                  <g key={i}>
+              Forecast Horizon Start
+            </text>
+
+            {/* Interactive Data Points & Hover Targets */}
+            {allChart1Points.map((p, idx) => {
+              const cx = getX1(idx);
+              const cy = getY1(p.actual ?? p.pred ?? 0);
+              const isHovered = hoveredPointIdx === idx;
+              return (
+                <g
+                  key={idx}
+                  onMouseEnter={() => setHoveredPointIdx(idx)}
+                  className="cursor-pointer"
+                >
+                  {/* Invisible broad hit box */}
+                  <rect
+                    x={cx - 10}
+                    y={c1Padding.top}
+                    width="20"
+                    height={innerH1}
+                    fill="transparent"
+                  />
+
+                  {/* Circle dot on curve */}
+                  <circle
+                    cx={cx}
+                    cy={cy}
+                    r={isHovered ? "5" : p.isForecast ? "3" : "2"}
+                    fill={p.isForecast ? "#6366F1" : isDark ? "#CBD5E1" : "#475569"}
+                    stroke={isDark ? "#0F172A" : "#FFFFFF"}
+                    strokeWidth="1.5"
+                  />
+
+                  {/* Active vertical hover guideline */}
+                  {isHovered && (
                     <line
-                      x1={c1Padding.left}
-                      y1={y}
-                      x2={c1Width - c1Padding.right}
-                      y2={y}
-                      stroke={gridLineColor}
-                      strokeDasharray="3 3"
+                      x1={cx}
+                      y1={c1Padding.top}
+                      x2={cx}
+                      y2={c1Padding.top + innerH1}
+                      stroke={isDark ? "#E2E8F0" : "#0F172A"}
+                      strokeWidth="1"
+                      strokeDasharray="2 2"
                     />
-                    <text
-                      x={c1Padding.left - 8}
-                      y={y + 4}
-                      fill={tickTextColor}
-                      fontSize="10"
-                      textAnchor="end"
-                      fontFamily="sans-serif"
-                    >
-                      {val}
-                    </text>
-                  </g>
+                  )}
+                </g>
+              );
+            })}
+
+            {/* X-Axis Ticks (Sample of Dates) */}
+            {allChart1Points
+              .filter((_, i) => i % Math.max(1, Math.floor(allChart1Points.length / 8)) === 0)
+              .map((p, i) => {
+                const idx = allChart1Points.indexOf(p);
+                return (
+                  <text
+                    key={i}
+                    x={getX1(idx)}
+                    y={c1Padding.top + innerH1 + 22}
+                    fill={tickTextColor}
+                    fontSize="9.5"
+                    textAnchor="middle"
+                    fontFamily="sans-serif"
+                    fontWeight="500"
+                  >
+                    {p.date.slice(5)}
+                  </text>
                 );
               })}
+          </svg>
 
-              {confidenceBandPath && (
-                <path
-                  d={confidenceBandPath}
-                  fill="rgba(99, 102, 241, 0.16)"
-                />
-              )}
-
-              {histPath && (
-                <path
-                  d={histPath}
-                  fill="none"
-                  stroke={isDark ? "#94A3B8" : "#64748B"}
-                  strokeWidth="1.8"
-                />
-              )}
-
-              {forePath && (
-                <path
-                  d={forePath}
-                  fill="none"
-                  stroke="#6366F1"
-                  strokeWidth="2.5"
-                  strokeLinecap="round"
-                />
-              )}
-
-              <line
-                x1={getX1(foreIdxOffset - 1)}
-                y1={c1Padding.top}
-                x2={getX1(foreIdxOffset - 1)}
-                y2={c1Padding.top + innerH1}
-                stroke="#6366F1"
-                strokeDasharray="4 4"
-                strokeWidth="1"
-              />
-              <text
-                x={getX1(foreIdxOffset - 1) + 4}
-                y={c1Padding.top + 12}
-                fill="#6366F1"
-                fontSize="9"
-                fontWeight="bold"
-              >
-                Forecast Start
-              </text>
-            </svg>
-          </div>
-
-          <div
-            className={`flex items-center justify-between text-xs mt-2 border-t pt-2 ${
-              isDark
-                ? "text-slate-400 border-slate-800/80"
-                : "text-slate-500 border-slate-200"
-            }`}
-          >
-            <div className="flex items-center gap-4">
-              <span className="flex items-center gap-1.5">
-                <span className="w-3 h-0.5 bg-slate-400 rounded-full" /> Historical
-              </span>
-              <span className="flex items-center gap-1.5">
-                <span className="w-3 h-0.5 bg-indigo-500 rounded-full" /> ML Forecast
-              </span>
-              <span className="flex items-center gap-1.5">
-                <span className="w-3 h-2 bg-indigo-500/20 rounded" /> 80% Conf. Interval
-              </span>
+          {/* Interactive Hover Tooltip */}
+          {activeHoveredPoint && hoveredPointIdx !== null && (
+            <div
+              className={`absolute top-4 pointer-events-none p-3 rounded-xl border shadow-lg text-xs z-10 transition-all ${
+                isDark
+                  ? "bg-neutral-950/95 border-neutral-700 text-neutral-100"
+                  : "bg-white/95 border-slate-300 text-slate-900 shadow-md backdrop-blur-xs"
+              }`}
+              style={{
+                left: `${Math.min(
+                  80,
+                  Math.max(
+                    15,
+                    (hoveredPointIdx / (allChart1Points.length - 1)) * 100
+                  )
+                )}%`,
+                transform: "translateX(-50%)",
+              }}
+            >
+              <div className="font-bold flex items-center justify-between gap-3 pb-1 border-b border-slate-200 dark:border-neutral-800">
+                <span>Date: {activeHoveredPoint.date}</span>
+                <span
+                  className={`text-[10px] px-1.5 py-0.2 rounded font-mono ${
+                    activeHoveredPoint.isForecast
+                      ? "bg-indigo-500/20 text-indigo-400 font-bold"
+                      : "bg-slate-200 dark:bg-neutral-800 text-slate-700 dark:text-neutral-300 font-bold"
+                  }`}
+                >
+                  {activeHoveredPoint.isForecast ? "ML Forecast" : "Historical Actual"}
+                </span>
+              </div>
+              <div className="mt-1.5 space-y-1">
+                {activeHoveredPoint.actual !== null ? (
+                  <div className="flex justify-between gap-4">
+                    <span className="text-slate-600 dark:text-neutral-400 font-medium">Actual Demand:</span>
+                    <strong className="text-slate-950 dark:text-white font-mono">{activeHoveredPoint.actual} units</strong>
+                  </div>
+                ) : (
+                  <>
+                    <div className="flex justify-between gap-4">
+                      <span className="text-indigo-600 dark:text-indigo-400 font-semibold">Predicted Demand:</span>
+                      <strong className="text-indigo-600 dark:text-indigo-400 font-mono font-bold">{activeHoveredPoint.pred} units</strong>
+                    </div>
+                    {activeHoveredPoint.lower !== null && activeHoveredPoint.upper !== null && (
+                      <div className="flex justify-between gap-4 text-[11px] text-slate-600 dark:text-neutral-400">
+                        <span>95% Confidence:</span>
+                        <span className="font-mono">{activeHoveredPoint.lower} – {activeHoveredPoint.upper} units</span>
+                      </div>
+                    )}
+                  </>
+                )}
+              </div>
             </div>
-            <span className="font-medium">Daily Units Sold</span>
-          </div>
+          )}
         </div>
 
-        {/* CHART 2: Forward Inventory Depletion vs Dynamic ROP (with Decay Callout) */}
+        {/* Comprehensive Understandable Legend */}
+        <div
+          className={`mt-3 pt-3 border-t flex flex-wrap items-center justify-between gap-3 text-xs ${
+            isDark
+              ? "border-neutral-800 text-neutral-300"
+              : "border-slate-200 text-slate-800"
+          }`}
+        >
+          <div className="flex items-center gap-4 flex-wrap">
+            <span className="flex items-center gap-1.5 font-medium">
+              <span className="w-3.5 h-1 bg-slate-500 rounded-full" />
+              <span>Historical Actuals</span>
+            </span>
+            <span className="flex items-center gap-1.5 font-medium">
+              <span className="w-3.5 h-1 bg-indigo-500 rounded-full" />
+              <span>Projected ML Demand</span>
+            </span>
+            <span className="flex items-center gap-1.5 font-medium">
+              <span className="w-3.5 h-2.5 bg-indigo-500/20 border border-indigo-500/30 rounded-xs" />
+              <span>95% Confidence Interval</span>
+            </span>
+            <span className="flex items-center gap-1.5 font-medium">
+              <span className="w-3.5 h-0.5 border-t border-dashed border-amber-500" />
+              <span className="text-amber-700 dark:text-amber-400 font-bold">Dynamic ROP Threshold</span>
+            </span>
+            <span className="flex items-center gap-1.5 font-medium">
+              <span className="w-3.5 h-0.5 border-t border-dashed border-emerald-500" />
+              <span className="text-emerald-700 dark:text-emerald-400 font-bold">Safety Stock Buffer</span>
+            </span>
+          </div>
+
+          <span className="text-[11px] font-mono text-slate-500 dark:text-neutral-400 font-semibold">
+            Timeline Horizon: {allChart1Points.length} Daily Observations
+          </span>
+        </div>
+      </div>
+
+      {/* Grid of Two Secondary Deep-Dive Charts */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {/* Secondary 1: Forward Inventory Depletion vs Dynamic ROP */}
         <div className={`border rounded-xl p-5 shadow-sm transition-colors ${cardCls}`}>
           <div className="flex items-center justify-between mb-3">
             <div>
               <h4
                 className={`text-sm font-bold flex items-center gap-2 ${
-                  isDark ? "text-white" : "text-slate-900"
+                  isDark ? "text-white" : "text-slate-950"
                 }`}
               >
-                <BarChart2 className="w-4 h-4 text-sky-400" />
+                <BarChart2 className="w-4 h-4 text-sky-500" />
                 Forward Depletion vs. Dynamic ROP (Usable Stock)
               </h4>
-              <p className="text-xs text-slate-400 mt-0.5">
+              <p className="text-xs text-slate-600 dark:text-neutral-400 mt-0.5 font-medium">
                 Effective fulfillment stock after discounting expired perishable batches
               </p>
             </div>
@@ -510,16 +765,16 @@ export const VisualAnalytics: React.FC<VisualAnalyticsProps> = ({
               <span
                 className={`text-xs font-semibold px-2 py-0.5 rounded border ${
                   usableStock <= mcResult.dynamicRop
-                    ? "bg-red-500/10 text-red-500 border-red-500/20"
-                    : "bg-emerald-500/10 text-emerald-500 border-emerald-500/20"
+                    ? "bg-rose-500/10 text-rose-600 border-rose-500/30 font-bold"
+                    : "bg-emerald-500/10 text-emerald-600 border-emerald-500/30 font-bold"
                 }`}
               >
-                Usable: {usableStock} ({currentStock} Gross) | ROP: {mcResult.dynamicRop}
+                Usable: {usableStock} ({currentStock} Gross)
               </span>
             </div>
           </div>
 
-          {/* SVG Chart 2 */}
+          {/* SVG Depletion Chart */}
           <div className="relative w-full overflow-hidden">
             <svg
               viewBox={`0 0 ${c2Width} ${c2Height}`}
@@ -551,79 +806,33 @@ export const VisualAnalytics: React.FC<VisualAnalyticsProps> = ({
                 );
               })}
 
-              {/* ROP Line */}
+              {/* ROP Threshold Line */}
               <line
                 x1={c2Padding.left}
                 y1={getY2(mcResult.dynamicRop)}
                 x2={c2Width - c2Padding.right}
                 y2={getY2(mcResult.dynamicRop)}
-                stroke="#EF4444"
-                strokeWidth="2"
-                strokeDasharray="5 4"
+                stroke="#F43F5E"
+                strokeWidth="1.5"
+                strokeDasharray="4 3"
               />
               <text
-                x={c2Width - c2Padding.right - 4}
+                x={c2Width - c2Padding.right}
                 y={getY2(mcResult.dynamicRop) - 6}
-                fill="#EF4444"
-                fontSize="10"
+                fill="#F43F5E"
+                fontSize="9.5"
                 fontWeight="bold"
                 textAnchor="end"
               >
-                ROP: {mcResult.dynamicRop} units
+                Dynamic ROP: {mcResult.dynamicRop}
               </text>
 
-              {/* Safety Stock Line */}
-              <line
-                x1={c2Padding.left}
-                y1={getY2(mcResult.dynamicSafetyStock)}
-                x2={c2Width - c2Padding.right}
-                y2={getY2(mcResult.dynamicSafetyStock)}
-                stroke="#F59E0B"
-                strokeWidth="1.5"
-                strokeDasharray="3 3"
-              />
-              <text
-                x={c2Width - c2Padding.right - 4}
-                y={getY2(mcResult.dynamicSafetyStock) - 6}
-                fill="#F59E0B"
-                fontSize="9"
-                fontWeight="600"
-                textAnchor="end"
-              >
-                Safety Stock: {mcResult.dynamicSafetyStock}
-              </text>
-
-              {/* Gross vs Usable Stock marker at day 0 */}
-              {decayedUnits > 0 && (
-                <g>
-                  <line
-                    x1={c2Padding.left}
-                    y1={getY2(currentStock)}
-                    x2={c2Padding.left + 40}
-                    y2={getY2(currentStock)}
-                    stroke="#F59E0B"
-                    strokeWidth="1.5"
-                    strokeDasharray="2 2"
-                  />
-                  <text
-                    x={c2Padding.left + 45}
-                    y={getY2(currentStock) + 3}
-                    fill="#F59E0B"
-                    fontSize="9"
-                  >
-                    Gross: {currentStock} (-{decayedUnits} Expired)
-                  </text>
-                </g>
-              )}
-
-              {/* Depletion Area */}
-              <path d={depletionArea} fill="rgba(56, 189, 248, 0.1)" />
-
-              {/* Depletion Line */}
+              {/* Depletion Area & Curve */}
+              <path d={depletionArea} fill="rgba(56, 189, 248, 0.12)" />
               <path
                 d={depletionPath}
                 fill="none"
-                stroke="#38BDF8"
+                stroke="#0284C7"
                 strokeWidth="2.8"
                 strokeLinecap="round"
               />
@@ -634,7 +843,7 @@ export const VisualAnalytics: React.FC<VisualAnalyticsProps> = ({
                   cx={getX2(i)}
                   cy={getY2(d.stock)}
                   r={i === 0 ? "4" : "2.5"}
-                  fill="#38BDF8"
+                  fill="#0284C7"
                 />
               ))}
             </svg>
@@ -643,338 +852,197 @@ export const VisualAnalytics: React.FC<VisualAnalyticsProps> = ({
           <div
             className={`flex items-center justify-between text-xs mt-2 border-t pt-2 ${
               isDark
-                ? "text-slate-400 border-slate-800/80"
-                : "text-slate-500 border-slate-200"
+                ? "text-neutral-400 border-neutral-800"
+                : "text-slate-600 border-slate-200"
             }`}
           >
             <div className="flex items-center gap-4">
-              <span className="flex items-center gap-1.5">
-                <span className="w-3 h-0.5 bg-sky-400 rounded-full" /> Usable Stock ({usableStock})
+              <span className="flex items-center gap-1.5 font-medium">
+                <span className="w-3 h-0.5 bg-sky-500 rounded-full" /> Usable Stock ({usableStock})
               </span>
-              <span className="flex items-center gap-1.5">
-                <span className="w-3 h-0.5 bg-red-400 rounded-full" /> Dynamic ROP
-              </span>
-              {decayedUnits > 0 && (
-                <span className="flex items-center gap-1.5 text-amber-500 font-medium">
-                  ⚠ {decayedUnits} Expired Waste Units
-                </span>
-              )}
-            </div>
-            <span className="font-medium">Forward Days</span>
-          </div>
-        </div>
-      </div>
-
-      {/* Perishable Batch Expiry & Decay Engine Diagnostic Card */}
-      <div
-        className={`border rounded-xl p-5 shadow-sm transition-colors ${
-          isDark
-            ? sku.isPerishable
-              ? "bg-amber-950/15 border-amber-500/30"
-              : "bg-slate-900/60 border-slate-800"
-            : sku.isPerishable
-            ? "bg-amber-50/70 border-amber-200"
-            : "bg-slate-50 border-slate-200"
-        }`}
-      >
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-slate-700/30">
-          <div className="flex items-center gap-2">
-            {sku.isPerishable ? (
-              <Leaf className="w-4 h-4 text-amber-500" />
-            ) : (
-              <ShieldCheck className="w-4 h-4 text-emerald-500" />
-            )}
-            <h4
-              className={`text-sm font-bold ${
-                isDark ? "text-white" : "text-slate-900"
-              }`}
-            >
-              {sku.isPerishable
-                ? "Perishable Batch Expiry & Shelf-Life Decay Engine"
-                : "Ambient Non-Perishable Shelf Stability"}
-            </h4>
-          </div>
-          <span
-            className={`text-xs px-2.5 py-0.5 rounded-full font-bold border ${
-              sku.isPerishable
-                ? "bg-amber-500/10 text-amber-400 border-amber-500/30"
-                : "bg-emerald-500/10 text-emerald-400 border-emerald-500/30"
-            }`}
-          >
-            {sku.isPerishable
-              ? `Dynamic Spoilage Discount: -${decayRatePct}% Usable Stock`
-              : "Zero Expiry Discount (90-Day Stable)"}
-          </span>
-        </div>
-
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mt-4">
-          <div className="space-y-1">
-            <div className="text-xs text-slate-400 flex items-center gap-1">
-              <Calendar className="w-3.5 h-3.5 text-slate-400" />
-              <span>Shelf-Life Limit</span>
-            </div>
-            <div
-              className={`text-lg font-extrabold ${
-                isDark ? "text-white" : "text-slate-900"
-              }`}
-            >
-              {sku.shelfLifeDays}{" "}
-              <span className="text-xs font-normal text-slate-400">Days</span>
-            </div>
-            <div className="text-[11px] text-slate-500">
-              {sku.isPerishable
-                ? "Cold-chain expiration limit"
-                : "Ambient shelf stability"}
-            </div>
-          </div>
-
-          <div className="space-y-1">
-            <div className="text-xs text-slate-400">Gross Physical Stock</div>
-            <div
-              className={`text-lg font-extrabold font-mono ${
-                isDark ? "text-slate-200" : "text-slate-800"
-              }`}
-            >
-              {currentStock}{" "}
-              <span className="text-xs font-normal text-slate-400">Units</span>
-            </div>
-            <div className="text-[11px] text-slate-500">
-              Total warehouse count
-            </div>
-          </div>
-
-          <div className="space-y-1">
-            <div className="text-xs text-slate-400 flex items-center gap-1">
-              <PackageX className="w-3.5 h-3.5 text-amber-400" />
-              <span>Expired Spoilage</span>
-            </div>
-            <div className="text-lg font-extrabold text-amber-500 font-mono">
-              -{decayedUnits}{" "}
-              <span className="text-xs font-normal text-amber-400/80">
-                ({decayRatePct}%)
+              <span className="flex items-center gap-1.5 font-medium">
+                <span className="w-3 h-0.5 bg-rose-500 rounded-full" /> Dynamic ROP ({mcResult.dynamicRop})
               </span>
             </div>
-            <div className="text-[11px] text-slate-500">
-              {formatCurrency(decayedUnits * sku.basePrice, currency)} written-off
-            </div>
-          </div>
-
-          <div className="space-y-1">
-            <div className="text-xs text-slate-400 flex items-center gap-1">
-              <ShieldCheck className="w-3.5 h-3.5 text-sky-400" />
-              <span>Net Usable Stock</span>
-            </div>
-            <div className="text-lg font-extrabold text-sky-400 font-mono">
-              {usableStock}{" "}
-              <span className="text-xs font-normal text-slate-400">Units</span>
-            </div>
-            <div className="text-[11px] text-slate-500">
-              Engine ROP baseline
-            </div>
+            <span className="font-semibold text-slate-800 dark:text-neutral-200">
+              {depletionData.length} Forward Days
+            </span>
           </div>
         </div>
 
-        {sku.isPerishable && (
-          <div
-            className={`mt-4 p-3 rounded-lg text-xs flex items-start gap-2 border ${
-              isDark
-                ? "bg-slate-900/80 border-slate-800 text-slate-300"
-                : "bg-white border-slate-200 text-slate-700"
-            }`}
-          >
-            <AlertTriangle className="w-4 h-4 text-amber-500 shrink-0 mt-0.5" />
+        {/* Secondary 2: Monte Carlo Lead-Time Demand Distribution Histogram */}
+        <div className={`border rounded-xl p-5 shadow-sm transition-colors ${cardCls}`}>
+          <div className="flex items-center justify-between mb-3">
             <div>
-              <strong>Quick-Commerce Batch Freshness Protection:</strong>{" "}
-              Without expiration decay modeling, the gross count of {currentStock} units
-              would falsely appear to satisfy demand. By factoring in aging batches, usable stock is adjusted to {usableStock} units, accelerating the Reorder Point trigger and preventing customer delivery of expired milk or yogurt.
+              <h4
+                className={`text-sm font-bold flex items-center gap-2 ${
+                  isDark ? "text-white" : "text-slate-950"
+                }`}
+              >
+                <Activity className="w-4 h-4 text-emerald-500" />
+                Monte Carlo Simulated Lead-Time Demand ({monteCarloIterations} Runs)
+              </h4>
+              <p className="text-xs text-slate-600 dark:text-neutral-400 mt-0.5 font-medium">
+                Stochastic demand during supplier lead time under Gaussian lead-time variance
+              </p>
+            </div>
+            <div className="text-right">
+              <span className="text-xs font-semibold px-2 py-0.5 rounded bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 font-mono">
+                P95: {mcResult.p95LeadTimeDemand} | P99: {mcResult.p99LeadTimeDemand}
+              </span>
             </div>
           </div>
-        )}
+
+          {/* SVG Histogram */}
+          <div className="relative w-full overflow-hidden">
+            <svg
+              viewBox={`0 0 ${c3Width} ${c3Height}`}
+              className="w-full h-auto select-none"
+            >
+              {[0, 0.5, 1].map((pct, i) => {
+                const y = c3Padding.top + innerH3 * (1 - pct);
+                return (
+                  <line
+                    key={i}
+                    x1={c3Padding.left}
+                    y1={y}
+                    x2={c3Width - c3Padding.right}
+                    y2={y}
+                    stroke={gridLineColor}
+                    strokeDasharray="3 3"
+                  />
+                );
+              })}
+
+              {bins.map((bin, i) => {
+                const x1 = getX3(bin.binStart);
+                const x2 = getX3(bin.binEnd);
+                const barW = Math.max(1, x2 - x1 - 1.5);
+                const barH = (bin.count / maxBinCount) * innerH3;
+                const y = c3Padding.top + innerH3 - barH;
+                const isStockoutBin = bin.binEnd > usableStock;
+
+                return (
+                  <rect
+                    key={i}
+                    x={x1}
+                    y={y}
+                    width={barW}
+                    height={barH}
+                    fill={isStockoutBin ? "rgba(244, 63, 94, 0.85)" : "rgba(99, 102, 241, 0.85)"}
+                    rx="2"
+                  />
+                );
+              })}
+
+              {usableStock >= minDdlt && usableStock <= maxDdlt && (
+                <g>
+                  <line
+                    x1={getX3(usableStock)}
+                    y1={c3Padding.top}
+                    x2={getX3(usableStock)}
+                    y2={c3Padding.top + innerH3}
+                    stroke="#F43F5E"
+                    strokeWidth="2.5"
+                    strokeDasharray="4 3"
+                  />
+                  <rect
+                    x={getX3(usableStock) - 55}
+                    y={c3Padding.top - 18}
+                    width="110"
+                    height="18"
+                    rx="4"
+                    fill="#F43F5E"
+                  />
+                  <text
+                    x={getX3(usableStock)}
+                    y={c3Padding.top - 5}
+                    fill="#FFFFFF"
+                    fontSize="9"
+                    fontWeight="bold"
+                    textAnchor="middle"
+                  >
+                    Usable Stock: {usableStock}
+                  </text>
+                </g>
+              )}
+            </svg>
+          </div>
+
+          <div
+            className={`flex items-center justify-between text-xs mt-2 border-t pt-2 ${
+              isDark
+                ? "text-neutral-400 border-neutral-800"
+                : "text-slate-600 border-slate-200"
+            }`}
+          >
+            <div className="flex items-center gap-4">
+              <span className="flex items-center gap-1.5 font-medium">
+                <span className="w-3 h-3 bg-indigo-500 rounded-xs" /> Buffer Safe
+              </span>
+              <span className="flex items-center gap-1.5 font-medium">
+                <span className="w-3 h-3 bg-rose-500 rounded-xs" /> Stockout Deficit Area
+              </span>
+            </div>
+            <span className="font-semibold text-slate-800 dark:text-neutral-200">
+              Safety Stock: {mcResult.dynamicSafetyStock} units
+            </span>
+          </div>
+        </div>
       </div>
 
-      {/* CHART 3: Monte Carlo Lead-Time Demand Distribution Histogram */}
-      <div className={`border rounded-xl p-5 shadow-sm transition-colors ${cardCls}`}>
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-3">
-          <div>
-            <h4
-              className={`text-sm font-bold flex items-center gap-2 ${
-                isDark ? "text-white" : "text-slate-900"
-              }`}
-            >
-              <Sparkles className="w-4 h-4 text-violet-400" />
-              Monte Carlo Joint Lead-Time Risk Distribution ({monteCarloIterations.toLocaleString()} Iterations)
-            </h4>
-            <p className="text-xs text-slate-400 mt-0.5">
-              Coupling demand variance ($\sigma_d$) with supplier lead-time risk ($\sigma_L = \pm{activeState.effectiveLeadTimeStd}d$ scaled by {supplierScorecard.grade}-Grade vendor buffer)
-            </p>
-          </div>
-          <div className="flex items-center gap-2">
-            <span
-              className={`text-xs font-bold px-2.5 py-1 rounded-md border ${
-                mcResult.stockoutProbabilityPct > 20
-                  ? "bg-red-500/10 text-red-500 border-red-500/30"
-                  : mcResult.stockoutProbabilityPct > 8
-                  ? "bg-amber-500/10 text-amber-500 border-amber-500/30"
-                  : "bg-emerald-500/10 text-emerald-500 border-emerald-500/30"
-              }`}
-            >
-              Stock-Out Risk: {mcResult.stockoutProbabilityPct.toFixed(1)}%
-            </span>
-            <span
-              className={`text-xs px-2 py-1 rounded border ${
-                isDark
-                  ? "bg-slate-800 text-slate-300 border-slate-700"
-                  : "bg-slate-100 text-slate-700 border-slate-300"
-              }`}
-            >
-              P95 Demand: {mcResult.p95LeadTimeDemand} units
-            </span>
-          </div>
-        </div>
-
-        {/* SVG Histogram */}
-        <div className="relative w-full overflow-hidden">
-          <svg
-            viewBox={`0 0 ${c3Width} ${c3Height}`}
-            className="w-full h-auto select-none"
-          >
-            {[0, 0.5, 1].map((pct, i) => {
-              const y = c3Padding.top + innerH3 * (1 - pct);
-              return (
-                <line
-                  key={i}
-                  x1={c3Padding.left}
-                  y1={y}
-                  x2={c3Width - c3Padding.right}
-                  y2={y}
-                  stroke={gridLineColor}
-                  strokeDasharray="3 3"
-                />
-              );
-            })}
-
-            {bins.map((bin, i) => {
-              const x1 = getX3(bin.binStart);
-              const x2 = getX3(bin.binEnd);
-              const barW = Math.max(1, x2 - x1 - 1.5);
-              const barH = (bin.count / maxBinCount) * innerH3;
-              const y = c3Padding.top + innerH3 - barH;
-
-              const isStockoutBin = bin.binEnd > usableStock;
-
-              return (
-                <rect
-                  key={i}
-                  x={x1}
-                  y={y}
-                  width={barW}
-                  height={barH}
-                  fill={isStockoutBin ? "rgba(244, 63, 94, 0.8)" : "rgba(99, 102, 241, 0.75)"}
-                  rx="2"
-                />
-              );
-            })}
-
-            {usableStock >= minDdlt && usableStock <= maxDdlt && (
-              <g>
-                <line
-                  x1={getX3(usableStock)}
-                  y1={c3Padding.top}
-                  x2={getX3(usableStock)}
-                  y2={c3Padding.top + innerH3}
-                  stroke="#F43F5E"
-                  strokeWidth="2.5"
-                  strokeDasharray="4 3"
-                />
-                <rect
-                  x={getX3(usableStock) - 60}
-                  y={c3Padding.top - 18}
-                  width="120"
-                  height="18"
-                  rx="4"
-                  fill="#F43F5E"
-                />
-                <text
-                  x={getX3(usableStock)}
-                  y={c3Padding.top - 5}
-                  fill="#FFFFFF"
-                  fontSize="9.5"
-                  fontWeight="bold"
-                  textAnchor="middle"
-                >
-                  Usable Stock: {usableStock}
-                </text>
-              </g>
-            )}
-
-            {mcResult.dynamicRop >= minDdlt && mcResult.dynamicRop <= maxDdlt && (
-              <g>
-                <line
-                  x1={getX3(mcResult.dynamicRop)}
-                  y1={c3Padding.top}
-                  x2={getX3(mcResult.dynamicRop)}
-                  y2={c3Padding.top + innerH3}
-                  stroke="#10B981"
-                  strokeWidth="2"
-                  strokeDasharray="3 3"
-                />
-                <rect
-                  x={getX3(mcResult.dynamicRop) - 55}
-                  y={c3Padding.top}
-                  width="110"
-                  height="16"
-                  rx="4"
-                  fill="#10B981"
-                />
-                <text
-                  x={getX3(mcResult.dynamicRop)}
-                  y={c3Padding.top + 12}
-                  fill="#FFFFFF"
-                  fontSize="9"
-                  fontWeight="bold"
-                  textAnchor="middle"
-                >
-                  Dynamic ROP: {mcResult.dynamicRop}
-                </text>
-              </g>
-            )}
-
-            {[minDdlt, Math.round((minDdlt + maxDdlt) / 2), maxDdlt].map((val, idx) => (
-              <text
-                key={idx}
-                x={getX3(val)}
-                y={c3Padding.top + innerH3 + 20}
-                fill={tickTextColor}
-                fontSize="10"
-                textAnchor="middle"
-              >
-                {Math.round(val)} units
-              </text>
-            ))}
-          </svg>
-        </div>
-
+      {/* Perishable Batch Expiry & Shelf-Life Decay Engine (If Perishable) */}
+      {sku.isPerishable && (
         <div
-          className={`flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs mt-2 border-t pt-3 ${
+          className={`border rounded-xl p-5 shadow-sm transition-colors ${
             isDark
-              ? "text-slate-400 border-slate-800/80"
-              : "text-slate-500 border-slate-200"
+              ? "bg-amber-950/15 border-amber-500/30 text-neutral-100"
+              : "bg-amber-50/70 border-amber-300 text-slate-900"
           }`}
         >
-          <div className="flex items-center gap-4">
-            <span className="flex items-center gap-1.5">
-              <span className="w-3 h-3 bg-indigo-500 rounded-sm" /> Safe Fulfillment Area
-            </span>
-            <span className="flex items-center gap-1.5">
-              <span className="w-3 h-3 bg-rose-500 rounded-sm" /> Stock-Out Breach Area (Deficit)
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-amber-500/20">
+            <div className="flex items-center gap-2">
+              <Leaf className="w-4 h-4 text-amber-600 dark:text-amber-400" />
+              <h4 className="text-sm font-bold text-slate-950 dark:text-white">
+                Perishable Batch Expiry &amp; Shelf-Life Decay Engine: {sku.name}
+              </h4>
+            </div>
+            <span className="text-xs px-2.5 py-0.5 rounded-full font-bold bg-amber-500/15 text-amber-700 dark:text-amber-400 border border-amber-500/30">
+              Dynamic Decay Discount: -{decayRatePct}% Usable Stock
             </span>
           </div>
-          <div className={isDark ? "text-slate-300" : "text-slate-700"}>
-            Expected Lead Time Demand: <strong>{mcResult.expectedLeadTimeDemand} units</strong> |
-            Safety Stock: <strong className="text-indigo-500">{mcResult.dynamicSafetyStock} units</strong>
+
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mt-4">
+            <div className="space-y-1">
+              <span className="text-xs text-slate-600 dark:text-neutral-400 font-medium">Shelf Life Limit:</span>
+              <div className="text-lg font-extrabold text-slate-950 dark:text-white">
+                {sku.shelfLifeDays} Days
+              </div>
+            </div>
+
+            <div className="space-y-1">
+              <span className="text-xs text-slate-600 dark:text-neutral-400 font-medium">Nominal Stock:</span>
+              <div className="text-lg font-extrabold text-slate-950 dark:text-white">
+                {currentStock} Units
+              </div>
+            </div>
+
+            <div className="space-y-1">
+              <span className="text-xs text-slate-600 dark:text-neutral-400 font-medium">Decayed Waste:</span>
+              <div className="text-lg font-extrabold text-rose-600 dark:text-rose-400">
+                {decayedUnits} Units ({decayRatePct}%)
+              </div>
+            </div>
+
+            <div className="space-y-1">
+              <span className="text-xs text-slate-600 dark:text-neutral-400 font-medium">Effective Usable:</span>
+              <div className="text-lg font-extrabold text-emerald-600 dark:text-emerald-400">
+                {usableStock} Units
+              </div>
+            </div>
           </div>
         </div>
-      </div>
+      )}
     </div>
   );
 };

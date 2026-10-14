@@ -424,8 +424,8 @@ export const CommandPaletteModal: React.FC<CommandPaletteModalProps> = ({
                       </div>
                       <p
                         className={`text-[11px] truncate mt-0.5 ${
-                          isDark ? "text-slate-400" : "text-slate-500"
-                        }`}
+                          isDark ? "text-neutral-300" : "text-slate-700"
+                        } font-medium`}
                       >
                         {cmd.subtitle}
                       </p>

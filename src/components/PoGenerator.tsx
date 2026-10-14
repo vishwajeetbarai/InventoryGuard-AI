@@ -250,10 +250,10 @@ export const PoGenerator: React.FC<PoGeneratorProps> = ({
           <table className="w-full text-left border-collapse text-xs">
             <thead>
               <tr
-                className={`border-b font-semibold uppercase tracking-wider ${
+                className={`border-b font-bold uppercase tracking-wider ${
                   isDark
-                    ? "bg-slate-950/60 border-slate-800 text-slate-400"
-                    : "bg-slate-100 border-slate-200 text-slate-600"
+                    ? "bg-neutral-950 border-neutral-800 text-neutral-300"
+                    : "bg-slate-100 border-slate-300 text-slate-800"
                 }`}
               >
                 <th className="py-2.5 px-4">PO Identifier</th>
@@ -270,12 +270,12 @@ export const PoGenerator: React.FC<PoGeneratorProps> = ({
             </thead>
             <tbody
               className={`divide-y ${
-                isDark ? "divide-slate-800/60" : "divide-slate-200"
+                isDark ? "divide-neutral-800" : "divide-slate-200"
               }`}
             >
               {purchaseOrders.length === 0 ? (
                 <tr>
-                  <td colSpan={10} className="py-8 text-center text-slate-500">
+                  <td colSpan={10} className="py-8 text-center text-slate-700 dark:text-neutral-300 font-medium">
                     No items currently require replenishment reorders.
                   </td>
                 </tr>
@@ -284,60 +284,60 @@ export const PoGenerator: React.FC<PoGeneratorProps> = ({
                   <tr
                     key={po.poNumber}
                     className={`transition-colors ${
-                      isDark ? "hover:bg-slate-800/40" : "hover:bg-slate-50"
+                      isDark ? "hover:bg-neutral-800/40" : "hover:bg-slate-50"
                     }`}
                   >
-                    <td className="py-2.5 px-4 font-mono font-medium text-slate-400">
+                    <td className="py-2.5 px-4 font-mono font-bold text-slate-900 dark:text-neutral-200">
                       {po.poNumber}
                     </td>
                     <td className="py-2.5 px-4">
                       <div
                         className={`font-bold ${
-                          isDark ? "text-white" : "text-slate-900"
+                          isDark ? "text-white" : "text-slate-950"
                         }`}
                       >
                         {po.skuName}
                       </div>
-                      <div className="text-[11px] text-slate-500 font-mono">
+                      <div className="text-[11px] text-slate-700 dark:text-neutral-300 font-mono font-medium">
                         {po.skuId} • {po.category}
                       </div>
                     </td>
                     <td className="py-2.5 px-4">
-                      <div className="font-medium text-slate-300 truncate max-w-[140px]">
+                      <div className="font-semibold text-slate-900 dark:text-neutral-100 truncate max-w-[140px]">
                         {po.supplierName}
                       </div>
                       <div className="mt-0.5">{getGradeBadge(po.supplierGrade)}</div>
                     </td>
-                    <td className="py-2.5 px-4 font-mono text-slate-300">
-                      <span className="font-bold text-sky-400">{po.usableStock}</span>
-                      <span className="text-slate-500"> / {po.currentStock}</span>
+                    <td className="py-2.5 px-4 font-mono text-slate-900 dark:text-neutral-200 font-semibold">
+                      <span className="font-bold text-sky-600 dark:text-sky-400">{po.usableStock}</span>
+                      <span className="text-slate-600 dark:text-neutral-400"> / {po.currentStock}</span>
                     </td>
-                    <td className="py-2.5 px-4 font-mono text-red-500 font-semibold">
+                    <td className="py-2.5 px-4 font-mono text-red-600 dark:text-red-400 font-bold">
                       {po.dynamicRop.toLocaleString()}
                     </td>
-                    <td className="py-2.5 px-4 font-mono font-bold text-emerald-500">
+                    <td className="py-2.5 px-4 font-mono font-bold text-emerald-600 dark:text-emerald-400">
                       +{po.recommendedOrderQty.toLocaleString()} units
                     </td>
-                    <td className="py-2.5 px-4 font-mono text-slate-400">
+                    <td className="py-2.5 px-4 font-mono text-slate-800 dark:text-neutral-200 font-medium">
                       {formatCurrency(po.unitCostInr, currency, { decimals: 2 })}
                     </td>
                     <td
                       className={`py-2.5 px-4 font-mono font-bold ${
-                        isDark ? "text-white" : "text-slate-900"
+                        isDark ? "text-white" : "text-slate-950"
                       }`}
                     >
                       {formatCurrency(po.totalPoValueInr, currency)}
                     </td>
-                    <td className="py-2.5 px-4 font-mono text-slate-400">
+                    <td className="py-2.5 px-4 font-mono text-slate-800 dark:text-neutral-200 font-medium">
                       {po.expectedDeliveryDate}
                     </td>
                     <td className="py-2.5 px-4">
                       {po.priority === "URGENT" ? (
-                        <span className="px-2 py-0.5 rounded text-[11px] font-bold bg-red-500/10 text-red-400 border border-red-500/30">
+                        <span className="px-2 py-0.5 rounded text-[11px] font-bold bg-red-500/10 text-red-600 dark:text-red-400 border border-red-500/30">
                           URGENT
                         </span>
                       ) : (
-                        <span className="px-2 py-0.5 rounded text-[11px] font-semibold bg-slate-800 text-slate-300 border border-slate-700">
+                        <span className="px-2 py-0.5 rounded text-[11px] font-semibold bg-slate-100 dark:bg-neutral-800 text-slate-800 dark:text-neutral-200 border border-slate-300 dark:border-neutral-700">
                           NORMAL
                         </span>
                       )}

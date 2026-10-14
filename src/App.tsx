@@ -13,6 +13,8 @@ import {
 import { Header, AppPage } from "./components/Header";
 import { Footer } from "./components/Footer";
 import { SidebarControls } from "./components/SidebarControls";
+import { SimulationLabWorkspace } from "./components/SimulationLabWorkspace";
+import { DataHubWorkspace } from "./components/DataHubWorkspace";
 import { KpiMetrics } from "./components/KpiMetrics";
 import { VisualAnalytics } from "./components/VisualAnalytics";
 import { RiskTable } from "./components/RiskTable";
@@ -23,6 +25,8 @@ import { InterTransferView } from "./components/InterTransferView";
 import { SupplierScorecardView } from "./components/SupplierScorecardView";
 import { SourceCodeViewer } from "./components/SourceCodeViewer";
 import { NetworkTopologyMap } from "./components/NetworkTopologyMap";
+import { OperationalAlerts } from "./components/OperationalAlerts";
+import { InventoryToolbar } from "./components/InventoryToolbar";
 import { ToastContainer, ToastItem } from "./components/ToastContainer";
 import { CommandPaletteModal } from "./components/CommandPaletteModal";
 import { ExecutiveReportModal } from "./components/ExecutiveReportModal";
@@ -55,6 +59,10 @@ import {
   AlertTriangle,
   Lock,
   UploadCloud,
+  Activity,
+  Sparkles,
+  Sliders,
+  Database,
 } from "lucide-react";
 
 const SERVICE_LEVELS = [
@@ -156,7 +164,9 @@ export default function App() {
   // 4 Dedicated Core Pages & Tab State
   const [activePage, setActivePage] = useState<AppPage>("overview");
   const [procurementTab, setProcurementTab] = useState<"po" | "transfer" | "suppliers">("po");
-  const [operationsTab, setOperationsTab] = useState<"controls" | "ingestion" | "audit" | "code">("controls");
+  const [operationsTab, setOperationsTab] = useState<
+    "simulation" | "datahub" | "controls" | "ingestion" | "audit" | "code"
+  >("simulation");
   const [activeTab, setActiveTab] = useState<
     "analytics" | "table" | "network" | "transfer" | "suppliers" | "po" | "code"
   >("network");
@@ -903,119 +913,103 @@ export default function App() {
         onSelectCurrency={setCurrency}
       />
 
-      {/* Main Spacious Content Canvas */}
-      <main className="flex-1 max-w-7xl w-full mx-auto p-4 sm:p-6 lg:p-8 space-y-6">
+      {/* Main Spacious Content Canvas with Generous Footer Spacing */}
+      <main className="flex-1 max-w-7xl w-full mx-auto p-4 sm:p-6 lg:p-8 pb-28 sm:pb-36 space-y-6">
         {/* PAGE 1: OVERVIEW & NETWORK TOPOLOGY */}
         {activePage === "overview" && (
           <div className="space-y-6 animate-in fade-in duration-150">
-            {/* Facility & Engine Status Strip */}
-            <div
-              className={`p-4 sm:p-5 rounded-2xl border transition-colors flex flex-col sm:flex-row sm:items-center justify-between gap-4 ${
-                isDark
-                  ? "bg-neutral-900/60 border-neutral-800 text-neutral-200"
-                  : "bg-white border-slate-200/90 text-slate-800 shadow-xs"
-              }`}
-            >
-              <div className="flex items-center gap-3.5">
-                <div
-                  className={`w-10 h-10 rounded-xl flex items-center justify-center font-bold text-sm ${
-                    isDark ? "bg-neutral-800 text-emerald-400" : "bg-emerald-50 text-emerald-700 border border-emerald-100"
-                  }`}
-                >
-                  <Building2 className="w-5 h-5" />
-                </div>
-                <div>
-                  <div className="flex items-center gap-2">
-                    <h2 className="text-base font-bold text-slate-950 dark:text-white">
-                      {currentWarehouse.name}
-                    </h2>
-                    <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-neutral-100 dark:bg-neutral-800 text-slate-600 dark:text-neutral-400">
-                      {currentWarehouse.id}
-                    </span>
-                  </div>
-                  <div className="text-xs text-slate-700 dark:text-neutral-300 mt-0.5 flex items-center gap-2 font-medium">
-                    <span>{currentWarehouse.city}, {currentWarehouse.region}</span>
-                    <span>·</span>
-                    <span>Demand Multiplier: {currentWarehouse.demandFactor.toFixed(2)}x</span>
-                  </div>
-                </div>
-              </div>
-
-              <div className="flex items-center gap-4 text-xs">
-                <div className="text-right">
-                  <span className="text-[10px] text-slate-700 dark:text-neutral-300 block uppercase font-bold">Cycle Service Level</span>
-                  <span className="font-bold text-slate-950 dark:text-white">{currentServiceLevel.label.split(" - ")[0]} (Z={selectedServiceZ})</span>
-                </div>
-                <div className="h-7 w-[1px] bg-slate-300 dark:bg-neutral-800" />
-                <div className="text-right">
-                  <span className="text-[10px] text-slate-700 dark:text-neutral-300 block uppercase font-bold">Engine Mode</span>
-                  <span className="font-bold text-emerald-600 dark:text-emerald-400 flex items-center gap-1.5 justify-end">
+            {/* A. Executive Page Header */}
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-1">
+              <div>
+                <div className="flex items-center gap-2.5">
+                  <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-slate-950 dark:text-white">
+                    Supply Chain Overview
+                  </h1>
+                  <span className="px-2.5 py-0.5 rounded-md text-[11px] font-mono font-bold bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border border-emerald-500/20 flex items-center gap-1.5">
                     <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-                    Stochastic ML
+                    Live Control Tower
                   </span>
                 </div>
+                <p className="text-xs sm:text-sm text-slate-600 dark:text-neutral-400 mt-1 font-medium">
+                  Real-time network health, multi-echelon stock levels, and stochastic stock-out risk across 4 dark stores.
+                </p>
+              </div>
+
+              {/* Current warehouse/network context & Run Engine Action */}
+              <div className="flex items-center gap-3 flex-wrap">
+                <div
+                  className={`px-3.5 py-2 rounded-xl border flex items-center gap-3 ${
+                    isDark
+                      ? "bg-neutral-900 border-neutral-800"
+                      : "bg-white border-slate-300 shadow-xs"
+                  }`}
+                >
+                  <div
+                    className={`w-8 h-8 rounded-lg flex items-center justify-center font-bold text-xs shrink-0 ${
+                      isDark
+                        ? "bg-neutral-800 text-emerald-400"
+                        : "bg-emerald-50 text-emerald-700 border border-emerald-200"
+                    }`}
+                  >
+                    <Building2 className="w-4 h-4" />
+                  </div>
+                  <div>
+                    <div className="flex items-center gap-1.5">
+                      <span className="text-xs font-bold text-slate-950 dark:text-white">
+                        {currentWarehouse.name}
+                      </span>
+                      <span className="text-[10px] font-mono px-1.5 py-0.2 rounded bg-slate-100 dark:bg-neutral-800 text-slate-700 dark:text-neutral-300">
+                        {currentWarehouse.id}
+                      </span>
+                    </div>
+                    <div className="text-[11px] text-slate-600 dark:text-neutral-400 font-medium flex items-center gap-1.5">
+                      <span>{currentWarehouse.city}</span>
+                      <span>·</span>
+                      <span>{currentWarehouse.demandFactor.toFixed(2)}x factor</span>
+                    </div>
+                  </div>
+                </div>
+
+                <button
+                  onClick={handleTriggerSimulation}
+                  disabled={isSimulating}
+                  className={`px-3.5 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-2 cursor-pointer shadow-xs ${
+                    isDark
+                      ? "bg-emerald-600 hover:bg-emerald-500 text-white"
+                      : "bg-emerald-600 hover:bg-emerald-700 text-white"
+                  }`}
+                >
+                  <Activity
+                    className={`w-3.5 h-3.5 ${
+                      isSimulating ? "animate-spin" : ""
+                    }`}
+                  />
+                  <span>{isSimulating ? "Computing Forecast..." : "Run Engine"}</span>
+                </button>
               </div>
             </div>
 
-            {/* High-Level Executive KPI Cards */}
+            {/* B. Executive KPI Row (4 Compact, Consistently Sized Cards) */}
             <KpiMetrics
               simulationStates={simulationStates}
               selectedCslLabel={currentServiceLevel.label.split(" - ")[0]}
+              selectedServiceZ={selectedServiceZ}
               currency={currency}
               theme={theme}
+              onDrillDown={(target) => {
+                if (target === "inventory" || target === "risk") {
+                  setActivePage("inventory");
+                } else if (target === "procurement") {
+                  setActivePage("procurement");
+                  setProcurementTab("po");
+                } else if (target === "controls") {
+                  setActivePage("operations");
+                  setOperationsTab("controls");
+                }
+              }}
             />
 
-            {/* Action Center Banner if Urgent Replenishment or Transfers Exist */}
-            {(criticalSkus.length > 0 || interTransfers.length > 0) && (
-              <div
-                className={`p-4 rounded-xl border flex flex-col md:flex-row md:items-center justify-between gap-3 ${
-                  isDark
-                    ? "bg-neutral-900 border-neutral-800 text-neutral-100"
-                    : "bg-white border-slate-300 text-slate-900 shadow-xs"
-                }`}
-              >
-                <div className="flex items-center gap-3">
-                  <div className="w-8 h-8 rounded-lg bg-amber-500/10 text-amber-500 flex items-center justify-center shrink-0">
-                    <AlertTriangle className="w-4 h-4" />
-                  </div>
-                  <div>
-                    <div className="text-xs font-bold text-slate-950 dark:text-white">
-                      {criticalSkus.length} Urgent Stockout Alerts &amp; {interTransfers.length} Rebalance Opportunities
-                    </div>
-                    <div className="text-xs text-slate-700 dark:text-neutral-300 mt-0.5 font-medium">
-                      Immediate action recommended to avoid stockout revenue leakage at {currentWarehouse.name}.
-                    </div>
-                  </div>
-                </div>
-
-                <div className="flex items-center gap-2">
-                  {criticalSkus.length > 0 && (
-                    <button
-                      onClick={() => {
-                        setActivePage("procurement");
-                        setProcurementTab("po");
-                      }}
-                      className="px-3 py-1.5 rounded-lg text-xs font-semibold bg-rose-600 hover:bg-rose-500 text-white transition-colors cursor-pointer"
-                    >
-                      Review {criticalSkus.length} Critical POs
-                    </button>
-                  )}
-                  {interTransfers.length > 0 && (
-                    <button
-                      onClick={() => {
-                        setActivePage("procurement");
-                        setProcurementTab("transfer");
-                      }}
-                      className="px-3 py-1.5 rounded-lg text-xs font-semibold border border-slate-300 dark:border-neutral-700 hover:bg-slate-100 dark:hover:bg-neutral-800 text-slate-800 dark:text-neutral-200 transition-colors cursor-pointer"
-                    >
-                      Inspect Transfers
-                    </button>
-                  )}
-                </div>
-              </div>
-            )}
-
-            {/* Full Width Dark Store Network Topology Map */}
+            {/* C. Multi-Echelon Dark Store Network Topology Map */}
             <NetworkTopologyMap
               warehouses={effectiveWarehouses}
               selectedWarehouseId={selectedWarehouseId}
@@ -1026,12 +1020,83 @@ export default function App() {
               currency={currency}
               theme={theme}
             />
+
+            {/* D. Operational Alerts & Recommended Actions */}
+            <OperationalAlerts
+              simulationStates={simulationStates}
+              interTransfers={interTransfers}
+              purchaseOrders={purchaseOrders}
+              currentWarehouse={currentWarehouse}
+              currency={currency}
+              theme={theme}
+              onNavigateToPo={(skuId) => {
+                setActivePage("procurement");
+                setProcurementTab("po");
+                if (skuId) {
+                  setActiveSkuId(skuId);
+                }
+              }}
+              onNavigateToTransfers={() => {
+                setActivePage("procurement");
+                setProcurementTab("transfer");
+              }}
+              onNavigateToSuppliers={() => {
+                setActivePage("procurement");
+                setProcurementTab("suppliers");
+              }}
+              onNavigateToInventory={(skuId) => {
+                setActivePage("inventory");
+                if (skuId) {
+                  setActiveSkuId(skuId);
+                }
+              }}
+              onApproveTransfer={handleApproveTransfer}
+            />
           </div>
         )}
 
         {/* PAGE 2: INVENTORY & FORECASTING */}
         {activePage === "inventory" && (
           <div className="space-y-6 animate-in fade-in duration-150">
+            {/* A. Page Heading */}
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-1">
+              <div>
+                <div className="flex items-center gap-2.5">
+                  <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-slate-950 dark:text-white">
+                    Inventory &amp; Forecast
+                  </h1>
+                  <span className="px-2.5 py-0.5 rounded-md text-[11px] font-mono font-bold bg-indigo-500/10 text-indigo-700 dark:text-indigo-400 border border-indigo-500/20">
+                    Stochastic ML Horizon
+                  </span>
+                </div>
+                <p className="text-xs sm:text-sm text-slate-600 dark:text-neutral-400 mt-1 font-medium">
+                  Demand intelligence, stock coverage and replenishment risk.
+                </p>
+              </div>
+            </div>
+
+            {/* B. Compact Analysis Toolbar */}
+            <InventoryToolbar
+              warehouses={effectiveWarehouses}
+              selectedWarehouseId={selectedWarehouseId}
+              onSelectWarehouse={handleSelectWarehouse}
+              skus={effectiveSkus}
+              selectedSkuId={activeSkuId}
+              onSelectSkuId={setActiveSkuId}
+              forecastHorizon={forecastHorizon}
+              onChangeForecastHorizon={(days) => {
+                setForecastHorizon(days);
+                handleTriggerSimulation();
+              }}
+              forecastModel={forecastModel}
+              onSelectForecastModel={(model) => {
+                setForecastModel(model);
+                handleTriggerSimulation();
+              }}
+              theme={theme}
+            />
+
+            {/* C & D. Main Demand Forecast & Supporting Inventory Metrics */}
             <VisualAnalytics
               simulationStates={simulationStates}
               selectedSkuId={activeSkuId}
@@ -1043,8 +1108,10 @@ export default function App() {
               theme={theme}
             />
 
+            {/* E. SKU Risk Table */}
             <RiskTable
               simulationStates={simulationStates}
+              selectedSkuId={activeSkuId}
               onSelectSku={handleSelectSkuDeepDive}
               onBulkDispatchCriticalPos={handleBulkDispatchCriticalPos}
               onAutoApproveTransfers={handleAutoApproveAllTransfers}
@@ -1052,17 +1119,39 @@ export default function App() {
               theme={theme}
             />
 
-            <DynamicMarkdownCard
-              items={markdownItems}
-              onApplyMarkdown={handleApplyMarkdown}
-              currency={currency}
-              theme={theme}
-            />
+            {/* F. AI Insights and Substitutions */}
+            <div className="space-y-6 pt-2">
+              <div className="flex items-center gap-2">
+                <div className="p-1.5 rounded-lg bg-amber-500/10 text-amber-500">
+                  <Sparkles className="w-4 h-4" />
+                </div>
+                <div>
+                  <h2 className="text-base font-bold text-slate-950 dark:text-white">
+                    AI Inventory Intelligence &amp; Demand Insights
+                  </h2>
+                  <p className="text-xs text-slate-600 dark:text-neutral-400 font-medium">
+                    Automated waste liquidation policies and demand absorption buffers.
+                  </p>
+                </div>
+              </div>
 
-            <SubstitutionCard
-              substitutions={substitutions}
-              theme={theme}
-            />
+              {/* Dynamic Markdown Spoilage Liquidation */}
+              <DynamicMarkdownCard
+                items={markdownItems}
+                onApplyMarkdown={handleApplyMarkdown}
+                currency={currency}
+                theme={theme}
+              />
+
+              {/* Lower-Priority Substitution & Cannibalization Section */}
+              <div className="pt-1">
+                <SubstitutionCard
+                  substitutions={substitutions}
+                  currency={currency}
+                  theme={theme}
+                />
+              </div>
+            </div>
           </div>
         )}
 
@@ -1072,7 +1161,7 @@ export default function App() {
             {/* Segmented Sub-Nav Controls */}
             <div
               className={`p-1.5 rounded-xl border flex items-center gap-1.5 w-fit ${
-                isDark ? "bg-neutral-900/60 border-neutral-800" : "bg-slate-100 border-slate-200"
+                isDark ? "bg-neutral-900 border-neutral-800" : "bg-slate-200/80 border-slate-300"
               }`}
             >
               <button
@@ -1080,9 +1169,11 @@ export default function App() {
                 className={`flex items-center gap-2 px-3.5 py-1.5 rounded-lg text-xs font-semibold transition-colors cursor-pointer ${
                   procurementTab === "po"
                     ? isDark
-                      ? "bg-neutral-800 text-white shadow-xs"
-                      : "bg-white text-slate-900 shadow-xs border border-slate-200"
-                    : "text-slate-500 hover:text-slate-900 dark:hover:text-white"
+                      ? "bg-neutral-800 text-white shadow-xs font-bold"
+                      : "bg-white text-slate-950 shadow-xs border border-slate-300 font-bold"
+                    : isDark
+                    ? "text-neutral-200 hover:text-white hover:bg-neutral-800/60"
+                    : "text-slate-800 hover:text-slate-950 hover:bg-white/80"
                 }`}
               >
                 <FileCheck2 className="w-3.5 h-3.5" />
@@ -1099,9 +1190,11 @@ export default function App() {
                 className={`flex items-center gap-2 px-3.5 py-1.5 rounded-lg text-xs font-semibold transition-colors cursor-pointer ${
                   procurementTab === "transfer"
                     ? isDark
-                      ? "bg-neutral-800 text-white shadow-xs"
-                      : "bg-white text-slate-900 shadow-xs border border-slate-200"
-                    : "text-slate-500 hover:text-slate-900 dark:hover:text-white"
+                      ? "bg-neutral-800 text-white shadow-xs font-bold"
+                      : "bg-white text-slate-950 shadow-xs border border-slate-300 font-bold"
+                    : isDark
+                    ? "text-neutral-200 hover:text-white hover:bg-neutral-800/60"
+                    : "text-slate-800 hover:text-slate-950 hover:bg-white/80"
                 }`}
               >
                 <ArrowRightLeft className="w-3.5 h-3.5" />
@@ -1118,9 +1211,11 @@ export default function App() {
                 className={`flex items-center gap-2 px-3.5 py-1.5 rounded-lg text-xs font-semibold transition-colors cursor-pointer ${
                   procurementTab === "suppliers"
                     ? isDark
-                      ? "bg-neutral-800 text-white shadow-xs"
-                      : "bg-white text-slate-900 shadow-xs border border-slate-200"
-                    : "text-slate-500 hover:text-slate-900 dark:hover:text-white"
+                      ? "bg-neutral-800 text-white shadow-xs font-bold"
+                      : "bg-white text-slate-950 shadow-xs border border-slate-300 font-bold"
+                    : isDark
+                    ? "text-neutral-200 hover:text-white hover:bg-neutral-800/60"
+                    : "text-slate-800 hover:text-slate-950 hover:bg-white/80"
                 }`}
               >
                 <Award className="w-3.5 h-3.5" />
@@ -1159,160 +1254,149 @@ export default function App() {
           </div>
         )}
 
-        {/* PAGE 4: DATA HUB & CONTROL TOWER */}
+        {/* PAGE 4: OPERATIONS & DATA HUB */}
         {activePage === "operations" && (
           <div className="space-y-6 animate-in fade-in duration-150">
-            <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
-              {/* Left Column: Control Tower Simulation Sliders */}
-              <div className="lg:col-span-5 space-y-6">
-                <SidebarControls
-                  warehouses={effectiveWarehouses}
-                  selectedWarehouseId={selectedWarehouseId}
-                  onSelectWarehouse={handleSelectWarehouse}
-                  allSkus={effectiveSkus}
-                  selectedSkuIds={selectedSkuIds}
-                  onToggleSku={handleToggleSku}
-                  onSelectAllSkus={handleSelectAllSkus}
-                  serviceLevels={SERVICE_LEVELS}
-                  selectedServiceZ={selectedServiceZ}
-                  onSelectServiceZ={(z) => {
-                    setSelectedServiceZ(z);
-                    handleTriggerSimulation();
-                  }}
-                  forecastHorizon={forecastHorizon}
-                  onChangeForecastHorizon={(days) => {
-                    setForecastHorizon(days);
-                    handleTriggerSimulation();
-                  }}
-                  monteCarloRuns={monteCarloRuns}
-                  onChangeMonteCarloRuns={(runs) => {
-                    setMonteCarloRuns(runs);
-                    handleTriggerSimulation();
-                  }}
-                  promoSurgePct={promoSurgePct}
-                  onChangePromoSurgePct={(pct) => {
-                    setPromoSurgePct(pct);
-                    handleTriggerSimulation();
-                  }}
-                  weatherSurgePct={weatherSurgePct}
-                  onChangeWeatherSurgePct={(pct) => {
-                    setWeatherSurgePct(pct);
-                    handleTriggerSimulation();
-                  }}
-                  supplierDelayDays={supplierDelayDays}
-                  onChangeSupplierDelayDays={(days) => {
-                    setSupplierDelayDays(days);
-                    handleTriggerSimulation();
-                  }}
-                  isSimulating={isSimulating}
-                  onTriggerSimulation={handleTriggerSimulation}
-                  onApplyPreset={handleApplyPreset}
-                  reorderPolicy={reorderPolicy}
-                  onSelectReorderPolicy={handleSelectReorderPolicy}
-                  forecastModel={forecastModel}
-                  onSelectForecastModel={(model) => {
-                    setForecastModel(model);
-                    handleTriggerSimulation();
-                  }}
-                  currency={currency}
-                  theme={theme}
-                />
+            {/* Page Header with Workspace Tabs */}
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+              <div>
+                <h1 className="text-xl sm:text-2xl font-bold text-slate-950 dark:text-white tracking-tight">
+                  Operations &amp; Data Hub
+                </h1>
+                <p className="text-xs sm:text-sm text-slate-600 dark:text-neutral-400 mt-1">
+                  Stochastic simulation calibration, external scenario shocks, and enterprise WMS catalog ingestion.
+                </p>
               </div>
 
-              {/* Right Column: Data Ingestion, Cryptographic Audit Ledger & Code Artifacts */}
-              <div className="lg:col-span-7 space-y-6">
-                {/* WMS Data Ingestion Card */}
-                <div
-                  className={`p-5 rounded-xl border transition-colors ${
-                    isDark ? "bg-neutral-900 border-neutral-800" : "bg-white border-slate-300 shadow-xs"
+              {/* Workspace Navigation Tabs (Simulation Lab vs Data Hub) */}
+              <div
+                className={`inline-flex items-center p-1 rounded-xl border ${
+                  isDark
+                    ? "bg-neutral-900 border-neutral-800"
+                    : "bg-slate-100 border-slate-200"
+                }`}
+              >
+                <button
+                  onClick={() => setOperationsTab("simulation")}
+                  className={`flex items-center gap-2 px-3.5 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
+                    operationsTab === "simulation" ||
+                    operationsTab === "controls" ||
+                    operationsTab === "code"
+                      ? isDark
+                        ? "bg-neutral-800 text-white shadow-xs font-bold"
+                        : "bg-white text-slate-950 shadow-xs border border-slate-300 font-bold"
+                      : isDark
+                      ? "text-neutral-400 hover:text-white"
+                      : "text-slate-600 hover:text-slate-950"
                   }`}
                 >
-                  <div className="flex items-center justify-between pb-3 border-b border-slate-200 dark:border-neutral-800">
-                    <div className="flex items-center gap-2">
-                      <div className="p-1.5 rounded-lg bg-emerald-500/10 text-emerald-500">
-                        <UploadCloud className="w-4 h-4" />
-                      </div>
-                      <div>
-                        <h3 className="font-bold text-sm text-slate-950 dark:text-white">Enterprise WMS Data Ingestion</h3>
-                        <p className="text-xs text-slate-600 dark:text-neutral-400 font-medium">Connect real customer CSV or reload baseline sandbox</p>
-                      </div>
-                    </div>
+                  <Sliders className="w-3.5 h-3.5 text-emerald-500" />
+                  <span>Simulation Lab</span>
+                </button>
 
-                    <button
-                      onClick={() => setIsWmsModalOpen(true)}
-                      className="px-3 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-semibold transition-colors cursor-pointer"
-                    >
-                      Upload CSV
-                    </button>
-                  </div>
-
-                  <div className="mt-3 flex items-center justify-between text-xs text-slate-700 dark:text-neutral-300">
-                    <div>
-                      Active Dataset: <strong className="text-slate-950 dark:text-white font-bold">{customDataset?.name || "Baseline Synthetic Sandbox"}</strong>
-                    </div>
-                    {customDataset && (
-                      <button
-                        onClick={handleResetCustomDataset}
-                        className="text-amber-600 dark:text-amber-400 font-bold hover:underline cursor-pointer"
-                      >
-                        Reset to Sandbox
-                      </button>
-                    )}
-                  </div>
-                </div>
-
-                {/* Audit Trail Card */}
-                <div
-                  className={`p-5 rounded-xl border transition-colors ${
-                    isDark ? "bg-neutral-900 border-neutral-800" : "bg-white border-slate-300 shadow-xs"
+                <button
+                  onClick={() => setOperationsTab("datahub")}
+                  className={`flex items-center gap-2 px-3.5 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
+                    operationsTab === "datahub" ||
+                    operationsTab === "ingestion" ||
+                    operationsTab === "audit"
+                      ? isDark
+                        ? "bg-neutral-800 text-white shadow-xs font-bold"
+                        : "bg-white text-slate-950 shadow-xs border border-slate-300 font-bold"
+                      : isDark
+                      ? "text-neutral-400 hover:text-white"
+                      : "text-slate-600 hover:text-slate-950"
                   }`}
                 >
-                  <div className="flex items-center justify-between pb-3 border-b border-slate-200 dark:border-neutral-800">
-                    <div className="flex items-center gap-2">
-                      <div className="p-1.5 rounded-lg bg-purple-500/10 text-purple-400">
-                        <Lock className="w-4 h-4" />
-                      </div>
-                      <div>
-                        <h3 className="font-bold text-sm text-slate-950 dark:text-white">Cryptographic Compliance Ledger</h3>
-                        <p className="text-xs text-slate-600 dark:text-neutral-400 font-medium">Immutable SHA-256 event audit trail ({auditLogs.length} entries)</p>
-                      </div>
-                    </div>
-
-                    <div className="flex items-center gap-2">
-                      <button
-                        onClick={handleDownloadCsv}
-                        className="px-2.5 py-1.5 rounded-lg border border-slate-300 dark:border-neutral-700 text-xs font-semibold hover:bg-slate-100 dark:hover:bg-neutral-800 transition-colors cursor-pointer text-slate-900 dark:text-neutral-100"
-                      >
-                        Export CSV
-                      </button>
-                      <button
-                        onClick={() => setIsAuditModalOpen(true)}
-                        className="px-3 py-1.5 rounded-lg bg-slate-950 dark:bg-white text-white dark:text-neutral-950 text-xs font-semibold transition-colors cursor-pointer"
-                      >
-                        View Ledger
-                      </button>
-                    </div>
-                  </div>
-
-                  <div className="mt-3 text-xs text-slate-700 dark:text-neutral-300 font-medium">
-                    Latest Event: <span className="font-mono text-slate-900 dark:text-white font-bold">{auditLogs[0]?.details || "System initialized"}</span>
-                  </div>
-                </div>
-
-                {/* Python / Streamlit Artifacts */}
-                <div
-                  className={`rounded-xl border overflow-hidden ${
-                    isDark ? "bg-neutral-900/80 border-neutral-800" : "bg-white border-slate-200/90 shadow-xs"
-                  }`}
-                >
-                  <SourceCodeViewer
-                    appPyCode={pythonCode}
-                    requirementsTxt={REQUIREMENTS_TXT}
-                    readmeContent={README_MD}
-                  />
-                </div>
+                  <Database className="w-3.5 h-3.5 text-emerald-500" />
+                  <span>Data Hub</span>
+                  {customDataset && (
+                    <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+                  )}
+                </button>
               </div>
             </div>
+
+            {/* Tab 1: Simulation Lab Workspace */}
+            {(operationsTab === "simulation" ||
+              operationsTab === "controls" ||
+              operationsTab === "code") && (
+              <SimulationLabWorkspace
+                warehouses={effectiveWarehouses}
+                selectedWarehouseId={selectedWarehouseId}
+                onSelectWarehouse={handleSelectWarehouse}
+                allSkus={effectiveSkus}
+                selectedSkuIds={selectedSkuIds}
+                onToggleSku={handleToggleSku}
+                onSelectAllSkus={handleSelectAllSkus}
+                serviceLevels={SERVICE_LEVELS}
+                selectedServiceZ={selectedServiceZ}
+                onSelectServiceZ={(z) => {
+                  setSelectedServiceZ(z);
+                  handleTriggerSimulation();
+                }}
+                forecastHorizon={forecastHorizon}
+                onChangeForecastHorizon={(days) => {
+                  setForecastHorizon(days);
+                  handleTriggerSimulation();
+                }}
+                monteCarloRuns={monteCarloRuns}
+                onChangeMonteCarloRuns={(runs) => {
+                  setMonteCarloRuns(runs);
+                  handleTriggerSimulation();
+                }}
+                promoSurgePct={promoSurgePct}
+                onChangePromoSurgePct={(pct) => {
+                  setPromoSurgePct(pct);
+                  handleTriggerSimulation();
+                }}
+                weatherSurgePct={weatherSurgePct}
+                onChangeWeatherSurgePct={(pct) => {
+                  setWeatherSurgePct(pct);
+                  handleTriggerSimulation();
+                }}
+                supplierDelayDays={supplierDelayDays}
+                onChangeSupplierDelayDays={(days) => {
+                  setSupplierDelayDays(days);
+                  handleTriggerSimulation();
+                }}
+                isSimulating={isSimulating}
+                onTriggerSimulation={handleTriggerSimulation}
+                onApplyPreset={handleApplyPreset}
+                reorderPolicy={reorderPolicy}
+                onSelectReorderPolicy={handleSelectReorderPolicy}
+                forecastModel={forecastModel}
+                onSelectForecastModel={(model) => {
+                  setForecastModel(model);
+                  handleTriggerSimulation();
+                }}
+                simulationStates={simulationStates}
+                pythonCode={pythonCode}
+                requirementsTxt={REQUIREMENTS_TXT}
+                readmeContent={README_MD}
+                currency={currency}
+                theme={theme}
+              />
+            )}
+
+            {/* Tab 2: Data Hub Workspace */}
+            {(operationsTab === "datahub" ||
+              operationsTab === "ingestion" ||
+              operationsTab === "audit") && (
+              <DataHubWorkspace
+                customDataset={customDataset}
+                effectiveWarehouses={effectiveWarehouses}
+                effectiveSkus={effectiveSkus}
+                onDatasetIngested={handleDatasetIngested}
+                onResetCustomDataset={handleResetCustomDataset}
+                onOpenIngestionWizard={() => setIsWmsModalOpen(true)}
+                onDownloadCsv={handleDownloadCsv}
+                auditLogs={auditLogs}
+                onOpenAuditModal={() => setIsAuditModalOpen(true)}
+                currency={currency}
+                theme={theme}
+              />
+            )}
           </div>
         )}
       </main>

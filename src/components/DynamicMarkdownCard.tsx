@@ -12,6 +12,8 @@ import {
   Zap,
   ArrowRight,
   ShieldAlert,
+  ChevronDown,
+  ChevronUp,
 } from "lucide-react";
 
 interface DynamicMarkdownCardProps {
@@ -29,6 +31,7 @@ export const DynamicMarkdownCard: React.FC<DynamicMarkdownCardProps> = ({
 }) => {
   const isDark = theme === "dark";
   const [deployedSkuIds, setDeployedSkuIds] = useState<string[]>([]);
+  const [isExpanded, setIsExpanded] = useState<boolean>(true);
 
   const handleDeploy = (skuId: string, discountPct: number) => {
     setDeployedSkuIds((prev) => [...prev, skuId]);
@@ -107,11 +110,28 @@ export const DynamicMarkdownCard: React.FC<DynamicMarkdownCardProps> = ({
               {formatCurrency(totalDiscardLossAtRisk, currency)}
             </div>
           </div>
+          <div className="h-7 w-[1px] bg-slate-300 dark:bg-neutral-800 hidden sm:block" />
+          <button
+            onClick={() => setIsExpanded(!isExpanded)}
+            className={`px-3 py-1.5 rounded-lg text-xs font-semibold border transition-colors cursor-pointer flex items-center gap-1.5 ${
+              isDark
+                ? "bg-neutral-950 border-neutral-800 text-neutral-300 hover:text-white hover:bg-neutral-800"
+                : "bg-slate-100 border-slate-300 text-slate-800 hover:text-slate-950 hover:bg-slate-200"
+            }`}
+          >
+            <span>{isExpanded ? "Collapse" : `Expand (${items.length})`}</span>
+            {isExpanded ? (
+              <ChevronUp className="w-3.5 h-3.5" />
+            ) : (
+              <ChevronDown className="w-3.5 h-3.5" />
+            )}
+          </button>
         </div>
       </div>
 
-      {/* Grid of Markdown Items */}
-      <div className="mt-4 grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+      {/* Grid of Markdown Items (Expandable) */}
+      {isExpanded && (
+        <div className="mt-4 grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
         {items.map((item) => {
           const isDeployed = deployedSkuIds.includes(item.skuId);
           return (
@@ -213,6 +233,7 @@ export const DynamicMarkdownCard: React.FC<DynamicMarkdownCardProps> = ({
           );
         })}
       </div>
+      )}
     </div>
   );
 };

@@ -16,6 +16,7 @@ import {
 
 interface RiskTableProps {
   simulationStates: SkuSimulationState[];
+  selectedSkuId?: string;
   onSelectSku: (skuId: string) => void;
   onBulkDispatchCriticalPos?: (selectedIds?: string[]) => void;
   onAutoApproveTransfers?: () => void;
@@ -25,6 +26,7 @@ interface RiskTableProps {
 
 export const RiskTable: React.FC<RiskTableProps> = ({
   simulationStates,
+  selectedSkuId,
   onSelectSku,
   onBulkDispatchCriticalPos,
   onAutoApproveTransfers,
@@ -372,11 +374,17 @@ export const RiskTable: React.FC<RiskTableProps> = ({
               filtered.map((s) => {
                 const isCrit = s.mcResult.urgency === "CRITICAL REORDER NOW";
                 const isSelected = selectedRowIds.has(s.sku.id);
+                const isFocused = selectedSkuId === s.sku.id;
                 return (
                   <tr
                     key={s.sku.id}
-                    className={`transition-colors ${
-                      isDark
+                    onClick={() => onSelectSku(s.sku.id)}
+                    className={`transition-colors cursor-pointer ${
+                      isFocused
+                        ? isDark
+                          ? "bg-emerald-950/30 border-l-4 border-emerald-500"
+                          : "bg-emerald-50/70 border-l-4 border-emerald-600"
+                        : isDark
                         ? `hover:bg-slate-800/40 ${
                             isSelected
                               ? "bg-indigo-950/30"
@@ -393,7 +401,10 @@ export const RiskTable: React.FC<RiskTableProps> = ({
                           }`
                     }`}
                   >
-                    <td className="py-3 px-3 text-center">
+                    <td
+                      className="py-3 px-3 text-center"
+                      onClick={(e) => e.stopPropagation()}
+                    >
                       <input
                         type="checkbox"
                         checked={isSelected}
@@ -402,12 +413,19 @@ export const RiskTable: React.FC<RiskTableProps> = ({
                       />
                     </td>
                     <td className="py-3 px-4">
-                      <div
-                        className={`font-bold ${
-                          isDark ? "text-slate-100" : "text-slate-900"
-                        }`}
-                      >
-                        {s.sku.name}
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <span
+                          className={`font-bold ${
+                            isDark ? "text-slate-100" : "text-slate-950"
+                          }`}
+                        >
+                          {s.sku.name}
+                        </span>
+                        {isFocused && (
+                          <span className="px-1.5 py-0.2 rounded text-[10px] font-mono font-bold bg-emerald-600 text-white shadow-xs">
+                            Active in Forecast
+                          </span>
+                        )}
                       </div>
                       <div className="text-[11px] text-slate-600 dark:text-neutral-400 font-mono flex items-center gap-2 font-medium">
                         <span>{s.sku.id}</span>

@@ -296,7 +296,7 @@ export const Footer: React.FC<FooterProps> = ({
                   <Cpu className="w-3.5 h-3.5 text-indigo-500" />
                   <span>Bivariate Monte Carlo Engine</span>
                 </div>
-                <p className="text-slate-600 dark:text-neutral-400 mt-1 leading-relaxed">
+                <p className="text-slate-700 dark:text-neutral-300 mt-1 leading-relaxed font-medium">
                   Couples daily demand volatility with stochastic supplier lead-time drag across 10,000 iterations to predict probability of stockout.
                 </p>
               </div>
@@ -306,7 +306,7 @@ export const Footer: React.FC<FooterProps> = ({
                   <Sparkles className="w-3.5 h-3.5 text-emerald-500" />
                   <span>Dual-Variance Dynamic Safety Stock</span>
                 </div>
-                <p className="text-slate-600 dark:text-neutral-400 mt-1 leading-relaxed">
+                <p className="text-slate-700 dark:text-neutral-300 mt-1 leading-relaxed font-medium">
                   Formula: SS = Z × √(L · σ_D² + D² · σ_L²). Adjusts target cycle service levels from 90% (Z=1.28) up to 99.9% (Z=3.09).
                 </p>
               </div>
@@ -316,7 +316,7 @@ export const Footer: React.FC<FooterProps> = ({
                   <Layers className="w-3.5 h-3.5 text-amber-500" />
                   <span>EOQ Reorder Optimizer</span>
                 </div>
-                <p className="text-slate-600 dark:text-neutral-400 mt-1 leading-relaxed">
+                <p className="text-slate-700 dark:text-neutral-300 mt-1 leading-relaxed font-medium">
                   Calculates Economic Order Quantity balanced against per-unit holding costs and supplier fixed order placement fees.
                 </p>
               </div>
@@ -341,7 +341,7 @@ export const Footer: React.FC<FooterProps> = ({
                   <FileText className="w-4 h-4 text-rose-500" />
                   <div>
                     <div className="font-bold">Executive Report Dossier</div>
-                    <div className="text-[10px] text-slate-600 dark:text-neutral-400 font-normal">
+                    <div className="text-[10px] text-slate-700 dark:text-neutral-300 font-medium">
                       Printable PDF audit brief &amp; KPI memo
                     </div>
                   </div>
@@ -361,7 +361,7 @@ export const Footer: React.FC<FooterProps> = ({
                   <UploadCloud className="w-4 h-4 text-emerald-500" />
                   <div>
                     <div className="font-bold">Enterprise WMS CSV Engine</div>
-                    <div className="text-[10px] text-slate-600 dark:text-neutral-400 font-normal">
+                    <div className="text-[10px] text-slate-700 dark:text-neutral-300 font-medium">
                       SAP, Oracle NetSuite &amp; ERP ingestion
                     </div>
                   </div>
@@ -381,7 +381,7 @@ export const Footer: React.FC<FooterProps> = ({
                   <Lock className="w-4 h-4 text-purple-500" />
                   <div>
                     <div className="font-bold">Cryptographic Audit Ledger</div>
-                    <div className="text-[10px] text-slate-600 dark:text-neutral-400 font-normal">
+                    <div className="text-[10px] text-slate-700 dark:text-neutral-300 font-medium">
                       {auditLogsCount} SHA-256 verifiable logs
                     </div>
                   </div>
@@ -426,7 +426,7 @@ export const Footer: React.FC<FooterProps> = ({
               <h5 className="font-bold text-sm text-slate-950 dark:text-white">
                 InventoryGuard-AI Supply Chain Algorithmic Formulations
               </h5>
-              <p className="text-xs text-slate-600 dark:text-neutral-400">
+              <p className="text-xs text-slate-700 dark:text-neutral-300 font-medium">
                 Ground-truth mathematical specifications verified by supply chain operations research standards.
               </p>
             </div>
@@ -440,10 +440,10 @@ export const Footer: React.FC<FooterProps> = ({
               <div className="font-bold text-slate-900 dark:text-white mb-1">
                 1. Dual-Variance Safety Stock (SS)
               </div>
-              <div className="font-mono p-2 rounded bg-white dark:bg-neutral-900 border border-slate-200 dark:border-neutral-800 text-slate-900 dark:text-emerald-400">
+              <div className="font-mono p-2 rounded bg-white dark:bg-neutral-900 border border-slate-200 dark:border-neutral-800 text-slate-900 dark:text-emerald-400 font-bold">
                 SS = Z × √(L · σ_D² + D² · σ_L²)
               </div>
-              <p className="text-slate-600 dark:text-neutral-400 mt-1.5 leading-normal">
+              <p className="text-slate-700 dark:text-neutral-300 mt-1.5 leading-normal font-medium">
                 Accounts for variance in both customer demand (σ_D) and supplier delivery lead-time (σ_L).
               </p>
             </div>
@@ -452,10 +452,10 @@ export const Footer: React.FC<FooterProps> = ({
               <div className="font-bold text-slate-900 dark:text-white mb-1">
                 2. Reorder Point (ROP)
               </div>
-              <div className="font-mono p-2 rounded bg-white dark:bg-neutral-900 border border-slate-200 dark:border-neutral-800 text-slate-900 dark:text-emerald-400">
+              <div className="font-mono p-2 rounded bg-white dark:bg-neutral-900 border border-slate-200 dark:border-neutral-800 text-slate-900 dark:text-emerald-400 font-bold">
                 ROP = (D × L) + SS
               </div>
-              <p className="text-slate-600 dark:text-neutral-400 mt-1.5 leading-normal">
+              <p className="text-slate-700 dark:text-neutral-300 mt-1.5 leading-normal font-medium">
                 Replenishment triggers automatically the moment inventory + on-order units drop below ROP.
               </p>
             </div>
@@ -464,10 +464,10 @@ export const Footer: React.FC<FooterProps> = ({
               <div className="font-bold text-slate-900 dark:text-white mb-1">
                 3. Joint Monte Carlo Deficit
               </div>
-              <div className="font-mono p-2 rounded bg-white dark:bg-neutral-900 border border-slate-200 dark:border-neutral-800 text-slate-900 dark:text-emerald-400">
+              <div className="font-mono p-2 rounded bg-white dark:bg-neutral-900 border border-slate-200 dark:border-neutral-800 text-slate-900 dark:text-emerald-400 font-bold">
                 Stockout Prob = Σ [Stock &lt; 0] / N_runs
               </div>
-              <p className="text-slate-600 dark:text-neutral-400 mt-1.5 leading-normal">
+              <p className="text-slate-700 dark:text-neutral-300 mt-1.5 leading-normal font-medium">
                 10,000 stochastic paths evaluated across Poisson demand surges and log-normal supplier delays.
               </p>
             </div>
@@ -493,18 +493,18 @@ export const Footer: React.FC<FooterProps> = ({
               © 2026 InventoryGuard-AI Technologies Inc. All rights reserved.
             </span>
             <span className="hidden sm:inline text-slate-400">·</span>
-            <span className="text-slate-600 dark:text-neutral-400">
+            <span className="text-slate-700 dark:text-neutral-300 font-medium">
               Next-Gen Autonomous Supply Chain Defense Architecture.
             </span>
           </div>
 
           <div className="flex items-center gap-4 flex-wrap justify-center">
-            <span className="text-slate-600 dark:text-neutral-400">
+            <span className="text-slate-700 dark:text-neutral-300 font-medium">
               Keyboard: <kbd className="px-1.5 py-0.5 rounded text-[10px] font-mono bg-white dark:bg-neutral-800 border border-slate-300 dark:border-neutral-700 font-bold">⌘K</kbd> Command Palette
             </span>
             <span className="text-slate-400">·</span>
-            <span className="text-slate-600 dark:text-neutral-400">
-              Active Mode: <strong className="text-slate-900 dark:text-white">{isDark ? "Obsidian Dark" : "Pure Light"}</strong>
+            <span className="text-slate-700 dark:text-neutral-300 font-medium">
+              Active Mode: <strong className="text-slate-950 dark:text-white font-bold">{isDark ? "Obsidian Dark" : "Pure Light"}</strong>
             </span>
           </div>
         </div>

@@ -121,7 +121,11 @@ export const ExecutiveReportModal: React.FC<ExecutiveReportModalProps> = ({
 
             <button
               onClick={onClose}
-              className="p-1.5 rounded-lg text-slate-400 hover:text-slate-200 hover:bg-slate-800 cursor-pointer"
+              className={`p-1.5 rounded-lg transition-colors cursor-pointer ${
+                isDark
+                  ? "text-slate-400 hover:text-slate-200 hover:bg-slate-800"
+                  : "text-slate-500 hover:text-slate-900 hover:bg-slate-200"
+              }`}
               aria-label="Close modal"
             >
               <X className="w-4 h-4" />

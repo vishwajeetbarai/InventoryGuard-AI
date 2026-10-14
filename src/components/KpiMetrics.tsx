@@ -1,45 +1,62 @@
 import React from "react";
-import { AlertTriangle, ShieldCheck, Clock, Layers, ArrowUpRight } from "lucide-react";
+import {
+  Layers,
+  AlertTriangle,
+  TrendingDown,
+  ShieldCheck,
+  ArrowUpRight,
+  ShieldAlert,
+  CheckCircle2,
+} from "lucide-react";
 import { SkuSimulationState, CurrencyCode } from "../types";
 import { formatCurrency, CURRENCIES } from "../utils/currency";
 
 interface KpiMetricsProps {
   simulationStates: SkuSimulationState[];
   selectedCslLabel: string;
+  selectedServiceZ?: number;
   currency?: CurrencyCode;
   theme?: "dark" | "light";
+  onDrillDown?: (target: "inventory" | "risk" | "procurement" | "controls") => void;
 }
 
 export const KpiMetrics: React.FC<KpiMetricsProps> = ({
   simulationStates,
   selectedCslLabel,
+  selectedServiceZ = 2.326,
   currency = "USD",
   theme = "light",
+  onDrillDown,
 }) => {
   const isDark = theme === "dark";
 
+  // 1. Inventory Value (Total on-hand valuation)
+  const totalInventoryValue = simulationStates.reduce(
+    (acc, s) => acc + s.currentStock * s.sku.basePrice,
+    0
+  );
+  const totalUnits = simulationStates.reduce((acc, s) => acc + s.currentStock, 0);
+
+  // 2. At-Risk SKUs (Urgent stockout risks + approaching ROP warnings)
   const criticalCount = simulationStates.filter(
     (s) => s.mcResult.urgency === "CRITICAL REORDER NOW"
   ).length;
-
   const warningCount = simulationStates.filter(
     (s) => s.mcResult.urgency === "WARNING"
   ).length;
+  const atRiskCount = criticalCount + warningCount;
 
+  // 3. Stock-Out Risk / Revenue Exposure
   const totalRevenueAtRisk = simulationStates.reduce(
     (acc, s) => acc + s.revenueAtRisk,
     0
   );
-
-  const totalSafetyStock = simulationStates.reduce(
-    (acc, s) => acc + s.mcResult.dynamicSafetyStock,
-    0
-  );
-
-  const avgLeadTimeVariance =
+  const avgStockOutRisk =
     simulationStates.length > 0
-      ? simulationStates.reduce((acc, s) => acc + s.effectiveLeadTimeStd, 0) /
-        simulationStates.length
+      ? simulationStates.reduce(
+          (acc, s) => acc + s.mcResult.stockoutProbabilityPct,
+          0
+        ) / simulationStates.length
       : 0;
 
   const cardBase = isDark
@@ -48,157 +65,236 @@ export const KpiMetrics: React.FC<KpiMetricsProps> = ({
 
   return (
     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-      {/* Metric 1: Stockout Risk */}
-      <div className={`border rounded-xl p-5 transition-all ${cardBase}`}>
-        <div className="flex items-center justify-between">
-          <span className="text-[11px] font-bold uppercase tracking-wider text-slate-800 dark:text-neutral-300">
-            Critical Stockout Risk
-          </span>
-          <div
-            className={`w-7 h-7 rounded-lg flex items-center justify-center text-xs font-bold ${
-              criticalCount > 0
-                ? isDark
-                  ? "bg-rose-500/20 text-rose-300"
-                  : "bg-rose-100 text-rose-700"
-                : isDark
-                ? "bg-emerald-500/20 text-emerald-300"
-                : "bg-emerald-100 text-emerald-700"
-            }`}
-          >
-            <AlertTriangle className="w-3.5 h-3.5" />
+      {/* CARD 1: INVENTORY VALUE */}
+      <div
+        onClick={() => onDrillDown?.("inventory")}
+        className={`border rounded-xl p-5 transition-all flex flex-col justify-between ${cardBase} ${
+          onDrillDown ? "cursor-pointer group" : ""
+        }`}
+      >
+        <div>
+          <div className="flex items-center justify-between">
+            <span className="text-[11px] font-bold uppercase tracking-wider text-slate-700 dark:text-neutral-400">
+              Inventory Value
+            </span>
+            <div
+              className={`w-7 h-7 rounded-lg flex items-center justify-center text-xs font-bold ${
+                isDark
+                  ? "bg-emerald-500/15 text-emerald-400 border border-emerald-500/30"
+                  : "bg-emerald-50 text-emerald-700 border border-emerald-200"
+              }`}
+            >
+              <Layers className="w-3.5 h-3.5" />
+            </div>
+          </div>
+
+          <div className="mt-3 flex items-baseline">
+            <span
+              className={`text-2xl sm:text-3xl font-extrabold tracking-tight ${
+                isDark ? "text-white" : "text-slate-950"
+              }`}
+            >
+              {formatCurrency(totalInventoryValue, currency)}
+            </span>
           </div>
         </div>
-        <div className="mt-3 flex items-baseline gap-2">
-          <span
-            className={`text-2xl sm:text-3xl font-extrabold tracking-tight ${
-              criticalCount > 0
-                ? isDark
-                  ? "text-rose-400"
-                  : "text-rose-600"
-                : isDark
-                ? "text-emerald-400"
-                : "text-emerald-600"
-            }`}
-          >
-            {criticalCount}
+
+        <div className="mt-4 pt-3 border-t border-slate-200 dark:border-neutral-800 flex items-center justify-between text-xs text-slate-700 dark:text-neutral-300">
+          <span className="font-medium">
+            {totalUnits.toLocaleString()} units on hand
           </span>
-          <span className="text-xs text-slate-700 dark:text-neutral-300 font-semibold">
-            of {simulationStates.length} monitored SKUs
+          <span className="text-slate-900 dark:text-white font-bold flex items-center gap-1">
+            {simulationStates.length} SKUs
+            {onDrillDown && (
+              <ArrowUpRight className="w-3 h-3 opacity-0 group-hover:opacity-100 transition-opacity" />
+            )}
           </span>
         </div>
-        <div className="mt-3 pt-3 border-t border-slate-200 dark:border-neutral-800 flex items-center justify-between text-xs text-slate-700 dark:text-neutral-300">
-          <span className="font-medium">{warningCount} approaching ROP</span>
+      </div>
+
+      {/* CARD 2: AT-RISK SKUS */}
+      <div
+        onClick={() => onDrillDown?.("risk")}
+        className={`border rounded-xl p-5 transition-all flex flex-col justify-between ${cardBase} ${
+          onDrillDown ? "cursor-pointer group" : ""
+        }`}
+      >
+        <div>
+          <div className="flex items-center justify-between">
+            <span className="text-[11px] font-bold uppercase tracking-wider text-slate-700 dark:text-neutral-400">
+              At-Risk SKUs
+            </span>
+            <div
+              className={`w-7 h-7 rounded-lg flex items-center justify-center text-xs font-bold ${
+                criticalCount > 0
+                  ? isDark
+                    ? "bg-rose-500/15 text-rose-400 border border-rose-500/30"
+                    : "bg-rose-50 text-rose-700 border border-rose-200"
+                  : warningCount > 0
+                  ? isDark
+                    ? "bg-amber-500/15 text-amber-400 border border-amber-500/30"
+                    : "bg-amber-50 text-amber-700 border border-amber-200"
+                  : isDark
+                  ? "bg-emerald-500/15 text-emerald-400 border border-emerald-500/30"
+                  : "bg-emerald-50 text-emerald-700 border border-emerald-200"
+              }`}
+            >
+              <AlertTriangle className="w-3.5 h-3.5" />
+            </div>
+          </div>
+
+          <div className="mt-3 flex items-baseline gap-2">
+            <span
+              className={`text-2xl sm:text-3xl font-extrabold tracking-tight ${
+                criticalCount > 0
+                  ? isDark
+                    ? "text-rose-400"
+                    : "text-rose-600"
+                  : warningCount > 0
+                  ? isDark
+                    ? "text-amber-400"
+                    : "text-amber-600"
+                  : isDark
+                  ? "text-emerald-400"
+                  : "text-emerald-600"
+              }`}
+            >
+              {atRiskCount}
+            </span>
+            <span className="text-xs text-slate-600 dark:text-neutral-400 font-semibold">
+              of {simulationStates.length} SKUs
+            </span>
+          </div>
+        </div>
+
+        <div className="mt-4 pt-3 border-t border-slate-200 dark:border-neutral-800 flex items-center justify-between text-xs text-slate-700 dark:text-neutral-300">
+          <span className="font-medium">
+            {criticalCount} critical · {warningCount} warning
+          </span>
           <span
-            className={`font-bold ${
+            className={`font-bold flex items-center gap-1 ${
               criticalCount > 0
                 ? isDark
                   ? "text-rose-400"
                   : "text-rose-600"
+                : warningCount > 0
+                ? isDark
+                  ? "text-amber-400"
+                  : "text-amber-600"
                 : "text-emerald-600 dark:text-emerald-400"
             }`}
           >
-            {criticalCount > 0 ? "Dispatch POs" : "Optimal"}
+            {criticalCount > 0 ? "Reorder Now" : warningCount > 0 ? "Monitor ROP" : "Stock Healthy"}
+            {onDrillDown && (
+              <ArrowUpRight className="w-3 h-3 opacity-0 group-hover:opacity-100 transition-opacity" />
+            )}
           </span>
         </div>
       </div>
 
-      {/* Metric 2: Revenue at Risk */}
-      <div className={`border rounded-xl p-5 transition-all ${cardBase}`}>
-        <div className="flex items-center justify-between">
-          <span className="text-[11px] font-bold uppercase tracking-wider text-slate-800 dark:text-neutral-300">
-            Projected Revenue at Risk
-          </span>
-          <div
-            className={`w-7 h-7 rounded-lg flex items-center justify-center text-xs font-mono font-bold ${
-              isDark
-                ? "bg-amber-500/20 text-amber-300"
-                : "bg-amber-100 text-amber-800"
-            }`}
-          >
-            {CURRENCIES[currency]?.symbol || "$"}
+      {/* CARD 3: STOCK-OUT EXPOSURE */}
+      <div
+        onClick={() => onDrillDown?.("procurement")}
+        className={`border rounded-xl p-5 transition-all flex flex-col justify-between ${cardBase} ${
+          onDrillDown ? "cursor-pointer group" : ""
+        }`}
+      >
+        <div>
+          <div className="flex items-center justify-between">
+            <span className="text-[11px] font-bold uppercase tracking-wider text-slate-700 dark:text-neutral-400">
+              Stock-Out Exposure
+            </span>
+            <div
+              className={`w-7 h-7 rounded-lg flex items-center justify-center text-xs font-bold ${
+                totalRevenueAtRisk > 0
+                  ? isDark
+                    ? "bg-amber-500/15 text-amber-400 border border-amber-500/30"
+                    : "bg-amber-50 text-amber-700 border border-amber-200"
+                  : isDark
+                  ? "bg-emerald-500/15 text-emerald-400 border border-emerald-500/30"
+                  : "bg-emerald-50 text-emerald-700 border border-emerald-200"
+              }`}
+            >
+              <TrendingDown className="w-3.5 h-3.5" />
+            </div>
+          </div>
+
+          <div className="mt-3 flex items-baseline">
+            <span
+              className={`text-2xl sm:text-3xl font-extrabold tracking-tight ${
+                totalRevenueAtRisk > 0
+                  ? isDark
+                    ? "text-amber-400"
+                    : "text-amber-600"
+                  : isDark
+                  ? "text-emerald-400"
+                  : "text-emerald-600"
+              }`}
+            >
+              {formatCurrency(totalRevenueAtRisk, currency)}
+            </span>
           </div>
         </div>
-        <div className="mt-3 flex items-baseline">
-          <span
-            className={`text-2xl sm:text-3xl font-extrabold tracking-tight ${
-              isDark ? "text-amber-400" : "text-amber-700"
-            }`}
-          >
-            {formatCurrency(totalRevenueAtRisk, currency)}
+
+        <div className="mt-4 pt-3 border-t border-slate-200 dark:border-neutral-800 flex items-center justify-between text-xs text-slate-700 dark:text-neutral-300">
+          <span className="font-medium">
+            Avg {avgStockOutRisk.toFixed(1)}% stock-out risk
           </span>
-        </div>
-        <div className="mt-3 pt-3 border-t border-slate-200 dark:border-neutral-800 flex items-center justify-between text-xs text-slate-700 dark:text-neutral-300">
-          <span className="font-medium">Stockout deficit exposure</span>
-          <span className="text-amber-700 dark:text-amber-400 font-bold">
-            Lead-Time Drag
+          <span className="text-amber-700 dark:text-amber-400 font-bold flex items-center gap-1">
+            {totalRevenueAtRisk > 0 ? "Revenue Leakage" : "Protected"}
+            {onDrillDown && (
+              <ArrowUpRight className="w-3 h-3 opacity-0 group-hover:opacity-100 transition-opacity" />
+            )}
           </span>
         </div>
       </div>
 
-      {/* Metric 3: Dynamic Safety Buffer */}
-      <div className={`border rounded-xl p-5 transition-all ${cardBase}`}>
-        <div className="flex items-center justify-between">
-          <span className="text-[11px] font-bold uppercase tracking-wider text-slate-800 dark:text-neutral-300">
-            Dynamic Safety Buffer
-          </span>
-          <div
-            className={`w-7 h-7 rounded-lg flex items-center justify-center text-xs ${
-              isDark
-                ? "bg-neutral-800 text-neutral-200"
-                : "bg-slate-100 text-slate-800"
-            }`}
-          >
-            <ShieldCheck className="w-3.5 h-3.5" />
+      {/* CARD 4: CUSTOMER SERVICE LEVEL */}
+      <div
+        onClick={() => onDrillDown?.("controls")}
+        className={`border rounded-xl p-5 transition-all flex flex-col justify-between ${cardBase} ${
+          onDrillDown ? "cursor-pointer group" : ""
+        }`}
+      >
+        <div>
+          <div className="flex items-center justify-between">
+            <span className="text-[11px] font-bold uppercase tracking-wider text-slate-700 dark:text-neutral-400">
+              Customer Service Level
+            </span>
+            <div
+              className={`w-7 h-7 rounded-lg flex items-center justify-center text-xs font-bold ${
+                isDark
+                  ? "bg-emerald-500/15 text-emerald-400 border border-emerald-500/30"
+                  : "bg-emerald-50 text-emerald-700 border border-emerald-200"
+              }`}
+            >
+              <ShieldCheck className="w-3.5 h-3.5" />
+            </div>
           </div>
-        </div>
-        <div className="mt-3 flex items-baseline gap-1.5">
-          <span
-            className={`text-2xl sm:text-3xl font-extrabold tracking-tight ${
-              isDark ? "text-white" : "text-slate-950"
-            }`}
-          >
-            {totalSafetyStock.toLocaleString()}
-          </span>
-          <span className="text-xs text-slate-700 dark:text-neutral-300 font-semibold">Units</span>
-        </div>
-        <div className="mt-3 pt-3 border-t border-slate-200 dark:border-neutral-800 flex items-center justify-between text-xs text-slate-700 dark:text-neutral-300">
-          <span className="font-medium">Target: {selectedCslLabel} CSL</span>
-          <span className="font-bold text-slate-800 dark:text-neutral-200">
-            Dual-Variance
-          </span>
-        </div>
-      </div>
 
-      {/* Metric 4: Lead-Time Volatility */}
-      <div className={`border rounded-xl p-5 transition-all ${cardBase}`}>
-        <div className="flex items-center justify-between">
-          <span className="text-[11px] font-bold uppercase tracking-wider text-slate-800 dark:text-neutral-300">
-            Lead-Time Volatility
-          </span>
-          <div
-            className={`w-7 h-7 rounded-lg flex items-center justify-center text-xs ${
-              isDark
-                ? "bg-neutral-800 text-neutral-200"
-                : "bg-slate-100 text-slate-800"
-            }`}
-          >
-            <Clock className="w-3.5 h-3.5" />
+          <div className="mt-3 flex items-baseline gap-2">
+            <span
+              className={`text-2xl sm:text-3xl font-extrabold tracking-tight ${
+                isDark ? "text-white" : "text-slate-950"
+              }`}
+            >
+              {selectedCslLabel}
+            </span>
+            <span className="text-xs text-emerald-600 dark:text-emerald-400 font-bold">
+              CSL Target
+            </span>
           </div>
         </div>
-        <div className="mt-3 flex items-baseline gap-1.5">
-          <span
-            className={`text-2xl sm:text-3xl font-extrabold tracking-tight ${
-              isDark ? "text-white" : "text-slate-950"
-            }`}
-          >
-            ±{avgLeadTimeVariance.toFixed(1)}
+
+        <div className="mt-4 pt-3 border-t border-slate-200 dark:border-neutral-800 flex items-center justify-between text-xs text-slate-700 dark:text-neutral-300">
+          <span className="font-medium font-mono text-[11px]">
+            Z = {selectedServiceZ.toFixed(3)}
           </span>
-          <span className="text-xs text-slate-700 dark:text-neutral-300 font-semibold">Days σ</span>
-        </div>
-        <div className="mt-3 pt-3 border-t border-slate-200 dark:border-neutral-800 flex items-center justify-between text-xs text-slate-700 dark:text-neutral-300">
-          <span className="font-medium">Supplier delivery variance</span>
-          <span className="text-emerald-700 dark:text-emerald-400 font-bold">
-            Stochastic Lead
+          <span className="font-bold text-emerald-700 dark:text-emerald-400 flex items-center gap-1">
+            Dual-Variance Buffer
+            {onDrillDown && (
+              <ArrowUpRight className="w-3 h-3 opacity-0 group-hover:opacity-100 transition-opacity" />
+            )}
           </span>
         </div>
       </div>

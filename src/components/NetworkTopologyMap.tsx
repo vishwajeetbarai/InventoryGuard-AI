@@ -499,23 +499,23 @@ export const NetworkTopologyMap: React.FC<NetworkTopologyMapProps> = ({
         <div className="lg:col-span-4 space-y-4">
           <div
             className={`border rounded-xl p-5 shadow-xs transition-colors ${
-              isDark ? "bg-neutral-900/80 border-neutral-800" : "bg-white border-slate-200/90"
+              isDark ? "bg-neutral-900 border-neutral-800 text-neutral-100" : "bg-white border-slate-300 text-slate-900 shadow-xs"
             }`}
           >
-            <div className="flex items-center justify-between pb-3 border-b border-neutral-800/40 dark:border-neutral-800">
+            <div className="flex items-center justify-between pb-3 border-b border-slate-200 dark:border-neutral-800">
               <div className="flex items-center gap-2">
                 <MapPin className="w-4 h-4 text-emerald-500" />
-                <h3 className="font-bold text-sm">
+                <h3 className="font-bold text-sm text-slate-950 dark:text-white">
                   {focusedWh.name}
                 </h3>
               </div>
               <span
                 className={`text-[10px] px-2 py-0.5 rounded font-bold uppercase tracking-wider ${
                   focusedHealth.status === "critical"
-                    ? "bg-rose-500/15 text-rose-400 border border-rose-500/30"
+                    ? "bg-rose-500/15 text-rose-500 dark:text-rose-400 border border-rose-500/30"
                     : focusedHealth.status === "surplus"
-                    ? "bg-amber-500/15 text-amber-400 border border-amber-500/30"
-                    : "bg-emerald-500/15 text-emerald-400 border border-emerald-500/30"
+                    ? "bg-amber-500/15 text-amber-600 dark:text-amber-400 border border-amber-500/30"
+                    : "bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30"
                 }`}
               >
                 {focusedHealth.label}
@@ -523,25 +523,25 @@ export const NetworkTopologyMap: React.FC<NetworkTopologyMapProps> = ({
             </div>
 
             <div className="mt-4 space-y-3 text-xs">
-              <div className="flex justify-between items-center py-1 border-b border-slate-800/20">
-                <span className="text-slate-400">Node ID:</span>
-                <span className="font-mono font-semibold text-slate-200">
+              <div className="flex justify-between items-center py-1 border-b border-slate-200 dark:border-neutral-800">
+                <span className="text-slate-700 dark:text-neutral-300 font-medium">Node ID:</span>
+                <span className="font-mono font-bold text-slate-950 dark:text-white">
                   {focusedWh.id}
                 </span>
               </div>
-              <div className="flex justify-between items-center py-1 border-b border-slate-800/20">
-                <span className="text-slate-400">Geographic Region:</span>
-                <span className="font-semibold text-slate-200">
+              <div className="flex justify-between items-center py-1 border-b border-slate-200 dark:border-neutral-800">
+                <span className="text-slate-700 dark:text-neutral-300 font-medium">Geographic Region:</span>
+                <span className="font-bold text-slate-950 dark:text-white">
                   {focusedWh.region} ({focusedWh.city})
                 </span>
               </div>
-              <div className="flex justify-between items-center py-1 border-b border-slate-800/20">
-                <span className="text-slate-400">Inventory Equilibrium:</span>
+              <div className="flex justify-between items-center py-1 border-b border-slate-200 dark:border-neutral-800">
+                <span className="text-slate-700 dark:text-neutral-300 font-medium">Inventory Equilibrium:</span>
                 <span
-                  className={`font-semibold ${
+                  className={`font-bold ${
                     focusedHealth.status === "critical"
-                      ? "text-rose-400"
-                      : "text-emerald-400"
+                      ? "text-rose-600 dark:text-rose-400"
+                      : "text-emerald-600 dark:text-emerald-400"
                   }`}
                 >
                   {focusedHealth.label}
@@ -550,15 +550,15 @@ export const NetworkTopologyMap: React.FC<NetworkTopologyMapProps> = ({
 
               {focusedWh.id === selectedWarehouseId && (
                 <>
-                  <div className="flex justify-between items-center py-1 border-b border-slate-800/20">
-                    <span className="text-slate-400">Active SKUs Analyzed:</span>
-                    <span className="font-mono font-semibold text-slate-200">
+                  <div className="flex justify-between items-center py-1 border-b border-slate-200 dark:border-neutral-800">
+                    <span className="text-slate-700 dark:text-neutral-300 font-medium">Active SKUs Analyzed:</span>
+                    <span className="font-mono font-bold text-slate-950 dark:text-white">
                       {simulationStates.length} SKUs
                     </span>
                   </div>
-                  <div className="flex justify-between items-center py-1 border-b border-slate-800/20">
-                    <span className="text-slate-400">Critical Stockout Alerts:</span>
-                    <span className="font-mono font-bold text-rose-400">
+                  <div className="flex justify-between items-center py-1 border-b border-slate-200 dark:border-neutral-800">
+                    <span className="text-slate-700 dark:text-neutral-300 font-medium">Critical Stockout Alerts:</span>
+                    <span className="font-mono font-bold text-rose-600 dark:text-rose-400">
                       {
                         simulationStates.filter(
                           (s) => s.mcResult.urgency === "CRITICAL REORDER NOW"
@@ -580,7 +580,7 @@ export const NetworkTopologyMap: React.FC<NetworkTopologyMapProps> = ({
                     <span>Switch Command View to this Node</span>
                   </button>
                 ) : (
-                  <div className="w-full py-1.5 px-3 rounded-lg bg-emerald-500/10 text-emerald-400 text-center font-bold text-xs border border-emerald-500/20 flex items-center justify-center gap-1.5">
+                  <div className="w-full py-1.5 px-3 rounded-lg bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 text-center font-bold text-xs border border-emerald-500/20 flex items-center justify-center gap-1.5">
                     <CheckCircle2 className="w-3.5 h-3.5" />
                     <span>Currently Active Command Node</span>
                   </div>
@@ -592,22 +592,22 @@ export const NetworkTopologyMap: React.FC<NetworkTopologyMapProps> = ({
           {/* Active Inter-Store Cross-Dock Transfers on Corridor */}
           <div
             className={`border rounded-xl p-5 shadow-sm transition-colors ${
-              isDark ? "bg-slate-900/80 border-slate-800" : "bg-white border-slate-200"
+              isDark ? "bg-neutral-900 border-neutral-800 text-neutral-100" : "bg-white border-slate-300 text-slate-900 shadow-xs"
             }`}
           >
-            <div className="flex items-center justify-between pb-3 border-b border-slate-800/40">
-              <h3 className="font-bold text-xs flex items-center gap-1.5">
-                <Truck className="w-4 h-4 text-amber-400" />
+            <div className="flex items-center justify-between pb-3 border-b border-slate-200 dark:border-neutral-800">
+              <h3 className="font-bold text-xs flex items-center gap-1.5 text-slate-950 dark:text-white">
+                <Truck className="w-4 h-4 text-amber-500" />
                 <span>Inter-Node Transit Operations</span>
               </h3>
-              <span className="text-[11px] font-mono text-indigo-400 font-bold">
+              <span className="text-[11px] font-mono text-indigo-600 dark:text-indigo-400 font-bold">
                 {interTransfers.length} Active
               </span>
             </div>
 
             <div className="mt-3 space-y-2.5 max-h-[220px] overflow-y-auto pr-1">
               {interTransfers.length === 0 ? (
-                <div className="text-xs text-slate-500 text-center py-4">
+                <div className="text-xs text-slate-700 dark:text-neutral-300 text-center py-4 font-medium">
                   No emergency transfers required across corridors.
                 </div>
               ) : (
@@ -625,30 +625,30 @@ export const NetworkTopologyMap: React.FC<NetworkTopologyMapProps> = ({
                       key={xfer.id}
                       className={`p-2.5 rounded-lg border text-xs ${
                         isDark
-                          ? "bg-slate-800/50 border-slate-700/60"
-                          : "bg-slate-50 border-slate-200"
+                          ? "bg-neutral-950 border-neutral-800 text-neutral-200"
+                          : "bg-slate-50 border-slate-200 text-slate-800"
                       }`}
                     >
                       <div className="flex items-center justify-between">
-                        <span className="font-bold text-indigo-400">
+                        <span className="font-bold text-indigo-600 dark:text-indigo-400">
                           {xfer.skuName}
                         </span>
-                        <span className="font-mono text-emerald-400 font-semibold">
+                        <span className="font-mono text-emerald-600 dark:text-emerald-400 font-semibold">
                           +{xfer.recommendedTransferQty} Units
                         </span>
                       </div>
-                      <div className="text-[11px] text-slate-400 mt-1 flex items-center justify-between">
+                      <div className="text-[11px] text-slate-700 dark:text-neutral-300 mt-1 flex items-center justify-between font-medium">
                         <span>
                           {originWh.split(" ")[0]} ➔ {destWh.split(" ")[0]}
                         </span>
                         <span>~{xfer.transitHours}h van</span>
                       </div>
-                      <div className="mt-2 flex items-center justify-between pt-1 border-t border-slate-700/40 text-[10px]">
-                        <span className="text-sky-400 font-semibold">
+                      <div className="mt-2 flex items-center justify-between pt-1 border-t border-slate-200 dark:border-neutral-800 text-[10px]">
+                        <span className="text-sky-600 dark:text-sky-400 font-semibold">
                           Net Profit: +{formatCurrency(xfer.netProfitabilityInr || 1200, currency)}
                         </span>
                         {isApproved ? (
-                          <span className="text-emerald-400 font-bold flex items-center gap-1">
+                          <span className="text-emerald-600 dark:text-emerald-400 font-bold flex items-center gap-1">
                             <CheckCircle2 className="w-3 h-3" /> In Transit
                           </span>
                         ) : (
