@@ -24,6 +24,7 @@ import {
   Menu,
   X,
   Globe2,
+  LogOut,
 } from "lucide-react";
 
 interface HeaderProps {
@@ -49,6 +50,7 @@ interface HeaderProps {
   currentCurrency?: CurrencyCode;
   onSelectCurrency?: (curr: CurrencyCode) => void;
   onGoToLanding?: () => void;
+  onSignOut?: () => void;
 }
 
 export const Header: React.FC<HeaderProps> = ({
@@ -70,6 +72,7 @@ export const Header: React.FC<HeaderProps> = ({
   currentCurrency = "USD",
   onSelectCurrency,
   onGoToLanding,
+  onSignOut,
 }) => {
   const isDark = theme === "dark";
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
@@ -501,6 +504,26 @@ export const Header: React.FC<HeaderProps> = ({
                       })}
                     </div>
                   </div>
+
+                  {/* Sign Out Action */}
+                  {onSignOut && (
+                    <div className="pt-2 mt-2 border-t border-slate-100 dark:border-neutral-800">
+                      <button
+                        onClick={() => {
+                          setIsUserMenuOpen(false);
+                          onSignOut();
+                        }}
+                        className={`w-full flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-xs font-semibold transition-colors cursor-pointer text-left ${
+                          isDark
+                            ? "hover:bg-rose-950/40 text-rose-400 hover:text-rose-300"
+                            : "hover:bg-rose-50 text-rose-700 hover:text-rose-800"
+                        }`}
+                      >
+                        <LogOut className="w-3.5 h-3.5" />
+                        <span>Sign Out of Workspace</span>
+                      </button>
+                    </div>
+                  )}
                 </div>
               )}
             </div>
@@ -594,6 +617,26 @@ export const Header: React.FC<HeaderProps> = ({
                     </button>
                   ))}
                 </div>
+              </div>
+            )}
+
+            {/* Mobile Sign Out Action */}
+            {onSignOut && (
+              <div className="pt-2 border-t border-slate-100 dark:border-neutral-800 mt-2">
+                <button
+                  onClick={() => {
+                    setIsMobileMenuOpen(false);
+                    onSignOut();
+                  }}
+                  className={`w-full flex items-center gap-2 px-3 py-2 rounded-lg text-xs font-semibold transition-colors cursor-pointer text-left ${
+                    isDark
+                      ? "bg-rose-950/30 text-rose-400 hover:bg-rose-900/40"
+                      : "bg-rose-50 text-rose-700 hover:bg-rose-100"
+                  }`}
+                >
+                  <LogOut className="w-3.5 h-3.5" />
+                  <span>Sign Out of Workspace</span>
+                </button>
               </div>
             )}
           </div>

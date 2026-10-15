@@ -72,3 +72,47 @@ export interface AuditLogEntry {
   cryptoHash: string;
   status: "COMMITTED" | "VERIFIED";
 }
+
+export interface LoginCredentials {
+  email: string;
+  password: string;
+  rememberMe?: boolean;
+}
+
+export interface RegisterPayload {
+  name: string;
+  email: string;
+  password: string;
+  confirmPassword?: string;
+  role: UserRole;
+  tenantId?: string;
+  tenantName?: string;
+  acceptedTerms?: boolean;
+}
+
+export interface AuthSession {
+  user: UserProfile;
+  tenant: TenantOrganization;
+  isAuthenticated: boolean;
+  token: string;
+  loginTime: string;
+  rememberMe: boolean;
+}
+
+export interface AuthResult {
+  success: boolean;
+  session?: AuthSession;
+  error?: string;
+  fieldErrors?: Record<string, string>;
+  message?: string;
+}
+
+export interface PasswordResetRequest {
+  email: string;
+}
+
+export interface PasswordResetResult {
+  success: boolean;
+  message: string;
+  error?: string;
+}

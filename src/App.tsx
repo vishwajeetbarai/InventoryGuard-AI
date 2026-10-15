@@ -34,9 +34,12 @@ import { ExecutiveReportModal } from "./components/ExecutiveReportModal";
 import { WmsDataIngestionModal } from "./components/WmsDataIngestionModal";
 import { AuditLedgerModal } from "./components/AuditLedgerModal";
 import { LandingPage } from "./components/LandingPage";
+import { SignInPage } from "./components/auth/SignInPage";
+import { SignUpPage } from "./components/auth/SignUpPage";
+import { ForgotPasswordPage } from "./components/auth/ForgotPasswordPage";
 import { StorageService, CustomDatasetPayload } from "./services/storageService";
-import { UserProfile, TenantOrganization, UserRole, AuditLogEntry } from "./types/auth";
-import { USER_ROLES, DEMO_USERS, TENANT_ORGANIZATIONS } from "./services/authService";
+import { UserProfile, TenantOrganization, UserRole, AuditLogEntry, AuthSession } from "./types/auth";
+import { USER_ROLES, DEMO_USERS, TENANT_ORGANIZATIONS, AuthService } from "./services/authService";
 import { generateSupplyChainAuditCsv, triggerCsvDownload } from "./utils/exportCsv";
 import {
   DispatchedPoRecord,
@@ -125,12 +128,25 @@ export default function App() {
   });
 
   // Multi-Tenant Authentication & Session State
-  const [currentUser, setCurrentUser] = useState<UserProfile>(() =>
-    StorageService.getCurrentUser()
+  const [session, setSession] = useState<AuthSession | null>(() =>
+    StorageService.getAuthSession()
   );
-  const [currentTenant, setCurrentTenant] = useState<TenantOrganization>(() =>
-    StorageService.getCurrentTenant()
-  );
+  const isAuthenticated = !!(session && session.isAuthenticated);
+
+  const [currentUser, setCurrentUser] = useState<UserProfile>(() => {
+    const s = StorageService.getAuthSession();
+    if (s && s.user) return s.user;
+    return StorageService.getCurrentUser();
+  });
+
+  const [currentTenant, setCurrentTenant] = useState<TenantOrganization>(() => {
+    const s = StorageService.getAuthSession();
+    if (s && s.tenant) return s.tenant;
+    return StorageService.getCurrentTenant();
+  });
+
+  const [pendingRedirectUrl, setPendingRedirectUrl] = useState<string | null>(null);
+
   const [customDataset, setCustomDataset] = useState<CustomDatasetPayload | null>(() =>
     StorageService.getCustomDataset()
   );
@@ -170,11 +186,27 @@ export default function App() {
   const [forecastModel, setForecastModel] = useState<ForecastModel>("META_PROPHET");
   const [currency, setCurrency] = useState<CurrencyCode>(() => getStoredCurrency());
 
-  // View mode: Public Enterprise Landing Page vs Internal Enterprise Workspace
-  const [viewMode, setViewMode] = useState<"landing" | "app">(() => {
+  // View mode: 'landing' | 'login' | 'signup' | 'forgot-password' | 'app'
+  const [viewMode, setViewMode] = useState<"landing" | "login" | "signup" | "forgot-password" | "app">(() => {
     if (typeof window !== "undefined") {
-      const hash = window.location.hash;
-      if (hash === "#app" || hash.startsWith("#app/")) return "app";
+      const hash = window.location.hash.toLowerCase();
+      const pathname = window.location.pathname.toLowerCase();
+      const activeSession = StorageService.getAuthSession();
+
+      if (hash === "#login" || pathname === "/login") {
+        return activeSession?.isAuthenticated ? "app" : "login";
+      }
+      if (hash === "#signup" || pathname === "/signup") {
+        return activeSession?.isAuthenticated ? "app" : "signup";
+      }
+      if (hash === "#forgot-password" || pathname === "/forgot-password") {
+        return "forgot-password";
+      }
+      if (hash === "#app" || hash.startsWith("#app/") || pathname === "/app" || pathname.startsWith("/app/")) {
+        // Protected route
+        if (activeSession?.isAuthenticated) return "app";
+        return "login";
+      }
     }
     return "landing";
   });
@@ -270,25 +302,79 @@ export default function App() {
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, []);
 
-  // Synchronize viewMode with browser hash navigation
+  // Synchronize viewMode with browser hash navigation and protect internal routes
   useEffect(() => {
-    const handleHashChange = () => {
-      const hash = window.location.hash;
-      if (hash === "#app" || hash.startsWith("#app/")) {
-        setViewMode("app");
-        if (hash === "#app/inventory") setActivePage("inventory");
-        else if (hash === "#app/procurement") setActivePage("procurement");
-        else if (hash === "#app/operations") setActivePage("operations");
-        else if (hash === "#app/overview") setActivePage("overview");
-      } else if (hash === "" || hash === "#" || hash === "#landing") {
+    const handleLocationChange = () => {
+      const hash = window.location.hash.toLowerCase();
+      const pathname = window.location.pathname.toLowerCase();
+      const activeSession = StorageService.getAuthSession();
+
+      if (hash === "#login" || pathname === "/login") {
+        if (activeSession?.isAuthenticated) {
+          setViewMode("app");
+          window.location.hash = "app/overview";
+        } else {
+          setViewMode("login");
+        }
+      } else if (hash === "#signup" || pathname === "/signup") {
+        if (activeSession?.isAuthenticated) {
+          setViewMode("app");
+          window.location.hash = "app/overview";
+        } else {
+          setViewMode("signup");
+        }
+      } else if (hash === "#forgot-password" || pathname === "/forgot-password") {
+        setViewMode("forgot-password");
+      } else if (hash === "#app" || hash.startsWith("#app/") || pathname === "/app" || pathname.startsWith("/app/")) {
+        // Protected internal route check
+        if (activeSession?.isAuthenticated) {
+          setViewMode("app");
+          if (hash === "#app/inventory" || pathname === "/app/inventory") setActivePage("inventory");
+          else if (hash === "#app/procurement" || pathname === "/app/procurement") setActivePage("procurement");
+          else if (hash === "#app/operations" || pathname === "/app/operations") setActivePage("operations");
+          else setActivePage("overview");
+        } else {
+          // Unauthenticated visitor -> Redirect to login and save destination
+          const requested = hash ? hash.replace(/^#/, "") : "app/overview";
+          setPendingRedirectUrl(requested);
+          setViewMode("login");
+          window.location.hash = "login";
+          addToast({
+            type: "warning",
+            title: "Authentication Required",
+            message: "Sign in with your corporate workspace account to access the Control Tower.",
+          });
+        }
+      } else if (hash === "" || hash === "#" || hash === "#landing" || pathname === "/") {
         setViewMode("landing");
       }
     };
-    window.addEventListener("hashchange", handleHashChange);
-    return () => window.removeEventListener("hashchange", handleHashChange);
+
+    window.addEventListener("hashchange", handleLocationChange);
+    window.addEventListener("popstate", handleLocationChange);
+    return () => {
+      window.removeEventListener("hashchange", handleLocationChange);
+      window.removeEventListener("popstate", handleLocationChange);
+    };
   }, []);
 
   const handleEnterApp = (targetPage: AppPage = "overview", targetTab?: string) => {
+    const activeSession = StorageService.getAuthSession();
+
+    // If not authenticated, route to Sign In page with destination intent
+    if (!activeSession?.isAuthenticated) {
+      setPendingRedirectUrl(`app/${targetPage}`);
+      setViewMode("login");
+      window.location.hash = "login";
+      window.scrollTo({ top: 0, behavior: "smooth" });
+      addToast({
+        type: "info",
+        title: "Workspace Sign In",
+        message: "Please sign in with your corporate account or use quick demo access to enter.",
+      });
+      return;
+    }
+
     setActivePage(targetPage);
     if (targetTab) {
       if (
@@ -312,6 +398,80 @@ export default function App() {
     setViewMode("landing");
     window.location.hash = "";
     window.scrollTo({ top: 0, behavior: "smooth" });
+  };
+
+  const handleNavigateToSignIn = () => {
+    const activeSession = StorageService.getAuthSession();
+    if (activeSession?.isAuthenticated) {
+      setViewMode("app");
+      window.location.hash = `app/${activePage}`;
+    } else {
+      setViewMode("login");
+      window.location.hash = "login";
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    }
+  };
+
+  const handleNavigateToSignUp = () => {
+    const activeSession = StorageService.getAuthSession();
+    if (activeSession?.isAuthenticated) {
+      setViewMode("app");
+      window.location.hash = `app/${activePage}`;
+    } else {
+      setViewMode("signup");
+      window.location.hash = "signup";
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    }
+  };
+
+  const handleNavigateToForgotPassword = () => {
+    setViewMode("forgot-password");
+    window.location.hash = "forgot-password";
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  };
+
+  const handleLoginSuccess = (role?: UserRole) => {
+    const activeSession = StorageService.getAuthSession();
+    if (activeSession) {
+      setSession(activeSession);
+      setCurrentUser(activeSession.user);
+      setCurrentTenant(activeSession.tenant);
+    }
+
+    const destination = pendingRedirectUrl || "app/overview";
+    setPendingRedirectUrl(null);
+
+    // Apply destination page
+    if (destination.includes("inventory")) setActivePage("inventory");
+    else if (destination.includes("procurement")) setActivePage("procurement");
+    else if (destination.includes("operations")) setActivePage("operations");
+    else setActivePage("overview");
+
+    setViewMode("app");
+    window.location.hash = destination.startsWith("#") ? destination : `#${destination}`;
+    window.scrollTo({ top: 0, behavior: "smooth" });
+
+    addToast({
+      type: "success",
+      title: "Workspace Session Authenticated",
+      message: `Welcome, ${activeSession?.user.name || "Authorized User"}! (${USER_ROLES[activeSession?.user.role || role || "INVENTORY_MANAGER"].title})`,
+      meta: {
+        code: USER_ROLES[activeSession?.user.role || role || "INVENTORY_MANAGER"].badgeLabel,
+      },
+    });
+  };
+
+  const handleSignOut = () => {
+    AuthService.logout();
+    setSession(null);
+    setViewMode("landing");
+    window.location.hash = "";
+    window.scrollTo({ top: 0, behavior: "smooth" });
+    addToast({
+      type: "info",
+      title: "Signed Out Gracefully",
+      message: "Your workstation session has been closed.",
+    });
   };
 
   // Fetch /app.py content for code viewer
@@ -432,6 +592,15 @@ export default function App() {
     };
     setCurrentUser(updatedUser);
     StorageService.setCurrentUser(updatedUser);
+
+    if (session) {
+      const updatedSession: AuthSession = {
+        ...session,
+        user: updatedUser,
+      };
+      setSession(updatedSession);
+      StorageService.saveAuthSession(updatedSession);
+    }
 
     addToast({
       type: "info",
@@ -973,6 +1142,36 @@ export default function App() {
           currency={currency}
           onSelectCurrency={setCurrency}
           onEnterApp={handleEnterApp}
+          onNavigateToSignIn={handleNavigateToSignIn}
+          onNavigateToSignUp={handleNavigateToSignUp}
+          isAuthenticated={isAuthenticated}
+          currentUser={currentUser}
+          onSignOut={handleSignOut}
+        />
+      ) : viewMode === "login" ? (
+        <SignInPage
+          theme={theme}
+          onToggleTheme={handleToggleTheme}
+          onSuccess={handleLoginSuccess}
+          onNavigateToSignUp={handleNavigateToSignUp}
+          onNavigateToForgotPassword={handleNavigateToForgotPassword}
+          onNavigateToLanding={handleGoToLanding}
+          redirectUrl={pendingRedirectUrl || undefined}
+        />
+      ) : viewMode === "signup" ? (
+        <SignUpPage
+          theme={theme}
+          onToggleTheme={handleToggleTheme}
+          onSuccess={handleLoginSuccess}
+          onNavigateToSignIn={handleNavigateToSignIn}
+          onNavigateToLanding={handleGoToLanding}
+        />
+      ) : viewMode === "forgot-password" ? (
+        <ForgotPasswordPage
+          theme={theme}
+          onToggleTheme={handleToggleTheme}
+          onNavigateToSignIn={handleNavigateToSignIn}
+          onNavigateToLanding={handleGoToLanding}
         />
       ) : (
         <>
@@ -1000,6 +1199,7 @@ export default function App() {
             currentCurrency={currency}
             onSelectCurrency={setCurrency}
             onGoToLanding={handleGoToLanding}
+            onSignOut={handleSignOut}
           />
 
       {/* Main Spacious Content Canvas with Generous Footer Spacing */}

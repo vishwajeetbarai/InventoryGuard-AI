@@ -35,8 +35,11 @@ import {
   Calendar,
   Check,
   Users,
+  LogIn,
+  UserPlus,
 } from "lucide-react";
 import { CurrencyCode, AppPage, Warehouse } from "../types";
+import { UserProfile } from "../types/auth";
 import { CURRENCIES, formatCurrency, convertFromInr, convertToInr } from "../utils/currency";
 import { WAREHOUSES, SKUS } from "../engine/supplyChainEngine";
 
@@ -46,6 +49,11 @@ interface LandingPageProps {
   currency: CurrencyCode;
   onSelectCurrency: (curr: CurrencyCode) => void;
   onEnterApp: (targetPage?: AppPage, targetTab?: string) => void;
+  onNavigateToSignIn?: () => void;
+  onNavigateToSignUp?: () => void;
+  isAuthenticated?: boolean;
+  currentUser?: UserProfile | null;
+  onSignOut?: () => void;
 }
 
 export const LandingPage: React.FC<LandingPageProps> = ({
@@ -54,6 +62,11 @@ export const LandingPage: React.FC<LandingPageProps> = ({
   currency,
   onSelectCurrency,
   onEnterApp,
+  onNavigateToSignIn,
+  onNavigateToSignUp,
+  isAuthenticated = false,
+  currentUser,
+  onSignOut,
 }) => {
   const isDark = theme === "dark";
 
@@ -318,15 +331,66 @@ export const LandingPage: React.FC<LandingPageProps> = ({
                 {isDark ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
               </button>
 
-              {/* Launch Control Tower CTA */}
-              <button
-                onClick={() => onEnterApp("overview")}
-                className="flex items-center gap-2 px-3.5 sm:px-4 py-2 rounded-lg text-xs font-bold bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800 text-white shadow-sm transition-all cursor-pointer group"
-              >
-                <span className="w-2 h-2 rounded-full bg-emerald-300 animate-pulse" />
-                <span>Launch Control Tower</span>
-                <ArrowRight className="w-3.5 h-3.5 transition-transform group-hover:translate-x-0.5" />
-              </button>
+              {/* Authentication Actions */}
+              {isAuthenticated && currentUser ? (
+                <div className="flex items-center gap-2">
+                  <div
+                    className={`hidden sm:flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg border text-xs font-semibold ${
+                      isDark
+                        ? "bg-neutral-900 border-neutral-800 text-neutral-200"
+                        : "bg-slate-100 border-slate-200 text-slate-800"
+                    }`}
+                  >
+                    <span>{currentUser.avatar}</span>
+                    <span className="max-w-[90px] truncate">{currentUser.name.split(" ")[0]}</span>
+                  </div>
+
+                  <button
+                    onClick={() => onEnterApp("overview")}
+                    className="flex items-center gap-2 px-3.5 sm:px-4 py-2 rounded-lg text-xs font-bold bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800 text-white shadow-sm transition-all cursor-pointer group"
+                  >
+                    <span className="w-2 h-2 rounded-full bg-emerald-300 animate-pulse" />
+                    <span>Control Tower</span>
+                    <ArrowRight className="w-3.5 h-3.5 transition-transform group-hover:translate-x-0.5" />
+                  </button>
+                </div>
+              ) : (
+                <div className="flex items-center gap-2">
+                  {onNavigateToSignIn && (
+                    <button
+                      onClick={onNavigateToSignIn}
+                      className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg border text-xs font-semibold transition-colors cursor-pointer ${
+                        isDark
+                          ? "bg-neutral-900 hover:bg-neutral-800 border-neutral-700 text-neutral-200"
+                          : "bg-white hover:bg-slate-50 border-slate-200 text-slate-700 shadow-xs"
+                      }`}
+                    >
+                      <LogIn className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
+                      <span>Sign In</span>
+                    </button>
+                  )}
+
+                  {onNavigateToSignUp && (
+                    <button
+                      onClick={onNavigateToSignUp}
+                      className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-700 dark:text-emerald-300 border border-emerald-500/30 transition-all cursor-pointer"
+                    >
+                      <UserPlus className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
+                      <span>Get Started</span>
+                    </button>
+                  )}
+
+                  {/* Launch Control Tower CTA */}
+                  <button
+                    onClick={() => onEnterApp("overview")}
+                    className="flex items-center gap-1.5 px-3.5 sm:px-4 py-2 rounded-lg text-xs font-bold bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800 text-white shadow-sm transition-all cursor-pointer group"
+                  >
+                    <span className="w-2 h-2 rounded-full bg-emerald-300 animate-pulse" />
+                    <span className="hidden sm:inline">Launch</span> Control Tower
+                    <ArrowRight className="w-3.5 h-3.5 transition-transform group-hover:translate-x-0.5" />
+                  </button>
+                </div>
+              )}
             </div>
           </div>
         </div>

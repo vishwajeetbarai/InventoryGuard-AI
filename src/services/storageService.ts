@@ -1,10 +1,12 @@
 import { DispatchedPoRecord, SkuMetadata, DailyRecord, Warehouse } from "../types";
-import { AuditLogEntry, UserProfile, TenantOrganization } from "../types/auth";
+import { AuditLogEntry, UserProfile, TenantOrganization, AuthSession } from "../types/auth";
 import { DEMO_USERS, TENANT_ORGANIZATIONS } from "./authService";
 
 const STORAGE_KEYS = {
   CURRENT_USER: "aegis_current_user_v1",
   CURRENT_TENANT: "aegis_current_tenant_v1",
+  AUTH_SESSION: "aegis_auth_session_v1",
+  REGISTERED_USERS: "aegis_registered_users_v1",
   DISPATCHED_LEDGER: "aegis_dispatched_ledger_v1",
   APPROVED_TRANSFERS: "aegis_approved_transfers_v1",
   AUDIT_LOGS: "aegis_audit_logs_v1",
@@ -68,10 +70,88 @@ export interface CustomDatasetPayload {
 
 export class StorageService {
   /**
+   * Enterprise Authentication Session
+   */
+  static getAuthSession(): AuthSession | null {
+    try {
+      // Check localStorage first (remember me), then sessionStorage
+      const persistent = localStorage.getItem(STORAGE_KEYS.AUTH_SESSION);
+      if (persistent) {
+        const parsed = JSON.parse(persistent) as AuthSession;
+        if (parsed && parsed.isAuthenticated && parsed.user) return parsed;
+      }
+      const transient = sessionStorage.getItem(STORAGE_KEYS.AUTH_SESSION);
+      if (transient) {
+        const parsed = JSON.parse(transient) as AuthSession;
+        if (parsed && parsed.isAuthenticated && parsed.user) return parsed;
+      }
+    } catch (e) {
+      console.warn("Storage auth session load error:", e);
+    }
+    return null;
+  }
+
+  static saveAuthSession(session: AuthSession | null): void {
+    try {
+      if (!session) {
+        localStorage.removeItem(STORAGE_KEYS.AUTH_SESSION);
+        sessionStorage.removeItem(STORAGE_KEYS.AUTH_SESSION);
+        return;
+      }
+      const serialized = JSON.stringify(session);
+      if (session.rememberMe) {
+        localStorage.setItem(STORAGE_KEYS.AUTH_SESSION, serialized);
+        sessionStorage.removeItem(STORAGE_KEYS.AUTH_SESSION);
+      } else {
+        sessionStorage.setItem(STORAGE_KEYS.AUTH_SESSION, serialized);
+        localStorage.removeItem(STORAGE_KEYS.AUTH_SESSION);
+      }
+      // Keep legacy keys synced for backward compatibility
+      this.setCurrentUser(session.user);
+      this.setCurrentTenant(session.tenant);
+    } catch (e) {
+      console.warn("Storage auth session save error:", e);
+    }
+  }
+
+  static clearAuthSession(): void {
+    try {
+      localStorage.removeItem(STORAGE_KEYS.AUTH_SESSION);
+      sessionStorage.removeItem(STORAGE_KEYS.AUTH_SESSION);
+    } catch (e) {
+      console.warn("Storage clear session error:", e);
+    }
+  }
+
+  /**
+   * Local registered users database simulation
+   */
+  static getRegisteredUsers(): Record<string, { user: UserProfile; passwordHash: string; tenant: TenantOrganization }> {
+    try {
+      const data = localStorage.getItem(STORAGE_KEYS.REGISTERED_USERS);
+      if (data) return JSON.parse(data);
+    } catch (e) {
+      console.warn("Storage registered users load error:", e);
+    }
+    return {};
+  }
+
+  static saveRegisteredUsers(users: Record<string, { user: UserProfile; passwordHash: string; tenant: TenantOrganization }>): void {
+    try {
+      localStorage.setItem(STORAGE_KEYS.REGISTERED_USERS, JSON.stringify(users));
+    } catch (e) {
+      console.warn("Storage registered users save error:", e);
+    }
+  }
+
+  /**
    * Current authenticated user profile
    */
   static getCurrentUser(): UserProfile {
     try {
+      const session = this.getAuthSession();
+      if (session && session.user) return session.user;
+
       const data = localStorage.getItem(STORAGE_KEYS.CURRENT_USER);
       if (data) return JSON.parse(data);
     } catch (e) {
@@ -93,6 +173,9 @@ export class StorageService {
    */
   static getCurrentTenant(): TenantOrganization {
     try {
+      const session = this.getAuthSession();
+      if (session && session.tenant) return session.tenant;
+
       const data = localStorage.getItem(STORAGE_KEYS.CURRENT_TENANT);
       if (data) return JSON.parse(data);
     } catch (e) {
