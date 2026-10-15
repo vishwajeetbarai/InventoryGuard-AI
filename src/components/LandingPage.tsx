@@ -37,6 +37,8 @@ import {
   Users,
   LogIn,
   UserPlus,
+  Menu,
+  X,
 } from "lucide-react";
 import { CurrencyCode, AppPage, Warehouse } from "../types";
 import { UserProfile } from "../types/auth";
