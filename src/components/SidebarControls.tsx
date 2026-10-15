@@ -467,7 +467,7 @@ export const SidebarControls: React.FC<SidebarControlsProps> = ({
 
       {/* 6. Stress Test / Sandbox */}
       <div className={`pt-3 border-t ${borderCls} space-y-4`}>
-        <div className="text-xs font-bold text-amber-500 uppercase tracking-wider flex items-center gap-1.5">
+        <div className="text-xs font-bold text-amber-700 dark:text-amber-400 uppercase tracking-wider flex items-center gap-1.5">
           <Flame className="w-3.5 h-3.5" />
           <span>Stress-Test &amp; Promo Sandbox</span>
         </div>
@@ -476,7 +476,7 @@ export const SidebarControls: React.FC<SidebarControlsProps> = ({
         <div className="space-y-1.5">
           <div className="flex items-center justify-between text-xs">
             <span className={labelCls}>Flash Sale Surge</span>
-            <span className="font-mono text-amber-500 font-bold">
+            <span className="font-mono text-amber-700 dark:text-amber-400 font-bold">
               +{promoSurgePct}%
             </span>
           </div>
@@ -495,10 +495,10 @@ export const SidebarControls: React.FC<SidebarControlsProps> = ({
         <div className="space-y-1.5">
           <div className="flex items-center justify-between text-xs">
             <span className={`flex items-center gap-1 ${labelCls}`}>
-              <CloudRain className="w-3.5 h-3.5 text-sky-400" />
+              <CloudRain className="w-3.5 h-3.5 text-sky-600 dark:text-sky-400" />
               <span>Weather Shock Impact</span>
             </span>
-            <span className="font-mono text-sky-400 font-bold">
+            <span className="font-mono text-sky-700 dark:text-sky-400 font-bold">
               +{weatherSurgePct}% Rain
             </span>
           </div>
@@ -521,10 +521,10 @@ export const SidebarControls: React.FC<SidebarControlsProps> = ({
         <div className="space-y-1.5">
           <div className="flex items-center justify-between text-xs">
             <span className={`flex items-center gap-1 ${labelCls}`}>
-              <Truck className="w-3 h-3 text-slate-400" />
+              <Truck className="w-3 h-3 text-slate-500 dark:text-neutral-400" />
               <span>Supplier Delay Shock</span>
             </span>
-            <span className="font-mono text-amber-500 font-bold">
+            <span className="font-mono text-amber-700 dark:text-amber-400 font-bold">
               +{supplierDelayDays.toFixed(1)} Days
             </span>
           </div>

@@ -259,7 +259,7 @@ export const FacilityPerformanceMatrix: React.FC<FacilityPerformanceMatrixProps>
                         {fm.warehouse.name}
                       </span>
                     </div>
-                    <div className="text-xs text-slate-500 dark:text-neutral-400 mt-0.5 flex items-center gap-1.5 font-medium">
+                    <div className="text-xs text-slate-600 dark:text-neutral-400 mt-0.5 flex items-center gap-1.5 font-medium">
                       <span>{fm.warehouse.city}</span>
                       <span>·</span>
                       <span className="font-mono">{fm.warehouse.id}</span>
@@ -339,13 +339,13 @@ export const FacilityPerformanceMatrix: React.FC<FacilityPerformanceMatrixProps>
                         : "bg-white border-slate-200"
                     }`}
                   >
-                    <span className="text-[10px] text-slate-500 dark:text-neutral-400 block font-medium">
+                    <span className="text-[10px] text-slate-600 dark:text-neutral-400 block font-semibold">
                       Inventory Value
                     </span>
                     <span className="font-extrabold text-sm text-slate-950 dark:text-white block mt-0.5">
                       {formatCurrency(fm.totalValuation, currency)}
                     </span>
-                    <span className="text-[10px] font-mono text-slate-500 dark:text-neutral-400">
+                    <span className="text-[10px] font-mono text-slate-600 dark:text-neutral-400 font-medium">
                       {fm.totalUnits.toLocaleString()} units
                     </span>
                   </div>
@@ -357,7 +357,7 @@ export const FacilityPerformanceMatrix: React.FC<FacilityPerformanceMatrixProps>
                         : "bg-white border-slate-200"
                     }`}
                   >
-                    <span className="text-[10px] text-slate-500 dark:text-neutral-400 block font-medium">
+                    <span className="text-[10px] text-slate-600 dark:text-neutral-400 block font-semibold">
                       Avg Stockout Risk
                     </span>
                     <span
@@ -371,7 +371,7 @@ export const FacilityPerformanceMatrix: React.FC<FacilityPerformanceMatrixProps>
                     >
                       {fm.avgStockoutRisk.toFixed(1)}%
                     </span>
-                    <span className="text-[10px] text-slate-500 dark:text-neutral-400">
+                    <span className="text-[10px] text-slate-600 dark:text-neutral-400 font-medium">
                       {fm.criticalCount} urgent orders
                     </span>
                   </div>

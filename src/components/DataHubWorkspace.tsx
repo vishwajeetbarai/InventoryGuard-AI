@@ -406,7 +406,7 @@ export const DataHubWorkspace: React.FC<DataHubWorkspaceProps> = ({
               <p className="text-[11px] text-slate-500 dark:text-neutral-400 mt-1">
                 or click anywhere to browse from your local device
               </p>
-              <div className="mt-3 flex items-center justify-center gap-2 text-[10px] text-slate-400">
+              <div className="mt-3 flex items-center justify-center gap-2 text-[10px] text-slate-700 dark:text-neutral-300 font-semibold">
                 <span className="px-2 py-0.5 rounded bg-slate-200 dark:bg-neutral-800 font-mono">
                   sku_id
                 </span>

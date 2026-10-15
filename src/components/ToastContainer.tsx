@@ -123,8 +123,8 @@ const ToastCard: React.FC<ToastCardProps> = ({ toast, onDismiss, isDark }) => {
           <div className="flex items-center justify-between gap-2">
             <h4 className="text-xs font-bold truncate">{toast.title}</h4>
             <span
-              className={`text-[10px] shrink-0 ${
-                isDark ? "text-slate-400" : "text-slate-400"
+              className={`text-[10px] shrink-0 font-medium ${
+                isDark ? "text-neutral-400" : "text-slate-500"
               }`}
             >
               {toast.timestamp}
@@ -133,29 +133,31 @@ const ToastCard: React.FC<ToastCardProps> = ({ toast, onDismiss, isDark }) => {
 
           <p
             className={`text-xs mt-1 leading-relaxed ${
-              isDark ? "text-slate-300" : "text-slate-600"
+              isDark ? "text-neutral-200" : "text-slate-800 font-medium"
             }`}
           >
             {toast.message}
           </p>
 
           {toast.meta && (
-            <div className="mt-2 pt-2 border-t border-slate-700/40 flex flex-wrap items-center gap-2 text-[10px] font-mono">
+            <div className={`mt-2 pt-2 border-t flex flex-wrap items-center gap-2 text-[10px] font-mono ${isDark ? "border-slate-800" : "border-slate-200"}`}>
               {toast.meta.code && (
-                <span className="px-1.5 py-0.5 rounded bg-indigo-500/15 text-indigo-400 font-semibold border border-indigo-500/30">
+                <span className="px-1.5 py-0.5 rounded bg-indigo-500/15 text-indigo-700 dark:text-indigo-400 font-bold border border-indigo-500/30">
                   {toast.meta.code}
                 </span>
               )}
               {toast.meta.hash && (
                 <span
-                  className="px-1.5 py-0.5 rounded bg-slate-800 text-slate-400 truncate max-w-[150px]"
+                  className={`px-1.5 py-0.5 rounded truncate max-w-[150px] border ${
+                    isDark ? "bg-slate-800 text-slate-300 border-slate-700" : "bg-slate-100 text-slate-700 border-slate-200 font-medium"
+                  }`}
                   title={toast.meta.hash}
                 >
                   SHA-256: {toast.meta.hash.slice(0, 8)}...
                 </span>
               )}
               {toast.meta.latency && (
-                <span className="px-1.5 py-0.5 rounded bg-emerald-500/10 text-emerald-400">
+                <span className="px-1.5 py-0.5 rounded bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 font-bold">
                   ⚡ {toast.meta.latency}
                 </span>
               )}
@@ -168,7 +170,7 @@ const ToastCard: React.FC<ToastCardProps> = ({ toast, onDismiss, isDark }) => {
           className={`p-1 rounded-md transition-colors cursor-pointer shrink-0 ${
             isDark
               ? "text-slate-400 hover:text-white hover:bg-slate-800"
-              : "text-slate-400 hover:text-slate-700 hover:bg-slate-100"
+              : "text-slate-500 hover:text-slate-900 hover:bg-slate-100"
           }`}
           aria-label="Dismiss toast"
         >

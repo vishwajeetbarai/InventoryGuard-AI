@@ -99,7 +99,7 @@ export const KpiMetrics: React.FC<KpiMetricsProps> = ({
             </span>
           </div>
 
-          <div className="mt-1 text-xs text-slate-500 dark:text-neutral-400 flex items-center gap-1.5 font-medium">
+          <div className="mt-1 text-xs text-slate-600 dark:text-neutral-400 flex items-center gap-1.5 font-medium">
             <span>On-hand stock valuation</span>
             <span>·</span>
             <span>Active catalog</span>
@@ -173,7 +173,7 @@ export const KpiMetrics: React.FC<KpiMetricsProps> = ({
             </span>
           </div>
 
-          <div className="mt-1 text-xs text-slate-500 dark:text-neutral-400 flex items-center gap-1.5 font-medium">
+          <div className="mt-1 text-xs text-slate-600 dark:text-neutral-400 flex items-center gap-1.5 font-medium">
             <span>Stochastic ROP breached</span>
             <span>·</span>
             <span>Demand surge risk</span>
@@ -248,7 +248,7 @@ export const KpiMetrics: React.FC<KpiMetricsProps> = ({
             </span>
           </div>
 
-          <div className="mt-1 text-xs text-slate-500 dark:text-neutral-400 flex items-center gap-1.5 font-medium">
+          <div className="mt-1 text-xs text-slate-600 dark:text-neutral-400 flex items-center gap-1.5 font-medium">
             <span>Potential revenue leakage</span>
             <span>·</span>
             <span>Unserved orders</span>
@@ -304,7 +304,7 @@ export const KpiMetrics: React.FC<KpiMetricsProps> = ({
             </span>
           </div>
 
-          <div className="mt-1 text-xs text-slate-500 dark:text-neutral-400 flex items-center gap-1.5 font-medium">
+          <div className="mt-1 text-xs text-slate-600 dark:text-neutral-400 flex items-center gap-1.5 font-medium">
             <span>Dynamic normal safety buffer</span>
             <span>·</span>
             <span>Dual-variance</span>

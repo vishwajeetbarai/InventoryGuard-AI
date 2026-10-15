@@ -170,7 +170,9 @@ export const PayloadInspectModal: React.FC<PayloadInspectModalProps> = ({
               className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
                 activeTab === "json"
                   ? "bg-indigo-600 text-white shadow-sm shadow-indigo-600/30"
-                  : "text-slate-400 hover:text-slate-200"
+                  : isDark
+                  ? "text-slate-400 hover:text-slate-200"
+                  : "text-slate-600 hover:text-slate-950 font-medium"
               }`}
             >
               <FileCode className="w-3.5 h-3.5" />
@@ -182,7 +184,9 @@ export const PayloadInspectModal: React.FC<PayloadInspectModalProps> = ({
               className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
                 activeTab === "edi"
                   ? "bg-indigo-600 text-white shadow-sm shadow-indigo-600/30"
-                  : "text-slate-400 hover:text-slate-200"
+                  : isDark
+                  ? "text-slate-400 hover:text-slate-200"
+                  : "text-slate-600 hover:text-slate-950 font-medium"
               }`}
             >
               <FileText className="w-3.5 h-3.5" />
@@ -194,7 +198,9 @@ export const PayloadInspectModal: React.FC<PayloadInspectModalProps> = ({
               className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
                 activeTab === "verify"
                   ? "bg-indigo-600 text-white shadow-sm shadow-indigo-600/30"
-                  : "text-slate-400 hover:text-slate-200"
+                  : isDark
+                  ? "text-slate-400 hover:text-slate-200"
+                  : "text-slate-600 hover:text-slate-950 font-medium"
               }`}
             >
               <Code2 className="w-3.5 h-3.5" />
@@ -217,8 +223,8 @@ export const PayloadInspectModal: React.FC<PayloadInspectModalProps> = ({
             >
               {copiedKey === activeTab ? (
                 <>
-                  <Check className="w-3.5 h-3.5 text-emerald-400" />
-                  <span className="text-emerald-400">Copied</span>
+                  <Check className="w-3.5 h-3.5 text-emerald-500" />
+                  <span className="text-emerald-600 dark:text-emerald-400 font-bold">Copied</span>
                 </>
               ) : (
                 <>
@@ -236,32 +242,32 @@ export const PayloadInspectModal: React.FC<PayloadInspectModalProps> = ({
             {/* Live Webhook Dispatch Card */}
             <div className={`p-4 rounded-xl border ${isDark ? "bg-slate-950/60 border-slate-800" : "bg-slate-50 border-slate-200"}`}>
               <div className="flex items-center justify-between mb-2">
-                <label className="font-bold text-slate-200 flex items-center gap-1.5">
-                  <Globe className="w-4 h-4 text-emerald-400" />
+                <label className={`font-bold flex items-center gap-1.5 ${isDark ? "text-slate-200" : "text-slate-900"}`}>
+                  <Globe className="w-4 h-4 text-emerald-500" />
                   <span>Live Target Webhook Endpoint (HTTPS POST)</span>
                 </label>
 
                 {/* Presets */}
                 <div className="flex items-center gap-2">
-                  <span className="text-[10px] text-slate-400">Live Test Presets:</span>
+                  <span className={`text-[10px] ${isDark ? "text-slate-400" : "text-slate-600 font-medium"}`}>Live Test Presets:</span>
                   <button
                     onClick={() => setCustomEndpointUrl("https://httpbin.org/post")}
-                    className="text-[10px] text-emerald-400 hover:underline cursor-pointer font-bold"
+                    className="text-[10px] text-emerald-700 dark:text-emerald-400 hover:underline cursor-pointer font-bold"
                     title="Live Public Reflector (Returns 200 OK + reflects full HMAC headers)"
                   >
                     httpbin.org (Recommended)
                   </button>
-                  <span className="text-slate-600">·</span>
+                  <span className="text-slate-400">·</span>
                   <button
                     onClick={() => setCustomEndpointUrl("https://webhook.site/inventoryguard-live-test")}
-                    className="text-[10px] text-indigo-400 hover:underline cursor-pointer"
+                    className="text-[10px] text-indigo-700 dark:text-indigo-400 hover:underline cursor-pointer font-bold"
                   >
                     webhook.site
                   </button>
-                  <span className="text-slate-600">·</span>
+                  <span className="text-slate-400">·</span>
                   <button
                     onClick={() => setCustomEndpointUrl("https://hooks.slack.com/services/T00/B00/XXXX")}
-                    className="text-[10px] text-purple-400 hover:underline cursor-pointer"
+                    className="text-[10px] text-purple-700 dark:text-purple-400 hover:underline cursor-pointer font-bold"
                   >
                     Slack Webhook
                   </button>

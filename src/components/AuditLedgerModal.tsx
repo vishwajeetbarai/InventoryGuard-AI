@@ -210,17 +210,17 @@ export const AuditLedgerModal: React.FC<AuditLedgerModalProps> = ({
             ) : (
               filteredLogs.map((log) => {
                 const actionBadgeColors: Record<string, string> = {
-                  PO_DISPATCH: "bg-blue-500/10 text-blue-400 border-blue-500/20",
-                  INTER_TRANSFER_APPROVAL: "bg-amber-500/10 text-amber-400 border-amber-500/20",
-                  SLA_DEBIT_NOTE_ISSUED: "bg-rose-500/10 text-rose-400 border-rose-500/20",
-                  POLICY_MODIFIED: "bg-purple-500/10 text-purple-400 border-purple-500/20",
-                  WMS_DATA_INGESTED: "bg-emerald-500/10 text-emerald-400 border-emerald-500/20",
-                  SIMULATION_TRIGGERED: "bg-indigo-500/10 text-indigo-400 border-indigo-500/20",
-                  MARKDOWN_ACTIVATED: "bg-orange-500/10 text-orange-400 border-orange-500/20",
+                  PO_DISPATCH: "bg-blue-500/10 text-blue-700 dark:text-blue-400 border-blue-500/20",
+                  INTER_TRANSFER_APPROVAL: "bg-amber-500/10 text-amber-800 dark:text-amber-400 border-amber-500/20",
+                  SLA_DEBIT_NOTE_ISSUED: "bg-rose-500/10 text-rose-700 dark:text-rose-400 border-rose-500/20",
+                  POLICY_MODIFIED: "bg-purple-500/10 text-purple-700 dark:text-purple-400 border-purple-500/20",
+                  WMS_DATA_INGESTED: "bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border-emerald-500/20",
+                  SIMULATION_TRIGGERED: "bg-indigo-500/10 text-indigo-700 dark:text-indigo-400 border-indigo-500/20",
+                  MARKDOWN_ACTIVATED: "bg-orange-500/10 text-orange-700 dark:text-orange-400 border-orange-500/20",
                 };
 
                 const badgeCls =
-                  actionBadgeColors[log.actionType] || "bg-slate-500/10 text-slate-400 border-slate-500/20";
+                  actionBadgeColors[log.actionType] || "bg-slate-500/10 text-slate-700 dark:text-slate-400 border-slate-500/20";
 
                 return (
                   <div

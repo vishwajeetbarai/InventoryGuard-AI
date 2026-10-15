@@ -280,8 +280,8 @@ export const WmsDataIngestionModal: React.FC<WmsDataIngestionModalProps> = ({
             <div className="space-y-6 animate-in fade-in duration-150">
               {/* Preset Cards */}
               <div>
-                <label className="text-xs font-semibold uppercase tracking-wider text-slate-400 flex items-center gap-1.5 mb-2.5">
-                  <Sparkles className="w-3.5 h-3.5 text-amber-400" />
+                <label className="text-xs font-semibold uppercase tracking-wider text-slate-700 dark:text-neutral-400 flex items-center gap-1.5 mb-2.5">
+                  <Sparkles className="w-3.5 h-3.5 text-amber-500" />
                   <span>Option A: Load Instant Pilot Demonstration Dataset</span>
                 </label>
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
@@ -296,10 +296,10 @@ export const WmsDataIngestionModal: React.FC<WmsDataIngestionModalProps> = ({
                     }`}
                   >
                     <div className="flex items-center justify-between mb-1">
-                      <span className="text-xs font-bold text-emerald-400">⚡ Zepto / Blinkit FMCG</span>
-                      <span className="text-[10px] px-1.5 py-0.5 rounded bg-emerald-500/20 text-emerald-300 font-mono">12 SKUs</span>
+                      <span className="text-xs font-bold text-emerald-700 dark:text-emerald-400">⚡ Zepto / Blinkit FMCG</span>
+                      <span className="text-[10px] px-1.5 py-0.5 rounded bg-emerald-500/20 text-emerald-700 dark:text-emerald-300 font-mono font-bold">12 SKUs</span>
                     </div>
-                    <p className="text-[11px] text-slate-400 leading-relaxed">
+                    <p className="text-[11px] text-slate-600 dark:text-neutral-400 leading-relaxed font-medium">
                       Milk, avocados, cold brew, bakery with 1–4 day shelf life &amp; weather spikes.
                     </p>
                   </div>
@@ -315,10 +315,10 @@ export const WmsDataIngestionModal: React.FC<WmsDataIngestionModalProps> = ({
                     }`}
                   >
                     <div className="flex items-center justify-between mb-1">
-                      <span className="text-xs font-bold text-blue-400">🧪 Pharma Cold-Chain 3PL</span>
-                      <span className="text-[10px] px-1.5 py-0.5 rounded bg-blue-500/20 text-blue-300 font-mono">8 SKUs</span>
+                      <span className="text-xs font-bold text-blue-700 dark:text-blue-400">🧪 Pharma Cold-Chain 3PL</span>
+                      <span className="text-[10px] px-1.5 py-0.5 rounded bg-blue-500/20 text-blue-700 dark:text-blue-300 font-mono font-bold">8 SKUs</span>
                     </div>
-                    <p className="text-[11px] text-slate-400 leading-relaxed">
+                    <p className="text-[11px] text-slate-600 dark:text-neutral-400 leading-relaxed font-medium">
                       Insulin, pediatric vaccines, diagnostic kits with high stockout penalties.
                     </p>
                   </div>
@@ -334,10 +334,10 @@ export const WmsDataIngestionModal: React.FC<WmsDataIngestionModalProps> = ({
                     }`}
                   >
                     <div className="flex items-center justify-between mb-1">
-                      <span className="text-xs font-bold text-purple-400">🛍️ Retail &amp; Apparel D2C</span>
-                      <span className="text-[10px] px-1.5 py-0.5 rounded bg-purple-500/20 text-purple-300 font-mono">6 SKUs</span>
+                      <span className="text-xs font-bold text-purple-700 dark:text-purple-400">🛍️ Retail &amp; Apparel D2C</span>
+                      <span className="text-[10px] px-1.5 py-0.5 rounded bg-purple-500/20 text-purple-700 dark:text-purple-300 font-mono font-bold">6 SKUs</span>
                     </div>
-                    <p className="text-[11px] text-slate-400 leading-relaxed">
+                    <p className="text-[11px] text-slate-600 dark:text-neutral-400 leading-relaxed font-medium">
                       Activewear, audio tech, footwear with supplier delays &amp; seasonal variance.
                     </p>
                   </div>
@@ -346,8 +346,8 @@ export const WmsDataIngestionModal: React.FC<WmsDataIngestionModalProps> = ({
 
               {/* Upload Dropzone */}
               <div>
-                <label className="text-xs font-semibold uppercase tracking-wider text-slate-400 flex items-center gap-1.5 mb-2.5">
-                  <FileSpreadsheet className="w-3.5 h-3.5 text-indigo-400" />
+                <label className="text-xs font-semibold uppercase tracking-wider text-slate-700 dark:text-neutral-400 flex items-center gap-1.5 mb-2.5">
+                  <FileSpreadsheet className="w-3.5 h-3.5 text-indigo-500" />
                   <span>Option B: Upload Client WMS / ERP CSV File</span>
                 </label>
 
@@ -358,11 +358,11 @@ export const WmsDataIngestionModal: React.FC<WmsDataIngestionModalProps> = ({
                       : "border-slate-300 hover:border-indigo-500 bg-slate-50"
                   }`}
                 >
-                  <UploadCloud className="w-10 h-10 mx-auto text-indigo-400 mb-2" />
+                  <UploadCloud className="w-10 h-10 mx-auto text-indigo-500 mb-2" />
                   <p className="text-sm font-semibold mb-1">
                     Drag and drop your WMS inventory CSV / TSV file here
                   </p>
-                  <p className="text-xs text-slate-400 mb-4">
+                  <p className="text-xs text-slate-600 dark:text-neutral-400 mb-4 font-medium">
                     Supports SAP, BlueYonder, Oracle WMS, Increff, or custom Excel exports.
                   </p>
 
@@ -381,8 +381,8 @@ export const WmsDataIngestionModal: React.FC<WmsDataIngestionModalProps> = ({
               {/* Raw CSV Text Editor */}
               <div>
                 <div className="flex items-center justify-between mb-1.5">
-                  <label className="text-xs font-semibold uppercase tracking-wider text-slate-400 flex items-center gap-1.5">
-                    <FileText className="w-3.5 h-3.5 text-slate-400" />
+                  <label className="text-xs font-semibold uppercase tracking-wider text-slate-700 dark:text-neutral-400 flex items-center gap-1.5">
+                    <FileText className="w-3.5 h-3.5 text-slate-500" />
                     <span>Raw CSV Preview / Direct Paste</span>
                   </label>
                   <span className="text-[11px] text-slate-500 font-mono">
@@ -513,23 +513,23 @@ export const WmsDataIngestionModal: React.FC<WmsDataIngestionModalProps> = ({
 
               {/* Sample 2-Row Data Preview */}
               <div>
-                <label className="text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2 block">
+                <label className="text-xs font-semibold uppercase tracking-wider text-slate-700 dark:text-neutral-400 mb-2 block">
                   First 2 Rows Sample Data:
                 </label>
-                <div className="overflow-x-auto rounded-xl border border-slate-800">
+                <div className="overflow-x-auto rounded-xl border border-slate-300 dark:border-slate-800">
                   <table className="w-full text-[11px] text-left">
-                    <thead className={`text-slate-400 ${isDark ? "bg-slate-950" : "bg-slate-100"}`}>
+                    <thead className={isDark ? "text-neutral-400 bg-slate-950" : "text-slate-700 bg-slate-100"}>
                       <tr>
                         {parsedData.headers.slice(0, 6).map((h) => (
-                          <th key={h} className="p-2 font-mono">{h}</th>
+                          <th key={h} className="p-2 font-mono font-bold">{h}</th>
                         ))}
                       </tr>
                     </thead>
-                    <tbody className="divide-y divide-slate-800/60 font-mono">
+                    <tbody className="divide-y divide-slate-200 dark:divide-slate-800/60 font-mono">
                       {parsedData.rawRows.slice(0, 2).map((row, idx) => (
                         <tr key={idx} className={isDark ? "bg-slate-900/30" : "bg-white"}>
                           {parsedData.headers.slice(0, 6).map((h) => (
-                            <td key={h} className="p-2 text-slate-300">{row[h]}</td>
+                            <td key={h} className="p-2 text-slate-800 dark:text-slate-300">{row[h]}</td>
                           ))}
                         </tr>
                       ))}
@@ -542,7 +542,7 @@ export const WmsDataIngestionModal: React.FC<WmsDataIngestionModalProps> = ({
                 <button
                   onClick={() => setStep(1)}
                   className={`px-4 py-2 rounded-xl text-xs font-semibold transition-colors cursor-pointer ${
-                    isDark ? "bg-slate-800 hover:bg-slate-700 text-slate-300" : "bg-slate-200 text-slate-700"
+                    isDark ? "bg-slate-800 hover:bg-slate-700 text-slate-300" : "bg-slate-200 text-slate-700 hover:bg-slate-300"
                   }`}
                 >
                   ← Back to Upload
@@ -562,12 +562,12 @@ export const WmsDataIngestionModal: React.FC<WmsDataIngestionModalProps> = ({
           {step === 3 && (
             <div className="space-y-6 animate-in fade-in duration-150">
               <div className="p-4 rounded-xl border border-emerald-500/30 bg-emerald-500/10 flex items-start gap-3">
-                <CheckCircle2 className="w-5 h-5 text-emerald-400 shrink-0 mt-0.5" />
+                <CheckCircle2 className="w-5 h-5 text-emerald-500 shrink-0 mt-0.5" />
                 <div>
-                  <h4 className="text-sm font-bold text-emerald-300">
+                  <h4 className="text-sm font-bold text-emerald-800 dark:text-emerald-300">
                     Pre-Flight Validation Successful
                   </h4>
-                  <p className="text-xs text-slate-300 mt-1 leading-relaxed">
+                  <p className="text-xs text-slate-700 dark:text-slate-300 mt-1 leading-relaxed font-medium">
                     Dataset <strong>"{datasetTitle}"</strong> is validated and ready for real-time stochastic simulation.
                     Upon ingestion, our bivariate Monte Carlo engine will re-simulate all safety stock thresholds, dynamic ROPs,
                     and purchase orders across the entire control tower in ~0.4s.
@@ -578,30 +578,30 @@ export const WmsDataIngestionModal: React.FC<WmsDataIngestionModalProps> = ({
               {/* Dataset Metrics Cards */}
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
                 <div className={`p-3.5 rounded-xl border ${isDark ? "bg-slate-950/60 border-slate-800" : "bg-slate-50 border-slate-200"}`}>
-                  <span className="text-[10px] text-slate-400 uppercase font-semibold">Total Records</span>
-                  <p className="text-xl font-bold font-mono text-emerald-400 mt-1">{parsedData.totalRows}</p>
+                  <span className="text-[10px] text-slate-600 dark:text-neutral-400 uppercase font-semibold">Total Records</span>
+                  <p className="text-xl font-bold font-mono text-emerald-600 dark:text-emerald-400 mt-1">{parsedData.totalRows}</p>
                 </div>
                 <div className={`p-3.5 rounded-xl border ${isDark ? "bg-slate-950/60 border-slate-800" : "bg-slate-50 border-slate-200"}`}>
-                  <span className="text-[10px] text-slate-400 uppercase font-semibold">Target SKUs</span>
-                  <p className="text-xl font-bold font-mono text-indigo-400 mt-1">
+                  <span className="text-[10px] text-slate-600 dark:text-neutral-400 uppercase font-semibold">Target SKUs</span>
+                  <p className="text-xl font-bold font-mono text-indigo-600 dark:text-indigo-400 mt-1">
                     {new Set(parsedData.rawRows.map((r) => r[mapping.skuId] || "1")).size}
                   </p>
                 </div>
                 <div className={`p-3.5 rounded-xl border ${isDark ? "bg-slate-950/60 border-slate-800" : "bg-slate-50 border-slate-200"}`}>
-                  <span className="text-[10px] text-slate-400 uppercase font-semibold">Warehouses</span>
-                  <p className="text-xl font-bold font-mono text-amber-400 mt-1">
+                  <span className="text-[10px] text-slate-600 dark:text-neutral-400 uppercase font-semibold">Warehouses</span>
+                  <p className="text-xl font-bold font-mono text-amber-600 dark:text-amber-400 mt-1">
                     {Math.max(1, new Set(parsedData.rawRows.map((r) => r[mapping.warehouseId] || "1")).size)}
                   </p>
                 </div>
                 <div className={`p-3.5 rounded-xl border ${isDark ? "bg-slate-950/60 border-slate-800" : "bg-slate-50 border-slate-200"}`}>
-                  <span className="text-[10px] text-slate-400 uppercase font-semibold">Engine Speed</span>
-                  <p className="text-xl font-bold font-mono text-violet-400 mt-1">&lt; 0.5s</p>
+                  <span className="text-[10px] text-slate-600 dark:text-neutral-400 uppercase font-semibold">Engine Speed</span>
+                  <p className="text-xl font-bold font-mono text-violet-600 dark:text-violet-400 mt-1">&lt; 0.5s</p>
                 </div>
               </div>
 
               {/* Dataset Title Input */}
               <div>
-                <label className="text-xs font-semibold text-slate-300 block mb-1.5">
+                <label className="text-xs font-semibold text-slate-800 dark:text-slate-300 block mb-1.5">
                   Tenant Dataset Label:
                 </label>
                 <input
@@ -620,7 +620,7 @@ export const WmsDataIngestionModal: React.FC<WmsDataIngestionModalProps> = ({
                 <button
                   onClick={() => setStep(2)}
                   className={`px-4 py-2 rounded-xl text-xs font-semibold transition-colors cursor-pointer ${
-                    isDark ? "bg-slate-800 hover:bg-slate-700 text-slate-300" : "bg-slate-200 text-slate-700"
+                    isDark ? "bg-slate-800 hover:bg-slate-700 text-slate-300" : "bg-slate-200 text-slate-700 hover:bg-slate-300"
                   }`}
                 >
                   ← Back to Mapper

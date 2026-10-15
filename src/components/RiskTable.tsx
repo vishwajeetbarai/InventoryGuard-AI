@@ -112,21 +112,21 @@ export const RiskTable: React.FC<RiskTableProps> = ({
     switch (urgency) {
       case "CRITICAL REORDER NOW":
         return (
-          <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-bold bg-red-500/10 text-red-500 border border-red-500/30">
+          <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-bold bg-rose-500/10 text-rose-700 dark:text-rose-400 border border-rose-500/30">
             <AlertTriangle className="w-3 h-3" />
             CRITICAL REORDER NOW
           </span>
         );
       case "WARNING":
         return (
-          <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-bold bg-amber-500/10 text-amber-500 border border-amber-500/30">
+          <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-bold bg-amber-500/10 text-amber-800 dark:text-amber-400 border border-amber-500/30">
             <ShieldAlert className="w-3 h-3" />
             WARNING
           </span>
         );
       default:
         return (
-          <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-bold bg-emerald-500/10 text-emerald-500 border border-emerald-500/30">
+          <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-bold bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border border-emerald-500/30">
             <CheckCircle2 className="w-3 h-3" />
             OPTIMAL
           </span>
@@ -137,13 +137,13 @@ export const RiskTable: React.FC<RiskTableProps> = ({
   const getGradeBadge = (grade: string) => {
     switch (grade) {
       case "A":
-        return <span className="px-1.5 py-0.5 rounded text-[10px] font-bold bg-emerald-500/10 text-emerald-500 border border-emerald-500/30">Grade A</span>;
+        return <span className="px-1.5 py-0.5 rounded text-[10px] font-bold bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border border-emerald-500/30">Grade A</span>;
       case "B":
-        return <span className="px-1.5 py-0.5 rounded text-[10px] font-bold bg-sky-500/10 text-sky-500 border border-sky-500/30">Grade B</span>;
+        return <span className="px-1.5 py-0.5 rounded text-[10px] font-bold bg-sky-500/10 text-sky-700 dark:text-sky-400 border border-sky-500/30">Grade B</span>;
       case "C":
-        return <span className="px-1.5 py-0.5 rounded text-[10px] font-bold bg-amber-500/10 text-amber-500 border border-amber-500/30">Grade C</span>;
+        return <span className="px-1.5 py-0.5 rounded text-[10px] font-bold bg-amber-500/10 text-amber-800 dark:text-amber-400 border border-amber-500/30">Grade C</span>;
       default:
-        return <span className="px-1.5 py-0.5 rounded text-[10px] font-bold bg-red-500/10 text-red-500 border border-red-500/30">Grade {grade}</span>;
+        return <span className="px-1.5 py-0.5 rounded text-[10px] font-bold bg-rose-500/10 text-rose-700 dark:text-rose-400 border border-rose-500/30">Grade {grade}</span>;
     }
   };
 
@@ -440,18 +440,18 @@ export const RiskTable: React.FC<RiskTableProps> = ({
                       <div className="mt-0.5">{getGradeBadge(s.supplierScorecard.grade)}</div>
                     </td>
                     <td className="py-3 px-4 font-mono font-semibold">
-                      <span className="text-sky-600 dark:text-sky-400 font-bold">{s.usableStock}</span>
+                      <span className="text-sky-700 dark:text-sky-400 font-bold">{s.usableStock}</span>
                       <span className="text-slate-600 dark:text-neutral-400"> / {s.currentStock}</span>
                       {s.decayedUnits > 0 && (
-                        <div className="text-[10px] text-amber-500 font-sans font-medium">
+                        <div className="text-[10px] text-amber-800 dark:text-amber-400 font-sans font-medium">
                           -{s.decayedUnits} units decayed ({s.decayRatePct}%)
                         </div>
                       )}
                     </td>
-                    <td className="py-3 px-4 font-mono font-semibold text-red-500">
+                    <td className="py-3 px-4 font-mono font-bold text-rose-700 dark:text-rose-400">
                       {s.mcResult.dynamicRop.toLocaleString()}
                     </td>
-                    <td className="py-3 px-4 font-mono font-semibold text-indigo-500">
+                    <td className="py-3 px-4 font-mono font-bold text-indigo-700 dark:text-indigo-400">
                       {s.mcResult.dynamicSafetyStock.toLocaleString()}
                     </td>
                     <td className="py-3 px-4">
@@ -464,10 +464,10 @@ export const RiskTable: React.FC<RiskTableProps> = ({
                           <div
                             className={`h-full rounded-full ${
                               s.mcResult.stockoutProbabilityPct > 25
-                                ? "bg-red-500"
+                                ? "bg-rose-500"
                                 : s.mcResult.stockoutProbabilityPct > 10
-                                ? "bg-amber-400"
-                                : "bg-emerald-400"
+                                ? "bg-amber-500"
+                                : "bg-emerald-500"
                             }`}
                             style={{ width: `${Math.min(100, s.mcResult.stockoutProbabilityPct)}%` }}
                           />
@@ -475,26 +475,26 @@ export const RiskTable: React.FC<RiskTableProps> = ({
                         <span
                           className={`font-mono font-bold ${
                             s.mcResult.stockoutProbabilityPct > 25
-                              ? "text-red-500"
+                              ? "text-rose-700 dark:text-rose-400"
                               : s.mcResult.stockoutProbabilityPct > 10
-                              ? "text-amber-500"
-                              : "text-emerald-500"
+                              ? "text-amber-800 dark:text-amber-400"
+                              : "text-emerald-700 dark:text-emerald-400"
                           }`}
                         >
                           {s.mcResult.stockoutProbabilityPct.toFixed(1)}%
                         </span>
                       </div>
                     </td>
-                    <td className="py-3 px-4 font-mono font-semibold text-amber-500">
+                    <td className="py-3 px-4 font-mono font-bold text-amber-800 dark:text-amber-400">
                       {formatCurrency(s.revenueAtRisk, currency)}
                     </td>
                     <td className="py-3 px-4 font-mono font-bold">
                       {s.mcResult.recommendedReorderQty > 0 ? (
-                        <span className="text-emerald-500">
+                        <span className="text-emerald-700 dark:text-emerald-400">
                           +{s.mcResult.recommendedReorderQty.toLocaleString()} units
                         </span>
                       ) : (
-                        <span className="text-slate-400">—</span>
+                        <span className="text-slate-500 dark:text-neutral-500">—</span>
                       )}
                     </td>
                     <td className="py-3 px-4">{getUrgencyBadge(s.mcResult.urgency)}</td>

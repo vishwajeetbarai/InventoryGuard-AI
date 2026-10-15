@@ -1008,36 +1008,39 @@ export default function App() {
         {activePage === "overview" && (
           <div className="space-y-6 animate-in fade-in duration-150">
             {/* A. Executive Control Tower Header */}
-            <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 pb-1">
+            <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 pb-2 border-b border-slate-200 dark:border-neutral-800">
               <div>
-                <div className="flex items-center gap-3 flex-wrap">
+                <span className="text-[10px] font-mono font-bold uppercase tracking-wider text-emerald-700 dark:text-emerald-400">
+                  SUPPLY CHAIN CONTROL TOWER
+                </span>
+                <div className="flex items-center gap-3 flex-wrap mt-0.5">
                   <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-slate-950 dark:text-white">
-                    Supply Chain Control Tower
+                    Supply Chain Overview
                   </h1>
                   <div className="flex items-center gap-2 text-xs font-mono font-medium">
                     {criticalSkus.length > 0 ? (
-                      <span className="flex items-center gap-1.5 text-rose-600 dark:text-rose-400 font-semibold">
+                      <span className="flex items-center gap-1.5 text-rose-700 dark:text-rose-400 font-semibold">
                         <span className="w-2 h-2 rounded-full bg-rose-500 animate-pulse inline-block" />
                         {criticalSkus.length} Critical Stockouts Detected
                       </span>
                     ) : (
-                      <span className="flex items-center gap-1.5 text-emerald-600 dark:text-emerald-400 font-semibold">
+                      <span className="flex items-center gap-1.5 text-emerald-700 dark:text-emerald-400 font-semibold">
                         <span className="w-2 h-2 rounded-full bg-emerald-500 inline-block" />
                         Network Operating at Equilibrium
                       </span>
                     )}
                     <span className="text-slate-300 dark:text-neutral-700">·</span>
-                    <span className="text-slate-500 dark:text-neutral-400">
+                    <span className="text-slate-600 dark:text-neutral-400">
                       {effectiveWarehouses.length} Active Dark Stores
                     </span>
                     <span className="text-slate-300 dark:text-neutral-700">·</span>
-                    <span className="text-slate-500 dark:text-neutral-400">
+                    <span className="text-slate-600 dark:text-neutral-400">
                       Target CSL: {currentServiceLevel.label.split(" - ")[0]}
                     </span>
                   </div>
                 </div>
                 <p className="text-xs sm:text-sm text-slate-600 dark:text-neutral-400 mt-1 font-medium max-w-3xl">
-                  Real-time network health, multi-echelon stock levels, stochastic stock-out mitigation, and cross-dock balancing across regional dark store hubs.
+                  Monitor network health, inventory exposure and operational risk across regional dark store hubs.
                 </p>
               </div>
 

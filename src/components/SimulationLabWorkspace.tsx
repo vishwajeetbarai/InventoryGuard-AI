@@ -582,7 +582,7 @@ export const SimulationLabWorkspace: React.FC<SimulationLabWorkspaceProps> = ({
                           <div className="flex items-center justify-between mb-1">
                             <div className="flex items-center gap-2">
                               <span className="font-bold">{meta.name}</span>
-                              <span className="text-[10px] text-slate-400 font-mono">
+                              <span className="text-[10px] text-slate-600 dark:text-neutral-400 font-mono">
                                 ({meta.vendor})
                               </span>
                             </div>
@@ -590,16 +590,16 @@ export const SimulationLabWorkspace: React.FC<SimulationLabWorkspaceProps> = ({
                               className={`text-[9px] font-mono px-2 py-0.5 rounded-full font-bold ${
                                 isSelected
                                   ? "bg-indigo-500 text-white"
-                                  : "bg-slate-200 dark:bg-neutral-800 text-slate-600 dark:text-neutral-400"
+                                  : "bg-slate-200 dark:bg-neutral-800 text-slate-700 dark:text-neutral-300"
                               }`}
                             >
                               {meta.badge}
                             </span>
                           </div>
-                          <p className="text-[11px] text-slate-500 dark:text-neutral-400">
+                          <p className="text-[11px] text-slate-600 dark:text-neutral-400 font-medium">
                             {meta.description}
                           </p>
-                          <div className="mt-2 pt-1.5 border-t border-slate-200/60 dark:border-neutral-800 flex items-center justify-between text-[10px] font-mono text-slate-400">
+                          <div className="mt-2 pt-1.5 border-t border-slate-200/60 dark:border-neutral-800 flex items-center justify-between text-[10px] font-mono text-slate-600 dark:text-neutral-400 font-medium">
                             <span>Latency: ~{meta.inferenceLatencyMs}ms</span>
                             <span>Benchmark MAE: {meta.benchmarkMae}</span>
                           </div>
@@ -612,10 +612,10 @@ export const SimulationLabWorkspace: React.FC<SimulationLabWorkspaceProps> = ({
                 {/* Forecast Horizon Slider */}
                 <div className="space-y-1.5">
                   <div className="flex items-center justify-between text-xs">
-                    <span className="font-semibold text-slate-700 dark:text-neutral-300">
+                    <span className="font-semibold text-slate-800 dark:text-neutral-200">
                       Forecast Horizon
                     </span>
-                    <span className="font-mono font-bold text-indigo-600 dark:text-indigo-400">
+                    <span className="font-mono font-bold text-indigo-700 dark:text-indigo-400">
                       {forecastHorizon} Days Forward
                     </span>
                   </div>
@@ -628,7 +628,7 @@ export const SimulationLabWorkspace: React.FC<SimulationLabWorkspaceProps> = ({
                     onChange={(e) => onChangeForecastHorizon(Number(e.target.value))}
                     className="w-full accent-indigo-600 cursor-pointer"
                   />
-                  <div className="flex justify-between text-[10px] text-slate-400">
+                  <div className="flex justify-between text-[10px] text-slate-600 dark:text-neutral-400 font-medium">
                     <span>14 Days (Short-term)</span>
                     <span>21 Days (Sprint)</span>
                     <span>30 Days (Monthly)</span>
