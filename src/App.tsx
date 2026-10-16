@@ -11,6 +11,7 @@ import {
   calculateDemandCannibalization,
 } from "./engine/supplyChainEngine";
 import { Header, AppPage } from "./components/Header";
+import { DashboardSidebar } from "./components/DashboardSidebar";
 import { Footer } from "./components/Footer";
 import { SidebarControls } from "./components/SidebarControls";
 import { SimulationLabWorkspace } from "./components/SimulationLabWorkspace";
@@ -234,6 +235,7 @@ export default function App() {
   const [isReportModalOpen, setIsReportModalOpen] = useState<boolean>(false);
   const [isWmsModalOpen, setIsWmsModalOpen] = useState<boolean>(false);
   const [isAuditModalOpen, setIsAuditModalOpen] = useState<boolean>(false);
+  const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState<boolean>(false);
   const [toasts, setToasts] = useState<ToastItem[]>([]);
 
   // Synchronize state with persistent storage
@@ -1174,36 +1176,63 @@ export default function App() {
           onNavigateToLanding={handleGoToLanding}
         />
       ) : (
-        <>
-          {/* Sleek Top Navigation Header */}
-          <Header
-            currentWarehouse={currentWarehouse}
-            warehouses={effectiveWarehouses}
-            onSelectWarehouse={handleSelectWarehouse}
+        <div className="flex h-screen overflow-hidden w-full">
+          {/* Persistent Left Vertical Sidebar */}
+          <DashboardSidebar
             activePage={activePage}
-            onSelectPage={setActivePage}
-            onRefreshData={handleTriggerSimulation}
-            isSimulating={isSimulating}
-            theme={theme}
-            onToggleTheme={handleToggleTheme}
-            onOpenCommandPalette={() => setIsCommandPaletteOpen(true)}
-            onOpenExportReport={() => setIsReportModalOpen(true)}
-            onOpenWmsIngestion={() => setIsWmsModalOpen(true)}
-            onOpenAuditLedger={() => setIsAuditModalOpen(true)}
+            onSelectPage={(page) => {
+              setActivePage(page);
+              window.location.hash = `app/${page}`;
+            }}
+            criticalCount={criticalSkus.length}
+            poCount={purchaseOrders.length}
+            transferCount={interTransfers.filter((t) => !approvedTransferIds.includes(t.id)).length}
             currentUser={currentUser}
-            onSelectRole={handleSelectRole}
             currentTenant={currentTenant}
-            onSelectTenant={handleSelectTenant}
-            customDatasetName={customDataset?.name}
-            onResetCustomDataset={handleResetCustomDataset}
-            currentCurrency={currency}
-            onSelectCurrency={setCurrency}
+            onSelectRole={handleSelectRole}
             onGoToLanding={handleGoToLanding}
             onSignOut={handleSignOut}
+            onOpenCommandPalette={() => setIsCommandPaletteOpen(true)}
+            onOpenWmsIngestion={() => setIsWmsModalOpen(true)}
+            onOpenAuditLedger={() => setIsAuditModalOpen(true)}
+            onOpenExportReport={() => setIsReportModalOpen(true)}
+            isMobileOpen={isMobileSidebarOpen}
+            onCloseMobile={() => setIsMobileSidebarOpen(false)}
+            theme={theme}
           />
 
-      {/* Main Spacious Content Canvas with Generous Footer Spacing */}
-      <main className="flex-1 max-w-7xl w-full mx-auto p-4 sm:p-6 lg:p-8 pb-28 sm:pb-36 space-y-6">
+          {/* Right Main Column: Header + Scrollable Content */}
+          <div className="flex-1 flex flex-col min-w-0 h-screen overflow-y-auto">
+            {/* Top Navigation Header */}
+            <Header
+              currentWarehouse={currentWarehouse}
+              warehouses={effectiveWarehouses}
+              onSelectWarehouse={handleSelectWarehouse}
+              activePage={activePage}
+              onSelectPage={setActivePage}
+              onRefreshData={handleTriggerSimulation}
+              isSimulating={isSimulating}
+              theme={theme}
+              onToggleTheme={handleToggleTheme}
+              onOpenCommandPalette={() => setIsCommandPaletteOpen(true)}
+              onOpenExportReport={() => setIsReportModalOpen(true)}
+              onOpenWmsIngestion={() => setIsWmsModalOpen(true)}
+              onOpenAuditLedger={() => setIsAuditModalOpen(true)}
+              currentUser={currentUser}
+              onSelectRole={handleSelectRole}
+              currentTenant={currentTenant}
+              onSelectTenant={handleSelectTenant}
+              customDatasetName={customDataset?.name}
+              onResetCustomDataset={handleResetCustomDataset}
+              currentCurrency={currency}
+              onSelectCurrency={setCurrency}
+              onGoToLanding={handleGoToLanding}
+              onSignOut={handleSignOut}
+              onToggleMobileSidebar={() => setIsMobileSidebarOpen((prev) => !prev)}
+            />
+
+            {/* Main Spacious Content Canvas with Generous Footer Spacing */}
+            <main className="flex-1 max-w-7xl w-full mx-auto p-4 sm:p-6 lg:p-8 pb-28 sm:pb-36 space-y-6 min-w-0">
         {/* PAGE 1: OVERVIEW & NETWORK TOPOLOGY */}
         {activePage === "overview" && (
           <div className="space-y-6 animate-in fade-in duration-150">
@@ -1743,27 +1772,28 @@ export default function App() {
             )}
           </div>
         )}
-      </main>
+            </main>
 
-      {/* Enterprise Multi-Tier Architectural Footer */}
-      <Footer
-        currentWarehouse={currentWarehouse}
-        currentUser={currentUser}
-        auditLogsCount={auditLogs.length}
-        currency={currency}
-        theme={theme}
-        onToggleTheme={handleToggleTheme}
-        onOpenCommandPalette={() => setIsCommandPaletteOpen(true)}
-        onOpenReportModal={() => setIsReportModalOpen(true)}
-        onOpenWmsModal={() => setIsWmsModalOpen(true)}
-        onOpenAuditModal={() => setIsAuditModalOpen(true)}
-        onTriggerSimulation={handleTriggerSimulation}
-        onSelectPage={setActivePage}
-        isSimulating={isSimulating}
-        onGoToLanding={handleGoToLanding}
-      />
-    </>
-  )}
+            {/* Enterprise Multi-Tier Architectural Footer */}
+            <Footer
+              currentWarehouse={currentWarehouse}
+              currentUser={currentUser}
+              auditLogsCount={auditLogs.length}
+              currency={currency}
+              theme={theme}
+              onToggleTheme={handleToggleTheme}
+              onOpenCommandPalette={() => setIsCommandPaletteOpen(true)}
+              onOpenReportModal={() => setIsReportModalOpen(true)}
+              onOpenWmsModal={() => setIsWmsModalOpen(true)}
+              onOpenAuditModal={() => setIsAuditModalOpen(true)}
+              onTriggerSimulation={handleTriggerSimulation}
+              onSelectPage={setActivePage}
+              isSimulating={isSimulating}
+              onGoToLanding={handleGoToLanding}
+            />
+          </div>
+        </div>
+      )}
 
       {/* Global Command Bar Modal (Cmd + K / Ctrl + K) */}
       <CommandPaletteModal

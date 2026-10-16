@@ -87,6 +87,9 @@ export const LandingPage: React.FC<LandingPageProps> = ({
   // Currency Dropdown
   const [isCurrencyOpen, setIsCurrencyOpen] = useState(false);
 
+  // Mobile navigation drawer state
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+
   // Calculate Hero metrics based on active scenario
   const heroMetrics = useMemo(() => {
     switch (heroScenario) {
@@ -192,7 +195,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({
         isDark ? "dark bg-[#09090B] text-neutral-100" : "bg-[#F8FAFC] text-slate-900"
       }`}
     >
-      {/* 1. TOP ENTERPRISE STICKY NAVIGATION */}
+      {/* 1. TOP ENTERPRISE COMPACT STICKY NAVIGATION */}
       <header
         className={`sticky top-0 z-50 border-b backdrop-blur-md transition-colors duration-150 ${
           isDark
@@ -201,72 +204,69 @@ export const LandingPage: React.FC<LandingPageProps> = ({
         }`}
       >
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex items-center justify-between h-16 gap-4">
-            {/* Logo */}
-            <div className="flex items-center gap-3">
-              <div className="w-9 h-9 rounded-xl bg-emerald-600 flex items-center justify-center text-white shadow-sm font-bold">
-                <ShieldCheck className="w-5 h-5 text-white" />
+          <div className="flex items-center justify-between h-16 gap-3 sm:gap-4 min-w-0">
+            {/* Left: Logo and wordmark without overlapping */}
+            <div className="flex items-center gap-2.5 sm:gap-3 shrink-0 min-w-0">
+              <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-xl bg-emerald-600 flex items-center justify-center text-white shadow-xs font-bold shrink-0">
+                <ShieldCheck className="w-4 h-4 sm:w-5 sm:h-5 text-white" />
               </div>
-              <div>
-                <div className="flex items-center gap-2">
-                  <span className="font-extrabold text-xl tracking-tight">
+              <div className="min-w-0">
+                <div className="flex items-center gap-1.5 leading-none">
+                  <span className="font-extrabold text-base sm:text-lg tracking-tight text-slate-950 dark:text-white truncate">
                     InventoryGuard<span className="text-emerald-600 dark:text-emerald-400 font-black">-AI</span>
                   </span>
-                  <span className="px-2 py-0.5 rounded text-[10px] font-mono font-bold uppercase tracking-wider bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border border-emerald-500/20">
+                  <span className="hidden xl:inline-flex px-1.5 py-0.2 rounded text-[9px] font-mono font-bold uppercase tracking-wider bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border border-emerald-500/20 shrink-0">
                     Enterprise
                   </span>
                 </div>
-                <div className={`text-[10px] font-semibold tracking-wider uppercase -mt-0.5 ${isDark ? "text-neutral-400" : "text-slate-500"}`}>
+                <div className={`text-[9px] sm:text-[10px] font-semibold tracking-wider uppercase truncate mt-0.5 ${isDark ? "text-neutral-400" : "text-slate-500"}`}>
                   Supply Chain Intelligence
                 </div>
               </div>
             </div>
 
-            {/* Desktop Navigation Links */}
-            <nav className="hidden md:flex items-center gap-6 text-xs font-semibold">
+            {/* Center: Essential Public Navigation Links (Desktop only: lg+) */}
+            <nav className="hidden lg:flex items-center gap-6 xl:gap-8 text-xs font-semibold shrink-0" aria-label="Public website links">
               <a
                 href="#capabilities"
-                className={`transition-colors hover:text-emerald-600 ${isDark ? "text-neutral-300" : "text-slate-600"}`}
+                className={`transition-colors hover:text-emerald-600 dark:hover:text-emerald-400 ${
+                  isDark ? "text-neutral-300" : "text-slate-600"
+                }`}
               >
                 Capabilities
               </a>
               <a
-                href="#live-preview"
-                className={`transition-colors hover:text-emerald-600 ${isDark ? "text-neutral-300" : "text-slate-600"}`}
-              >
-                Live Preview
-              </a>
-              <a
                 href="#architecture"
-                className={`transition-colors hover:text-emerald-600 ${isDark ? "text-neutral-300" : "text-slate-600"}`}
+                className={`transition-colors hover:text-emerald-600 dark:hover:text-emerald-400 ${
+                  isDark ? "text-neutral-300" : "text-slate-600"
+                }`}
               >
                 Architecture
               </a>
               <a
-                href="#roi-calculator"
-                className={`transition-colors hover:text-emerald-600 ${isDark ? "text-neutral-300" : "text-slate-600"}`}
-              >
-                ROI Calculator
-              </a>
-              <a
                 href="#security"
-                className={`transition-colors hover:text-emerald-600 ${isDark ? "text-neutral-300" : "text-slate-600"}`}
+                className={`transition-colors hover:text-emerald-600 dark:hover:text-emerald-400 ${
+                  isDark ? "text-neutral-300" : "text-slate-600"
+                }`}
               >
-                Security & RBAC
+                Security
               </a>
               <a
                 href="#faq"
-                className={`transition-colors hover:text-emerald-600 ${isDark ? "text-neutral-300" : "text-slate-600"}`}
+                className={`transition-colors hover:text-emerald-600 dark:hover:text-emerald-400 ${
+                  isDark ? "text-neutral-300" : "text-slate-600"
+                }`}
               >
                 FAQ
               </a>
             </nav>
 
-            {/* Right Action Toolbar */}
-            <div className="flex items-center gap-3">
-              {/* Currency Selector */}
-              <div className="relative">
+            {/* Right: Actions (Theme, Sign In / Get Started or Dashboard, Mobile Hamburger) */}
+            <div className="flex items-center gap-2 sm:gap-2.5 shrink-0">
+              {/* Currency Selector (compact dropdown on sm+) */}
+              <div className="relative hidden sm:block">
                 <button
+                  type="button"
                   onClick={() => setIsCurrencyOpen(!isCurrencyOpen)}
                   className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg border text-xs font-semibold cursor-pointer transition-colors ${
                     isDark
@@ -276,7 +276,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({
                   title="Select Base Currency"
                 >
                   <span>{CURRENCIES[currency]?.flag}</span>
-                  <span>{currency}</span>
+                  <span className="font-mono text-[11px]">{currency}</span>
                   <ChevronDown className="w-3 h-3 text-slate-400" />
                 </button>
 
@@ -293,6 +293,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({
                       return (
                         <button
                           key={cCode}
+                          type="button"
                           onClick={() => {
                             onSelectCurrency(cCode);
                             setIsCurrencyOpen(false);
@@ -321,8 +322,9 @@ export const LandingPage: React.FC<LandingPageProps> = ({
 
               {/* Theme Switcher */}
               <button
+                type="button"
                 onClick={onToggleTheme}
-                className={`p-2 rounded-lg border text-xs font-medium transition-colors cursor-pointer ${
+                className={`p-1.5 sm:p-2 rounded-lg border text-xs font-medium transition-colors cursor-pointer shrink-0 ${
                   isDark
                     ? "bg-neutral-900 hover:bg-neutral-800 text-amber-400 border-neutral-700"
                     : "bg-white hover:bg-slate-50 text-slate-700 border-slate-200 shadow-xs"
@@ -333,35 +335,38 @@ export const LandingPage: React.FC<LandingPageProps> = ({
                 {isDark ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
               </button>
 
-              {/* Authentication Actions */}
+              {/* If Authenticated: Direct Return to Workspace */}
               {isAuthenticated && currentUser ? (
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-2 shrink-0">
                   <div
-                    className={`hidden sm:flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg border text-xs font-semibold ${
+                    className={`hidden md:flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg border text-xs font-semibold ${
                       isDark
                         ? "bg-neutral-900 border-neutral-800 text-neutral-200"
                         : "bg-slate-100 border-slate-200 text-slate-800"
                     }`}
                   >
                     <span>{currentUser.avatar}</span>
-                    <span className="max-w-[90px] truncate">{currentUser.name.split(" ")[0]}</span>
+                    <span className="max-w-[85px] truncate">{currentUser.name.split(" ")[0]}</span>
                   </div>
 
                   <button
+                    type="button"
                     onClick={() => onEnterApp("overview")}
-                    className="flex items-center gap-2 px-3.5 sm:px-4 py-2 rounded-lg text-xs font-bold bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800 text-white shadow-sm transition-all cursor-pointer group"
+                    className="flex items-center gap-1.5 px-3 sm:px-4 py-2 rounded-lg text-xs font-bold bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800 text-white shadow-xs transition-all cursor-pointer group shrink-0"
                   >
                     <span className="w-2 h-2 rounded-full bg-emerald-300 animate-pulse" />
-                    <span>Control Tower</span>
+                    <span>Workspace</span>
                     <ArrowRight className="w-3.5 h-3.5 transition-transform group-hover:translate-x-0.5" />
                   </button>
                 </div>
               ) : (
-                <div className="flex items-center gap-2">
+                /* Unauthenticated Public Actions: Sign In & Get Started */
+                <div className="flex items-center gap-2 shrink-0">
                   {onNavigateToSignIn && (
                     <button
+                      type="button"
                       onClick={onNavigateToSignIn}
-                      className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg border text-xs font-semibold transition-colors cursor-pointer ${
+                      className={`flex items-center gap-1 px-2.5 sm:px-3 py-1.5 rounded-lg border text-xs font-semibold transition-colors cursor-pointer shrink-0 ${
                         isDark
                           ? "bg-neutral-900 hover:bg-neutral-800 border-neutral-700 text-neutral-200"
                           : "bg-white hover:bg-slate-50 border-slate-200 text-slate-700 shadow-xs"
@@ -374,28 +379,186 @@ export const LandingPage: React.FC<LandingPageProps> = ({
 
                   {onNavigateToSignUp && (
                     <button
+                      type="button"
                       onClick={onNavigateToSignUp}
-                      className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-700 dark:text-emerald-300 border border-emerald-500/30 transition-all cursor-pointer"
+                      className="flex items-center gap-1.5 px-3 sm:px-3.5 py-1.5 rounded-lg text-xs font-bold bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800 text-white shadow-xs transition-all cursor-pointer shrink-0"
                     >
-                      <UserPlus className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
+                      <UserPlus className="w-3.5 h-3.5" />
                       <span>Get Started</span>
                     </button>
                   )}
+                </div>
+              )}
 
-                  {/* Launch Control Tower CTA */}
+              {/* Mobile Drawer Hamburger Trigger (lg:hidden) */}
+              <button
+                type="button"
+                onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+                className={`lg:hidden p-1.5 sm:p-2 rounded-lg border transition-colors cursor-pointer shrink-0 ${
+                  isDark
+                    ? "bg-neutral-900 hover:bg-neutral-800 border-neutral-700 text-neutral-300"
+                    : "bg-white hover:bg-slate-50 border-slate-200 text-slate-700 shadow-xs"
+                }`}
+                title={isMobileMenuOpen ? "Close menu" : "Open menu"}
+                aria-label="Toggle navigation menu"
+              >
+                {isMobileMenuOpen ? <X className="w-4 h-4" /> : <Menu className="w-4 h-4" />}
+              </button>
+            </div>
+          </div>
+        </div>
+
+        {/* Mobile Dropdown / Slide Menu (when open on < lg screens) */}
+        {isMobileMenuOpen && (
+          <div
+            className={`lg:hidden border-t px-4 py-4 space-y-4 animate-in slide-in-from-top-2 duration-150 ${
+              isDark ? "bg-[#09090B] border-neutral-800 text-neutral-100" : "bg-white border-slate-200 text-slate-900 shadow-lg"
+            }`}
+          >
+            {/* Nav links */}
+            <nav className="flex flex-col space-y-2 text-sm font-semibold">
+              <a
+                href="#capabilities"
+                onClick={() => setIsMobileMenuOpen(false)}
+                className={`py-1.5 transition-colors hover:text-emerald-600 dark:hover:text-emerald-400 ${
+                  isDark ? "text-neutral-300" : "text-slate-700"
+                }`}
+              >
+                Capabilities
+              </a>
+              <a
+                href="#architecture"
+                onClick={() => setIsMobileMenuOpen(false)}
+                className={`py-1.5 transition-colors hover:text-emerald-600 dark:hover:text-emerald-400 ${
+                  isDark ? "text-neutral-300" : "text-slate-700"
+                }`}
+              >
+                Architecture
+              </a>
+              <a
+                href="#security"
+                onClick={() => setIsMobileMenuOpen(false)}
+                className={`py-1.5 transition-colors hover:text-emerald-600 dark:hover:text-emerald-400 ${
+                  isDark ? "text-neutral-300" : "text-slate-700"
+                }`}
+              >
+                Security &amp; RBAC
+              </a>
+              <a
+                href="#faq"
+                onClick={() => setIsMobileMenuOpen(false)}
+                className={`py-1.5 transition-colors hover:text-emerald-600 dark:hover:text-emerald-400 ${
+                  isDark ? "text-neutral-300" : "text-slate-700"
+                }`}
+              >
+                FAQ
+              </a>
+              <a
+                href="#roi-calculator"
+                onClick={() => setIsMobileMenuOpen(false)}
+                className={`py-1.5 transition-colors hover:text-emerald-600 dark:hover:text-emerald-400 ${
+                  isDark ? "text-neutral-300" : "text-slate-700"
+                }`}
+              >
+                ROI Calculator
+              </a>
+              <a
+                href="#live-preview"
+                onClick={() => setIsMobileMenuOpen(false)}
+                className={`py-1.5 transition-colors hover:text-emerald-600 dark:hover:text-emerald-400 ${
+                  isDark ? "text-neutral-300" : "text-slate-700"
+                }`}
+              >
+                Live SKU Preview
+              </a>
+            </nav>
+
+            {/* Currency selector on mobile */}
+            <div className="pt-2 border-t border-slate-100 dark:border-neutral-800 flex items-center justify-between">
+              <span className="text-xs font-medium text-slate-500 dark:text-neutral-400">Currency</span>
+              <div className="flex items-center gap-1">
+                {(["USD", "INR", "EUR", "GBP"] as CurrencyCode[]).map((cCode) => (
                   <button
-                    onClick={() => onEnterApp("overview")}
-                    className="flex items-center gap-1.5 px-3.5 sm:px-4 py-2 rounded-lg text-xs font-bold bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800 text-white shadow-sm transition-all cursor-pointer group"
+                    key={cCode}
+                    type="button"
+                    onClick={() => onSelectCurrency(cCode)}
+                    className={`px-2 py-1 text-xs rounded-md font-mono ${
+                      currency === cCode
+                        ? "bg-emerald-600 text-white font-bold"
+                        : isDark
+                        ? "bg-neutral-800 text-neutral-300"
+                        : "bg-slate-100 text-slate-700"
+                    }`}
                   >
-                    <span className="w-2 h-2 rounded-full bg-emerald-300 animate-pulse" />
-                    <span className="hidden sm:inline">Launch</span> Control Tower
-                    <ArrowRight className="w-3.5 h-3.5 transition-transform group-hover:translate-x-0.5" />
+                    {cCode}
                   </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Auth actions in mobile menu */}
+            <div className="pt-2 border-t border-slate-100 dark:border-neutral-800 flex flex-col gap-2">
+              {isAuthenticated && currentUser ? (
+                <>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setIsMobileMenuOpen(false);
+                      onEnterApp("overview");
+                    }}
+                    className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl text-xs font-bold bg-emerald-600 text-white shadow-xs"
+                  >
+                    <span>Enter Control Tower Workspace</span>
+                    <ArrowRight className="w-4 h-4" />
+                  </button>
+                  {onSignOut && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setIsMobileMenuOpen(false);
+                        onSignOut();
+                      }}
+                      className="w-full text-center py-2 text-xs font-semibold text-rose-600 dark:text-rose-400 hover:underline"
+                    >
+                      Sign Out ({currentUser.name})
+                    </button>
+                  )}
+                </>
+              ) : (
+                <div className="grid grid-cols-2 gap-2">
+                  {onNavigateToSignIn && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setIsMobileMenuOpen(false);
+                        onNavigateToSignIn();
+                      }}
+                      className={`flex items-center justify-center gap-1.5 py-2.5 rounded-xl border text-xs font-semibold ${
+                        isDark ? "border-neutral-700 text-neutral-200" : "border-slate-200 text-slate-700"
+                      }`}
+                    >
+                      <LogIn className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
+                      <span>Sign In</span>
+                    </button>
+                  )}
+                  {onNavigateToSignUp && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setIsMobileMenuOpen(false);
+                        onNavigateToSignUp();
+                      }}
+                      className="flex items-center justify-center gap-1.5 py-2.5 rounded-xl text-xs font-bold bg-emerald-600 text-white shadow-xs"
+                    >
+                      <UserPlus className="w-3.5 h-3.5" />
+                      <span>Get Started</span>
+                    </button>
+                  )}
                 </div>
               )}
             </div>
           </div>
-        </div>
+        )}
       </header>
 
       {/* 2. HERO SECTION */}
