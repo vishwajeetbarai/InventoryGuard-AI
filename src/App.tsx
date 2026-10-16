@@ -19,6 +19,7 @@ import { DataHubWorkspace } from "./components/DataHubWorkspace";
 import { KpiMetrics } from "./components/KpiMetrics";
 import { VisualAnalytics } from "./components/VisualAnalytics";
 import { RiskTable } from "./components/RiskTable";
+import { InventoryWorkspace } from "./components/InventoryWorkspace";
 import { DynamicMarkdownCard } from "./components/DynamicMarkdownCard";
 import { SubstitutionCard } from "./components/SubstitutionCard";
 import { PoGenerator } from "./components/PoGenerator";
@@ -1428,104 +1429,39 @@ export default function App() {
           </div>
         )}
 
-        {/* PAGE 2: INVENTORY & FORECASTING */}
+        {/* PAGE 2: INVENTORY & FORECASTING WORKSPACE */}
         {activePage === "inventory" && (
-          <div className="space-y-6 animate-in fade-in duration-150">
-            {/* A. Page Heading */}
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-1">
-              <div>
-                <div className="flex items-center gap-2.5">
-                  <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-slate-950 dark:text-white">
-                    Inventory &amp; Forecast
-                  </h1>
-                  <span className="px-2.5 py-0.5 rounded-md text-[11px] font-mono font-bold bg-indigo-500/10 text-indigo-700 dark:text-indigo-400 border border-indigo-500/20">
-                    Stochastic ML Horizon
-                  </span>
-                </div>
-                <p className="text-xs sm:text-sm text-slate-600 dark:text-neutral-400 mt-1 font-medium">
-                  Demand intelligence, stock coverage and replenishment risk.
-                </p>
-              </div>
-            </div>
-
-            {/* B. Compact Analysis Toolbar */}
-            <InventoryToolbar
-              warehouses={effectiveWarehouses}
-              selectedWarehouseId={selectedWarehouseId}
-              onSelectWarehouse={handleSelectWarehouse}
-              skus={effectiveSkus}
-              selectedSkuId={activeSkuId}
-              onSelectSkuId={setActiveSkuId}
-              forecastHorizon={forecastHorizon}
-              onChangeForecastHorizon={(days) => {
-                setForecastHorizon(days);
-                handleTriggerSimulation();
-              }}
-              forecastModel={forecastModel}
-              onSelectForecastModel={(model) => {
-                setForecastModel(model);
-                handleTriggerSimulation();
-              }}
-              theme={theme}
-            />
-
-            {/* C & D. Main Demand Forecast & Supporting Inventory Metrics */}
-            <VisualAnalytics
-              simulationStates={simulationStates}
-              selectedSkuId={activeSkuId}
-              onSelectSkuId={setActiveSkuId}
-              monteCarloIterations={monteCarloRuns}
-              weatherSurgePct={weatherSurgePct}
-              currency={currency}
-              forecastModel={forecastModel}
-              theme={theme}
-            />
-
-            {/* E. SKU Risk Table */}
-            <RiskTable
-              simulationStates={simulationStates}
-              selectedSkuId={activeSkuId}
-              onSelectSku={handleSelectSkuDeepDive}
-              onBulkDispatchCriticalPos={handleBulkDispatchCriticalPos}
-              onAutoApproveTransfers={handleAutoApproveAllTransfers}
-              currency={currency}
-              theme={theme}
-            />
-
-            {/* F. AI Insights and Substitutions */}
-            <div className="space-y-6 pt-2">
-              <div className="flex items-center gap-2">
-                <div className="p-1.5 rounded-lg bg-amber-500/10 text-amber-500">
-                  <Sparkles className="w-4 h-4" />
-                </div>
-                <div>
-                  <h2 className="text-base font-bold text-slate-950 dark:text-white">
-                    AI Inventory Intelligence &amp; Demand Insights
-                  </h2>
-                  <p className="text-xs text-slate-600 dark:text-neutral-400 font-medium">
-                    Automated waste liquidation policies and demand absorption buffers.
-                  </p>
-                </div>
-              </div>
-
-              {/* Dynamic Markdown Spoilage Liquidation */}
-              <DynamicMarkdownCard
-                items={markdownItems}
-                onApplyMarkdown={handleApplyMarkdown}
-                currency={currency}
-                theme={theme}
-              />
-
-              {/* Lower-Priority Substitution & Cannibalization Section */}
-              <div className="pt-1">
-                <SubstitutionCard
-                  substitutions={substitutions}
-                  currency={currency}
-                  theme={theme}
-                />
-              </div>
-            </div>
-          </div>
+          <InventoryWorkspace
+            simulationStates={simulationStates}
+            selectedSkuId={activeSkuId}
+            onSelectSkuId={setActiveSkuId}
+            currentWarehouse={currentWarehouse}
+            warehouses={effectiveWarehouses}
+            onSelectWarehouse={handleSelectWarehouse}
+            forecastHorizon={forecastHorizon}
+            onChangeForecastHorizon={(days) => {
+              setForecastHorizon(days);
+              handleTriggerSimulation();
+            }}
+            forecastModel={forecastModel}
+            onSelectForecastModel={(model) => {
+              setForecastModel(model);
+              handleTriggerSimulation();
+            }}
+            currency={currency}
+            theme={theme}
+            onTriggerSimulation={handleTriggerSimulation}
+            isSimulating={isSimulating}
+            onDownloadCsv={handleDownloadCsv}
+            onNavigateToProcurement={(skuId) => {
+              if (skuId) {
+                setActiveSkuId(skuId);
+              }
+              setActivePage("procurement");
+              setProcurementTab("po");
+            }}
+            onApplyMarkdown={handleApplyMarkdown}
+          />
         )}
 
         {/* PAGE 3: PROCUREMENT & ROUTING */}
