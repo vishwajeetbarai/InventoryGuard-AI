@@ -20,6 +20,8 @@ import { KpiMetrics } from "./components/KpiMetrics";
 import { VisualAnalytics } from "./components/VisualAnalytics";
 import { RiskTable } from "./components/RiskTable";
 import { InventoryWorkspace } from "./components/InventoryWorkspace";
+import { ProcurementWorkspace } from "./components/ProcurementWorkspace";
+import { OperationsWorkspace } from "./components/OperationsWorkspace";
 import { DynamicMarkdownCard } from "./components/DynamicMarkdownCard";
 import { SubstitutionCard } from "./components/SubstitutionCard";
 import { PoGenerator } from "./components/PoGenerator";
@@ -1466,247 +1468,115 @@ export default function App() {
 
         {/* PAGE 3: PROCUREMENT & ROUTING */}
         {activePage === "procurement" && (
-          <div className="space-y-6 animate-in fade-in duration-150">
-            {/* Segmented Sub-Nav Controls */}
-            <div
-              className={`p-1.5 rounded-xl border flex items-center gap-1.5 w-fit ${
-                isDark ? "bg-neutral-900 border-neutral-800" : "bg-slate-200/80 border-slate-300"
-              }`}
-            >
-              <button
-                onClick={() => setProcurementTab("po")}
-                className={`flex items-center gap-2 px-3.5 py-1.5 rounded-lg text-xs font-semibold transition-colors cursor-pointer ${
-                  procurementTab === "po"
-                    ? isDark
-                      ? "bg-neutral-800 text-white shadow-xs font-bold"
-                      : "bg-white text-slate-950 shadow-xs border border-slate-300 font-bold"
-                    : isDark
-                    ? "text-neutral-200 hover:text-white hover:bg-neutral-800/60"
-                    : "text-slate-800 hover:text-slate-950 hover:bg-white/80"
-                }`}
-              >
-                <FileCheck2 className="w-3.5 h-3.5" />
-                <span>Automated PO Batches</span>
-                {purchaseOrders.length > 0 && (
-                  <span className="px-1.5 py-0.2 rounded-full text-[10px] font-mono font-bold bg-emerald-500/10 text-emerald-600 dark:text-emerald-400">
-                    {purchaseOrders.length}
-                  </span>
-                )}
-              </button>
-
-              <button
-                onClick={() => setProcurementTab("transfer")}
-                className={`flex items-center gap-2 px-3.5 py-1.5 rounded-lg text-xs font-semibold transition-colors cursor-pointer ${
-                  procurementTab === "transfer"
-                    ? isDark
-                      ? "bg-neutral-800 text-white shadow-xs font-bold"
-                      : "bg-white text-slate-950 shadow-xs border border-slate-300 font-bold"
-                    : isDark
-                    ? "text-neutral-200 hover:text-white hover:bg-neutral-800/60"
-                    : "text-slate-800 hover:text-slate-950 hover:bg-white/80"
-                }`}
-              >
-                <ArrowRightLeft className="w-3.5 h-3.5" />
-                <span>Inter-Store Transfers</span>
-                {interTransfers.length > 0 && (
-                  <span className="px-1.5 py-0.2 rounded-full text-[10px] font-mono font-bold bg-amber-500/10 text-amber-600 dark:text-amber-400">
-                    {interTransfers.length}
-                  </span>
-                )}
-              </button>
-
-              <button
-                onClick={() => setProcurementTab("suppliers")}
-                className={`flex items-center gap-2 px-3.5 py-1.5 rounded-lg text-xs font-semibold transition-colors cursor-pointer ${
-                  procurementTab === "suppliers"
-                    ? isDark
-                      ? "bg-neutral-800 text-white shadow-xs font-bold"
-                      : "bg-white text-slate-950 shadow-xs border border-slate-300 font-bold"
-                    : isDark
-                    ? "text-neutral-200 hover:text-white hover:bg-neutral-800/60"
-                    : "text-slate-800 hover:text-slate-950 hover:bg-white/80"
-                }`}
-              >
-                <Award className="w-3.5 h-3.5" />
-                <span>Supplier Reliability Matrix</span>
-              </button>
-            </div>
-
-            {procurementTab === "po" && (
-              <PoGenerator
-                purchaseOrders={purchaseOrders}
-                warehouse={currentWarehouse}
-                dispatchedLedger={dispatchedLedger}
-                onDispatchPo={handleDispatchPo}
-                currency={currency}
-                theme={theme}
-              />
-            )}
-
-            {procurementTab === "transfer" && (
-              <InterTransferView
-                recommendations={interTransfers}
-                onApproveTransfer={handleApproveTransfer}
-                currency={currency}
-                theme={theme}
-              />
-            )}
-
-            {procurementTab === "suppliers" && (
-              <SupplierScorecardView
-                simulationStates={simulationStates}
-                onIssueDebitNote={handleIssueDebitNote}
-                currency={currency}
-                theme={theme}
-              />
-            )}
-          </div>
+          <ProcurementWorkspace
+            purchaseOrders={purchaseOrders}
+            warehouse={currentWarehouse}
+            warehouses={effectiveWarehouses}
+            onSelectWarehouse={handleSelectWarehouse}
+            dispatchedLedger={dispatchedLedger}
+            onDispatchPo={handleDispatchPo}
+            interTransfers={interTransfers}
+            onApproveTransfer={handleApproveTransfer}
+            approvedTransferIds={approvedTransferIds}
+            simulationStates={simulationStates}
+            onIssueDebitNote={handleIssueDebitNote}
+            currency={currency}
+            theme={theme}
+            onTriggerSimulation={handleTriggerSimulation}
+            isSimulating={isSimulating}
+            onDownloadCsv={handleDownloadCsv}
+            initialTab={procurementTab}
+          />
         )}
 
         {/* PAGE 4: OPERATIONS & DATA HUB */}
+        {/* PAGE 4: OPERATIONS & DATA HUB COMMAND CENTER */}
         {activePage === "operations" && (
-          <div className="space-y-6 animate-in fade-in duration-150">
-            {/* Page Header with Workspace Tabs */}
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-              <div>
-                <h1 className="text-xl sm:text-2xl font-bold text-slate-950 dark:text-white tracking-tight">
-                  Operations &amp; Data Hub
-                </h1>
-                <p className="text-xs sm:text-sm text-slate-600 dark:text-neutral-400 mt-1">
-                  Stochastic simulation calibration, external scenario shocks, and enterprise WMS catalog ingestion.
-                </p>
-              </div>
-
-              {/* Workspace Navigation Tabs (Simulation Lab vs Data Hub) */}
-              <div
-                className={`inline-flex items-center p-1 rounded-xl border ${
-                  isDark
-                    ? "bg-neutral-900 border-neutral-800"
-                    : "bg-slate-100 border-slate-200"
-                }`}
-              >
-                <button
-                  onClick={() => setOperationsTab("simulation")}
-                  className={`flex items-center gap-2 px-3.5 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
-                    operationsTab === "simulation" ||
-                    operationsTab === "controls" ||
-                    operationsTab === "code"
-                      ? isDark
-                        ? "bg-neutral-800 text-white shadow-xs font-bold"
-                        : "bg-white text-slate-950 shadow-xs border border-slate-300 font-bold"
-                      : isDark
-                      ? "text-neutral-400 hover:text-white"
-                      : "text-slate-600 hover:text-slate-950"
-                  }`}
-                >
-                  <Sliders className="w-3.5 h-3.5 text-emerald-500" />
-                  <span>Simulation Lab</span>
-                </button>
-
-                <button
-                  onClick={() => setOperationsTab("datahub")}
-                  className={`flex items-center gap-2 px-3.5 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
-                    operationsTab === "datahub" ||
-                    operationsTab === "ingestion" ||
-                    operationsTab === "audit"
-                      ? isDark
-                        ? "bg-neutral-800 text-white shadow-xs font-bold"
-                        : "bg-white text-slate-950 shadow-xs border border-slate-300 font-bold"
-                      : isDark
-                      ? "text-neutral-400 hover:text-white"
-                      : "text-slate-600 hover:text-slate-950"
-                  }`}
-                >
-                  <Database className="w-3.5 h-3.5 text-emerald-500" />
-                  <span>Data Hub</span>
-                  {customDataset && (
-                    <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-                  )}
-                </button>
-              </div>
-            </div>
-
-            {/* Tab 1: Simulation Lab Workspace */}
-            {(operationsTab === "simulation" ||
-              operationsTab === "controls" ||
-              operationsTab === "code") && (
-              <SimulationLabWorkspace
-                warehouses={effectiveWarehouses}
-                selectedWarehouseId={selectedWarehouseId}
-                onSelectWarehouse={handleSelectWarehouse}
-                allSkus={effectiveSkus}
-                selectedSkuIds={selectedSkuIds}
-                onToggleSku={handleToggleSku}
-                onSelectAllSkus={handleSelectAllSkus}
-                serviceLevels={SERVICE_LEVELS}
-                selectedServiceZ={selectedServiceZ}
-                onSelectServiceZ={(z) => {
-                  setSelectedServiceZ(z);
-                  handleTriggerSimulation();
-                }}
-                forecastHorizon={forecastHorizon}
-                onChangeForecastHorizon={(days) => {
-                  setForecastHorizon(days);
-                  handleTriggerSimulation();
-                }}
-                monteCarloRuns={monteCarloRuns}
-                onChangeMonteCarloRuns={(runs) => {
-                  setMonteCarloRuns(runs);
-                  handleTriggerSimulation();
-                }}
-                promoSurgePct={promoSurgePct}
-                onChangePromoSurgePct={(pct) => {
-                  setPromoSurgePct(pct);
-                  handleTriggerSimulation();
-                }}
-                weatherSurgePct={weatherSurgePct}
-                onChangeWeatherSurgePct={(pct) => {
-                  setWeatherSurgePct(pct);
-                  handleTriggerSimulation();
-                }}
-                supplierDelayDays={supplierDelayDays}
-                onChangeSupplierDelayDays={(days) => {
-                  setSupplierDelayDays(days);
-                  handleTriggerSimulation();
-                }}
-                isSimulating={isSimulating}
-                onTriggerSimulation={handleTriggerSimulation}
-                onApplyPreset={handleApplyPreset}
-                reorderPolicy={reorderPolicy}
-                onSelectReorderPolicy={handleSelectReorderPolicy}
-                forecastModel={forecastModel}
-                onSelectForecastModel={(model) => {
-                  setForecastModel(model);
-                  handleTriggerSimulation();
-                }}
-                simulationStates={simulationStates}
-                pythonCode={pythonCode}
-                requirementsTxt={REQUIREMENTS_TXT}
-                readmeContent={README_MD}
-                currency={currency}
-                theme={theme}
-              />
-            )}
-
-            {/* Tab 2: Data Hub Workspace */}
-            {(operationsTab === "datahub" ||
-              operationsTab === "ingestion" ||
-              operationsTab === "audit") && (
-              <DataHubWorkspace
-                customDataset={customDataset}
-                effectiveWarehouses={effectiveWarehouses}
-                effectiveSkus={effectiveSkus}
-                onDatasetIngested={handleDatasetIngested}
-                onResetCustomDataset={handleResetCustomDataset}
-                onOpenIngestionWizard={() => setIsWmsModalOpen(true)}
-                onDownloadCsv={handleDownloadCsv}
-                auditLogs={auditLogs}
-                onOpenAuditModal={() => setIsAuditModalOpen(true)}
-                currency={currency}
-                theme={theme}
-              />
-            )}
-          </div>
+          <OperationsWorkspace
+            effectiveWarehouses={effectiveWarehouses}
+            selectedWarehouseId={selectedWarehouseId}
+            onSelectWarehouse={handleSelectWarehouse}
+            currentWarehouse={currentWarehouse}
+            effectiveSkus={effectiveSkus}
+            simulationStates={simulationStates}
+            purchaseOrders={purchaseOrders}
+            interTransfers={interTransfers}
+            approvedTransferIds={approvedTransferIds}
+            onApproveTransfer={handleApproveTransfer}
+            dispatchedLedger={dispatchedLedger}
+            auditLogs={auditLogs}
+            customDataset={customDataset}
+            onDatasetIngested={handleDatasetIngested}
+            onResetCustomDataset={handleResetCustomDataset}
+            onOpenIngestionWizard={() => setIsWmsModalOpen(true)}
+            onOpenAuditModal={() => setIsAuditModalOpen(true)}
+            onDownloadCsv={handleDownloadCsv}
+            isSimulating={isSimulating}
+            onTriggerSimulation={handleTriggerSimulation}
+            forecastModel={forecastModel}
+            onSelectForecastModel={(model) => {
+              setForecastModel(model);
+              handleTriggerSimulation();
+            }}
+            forecastHorizon={forecastHorizon}
+            onChangeForecastHorizon={(days) => {
+              setForecastHorizon(days);
+              handleTriggerSimulation();
+            }}
+            monteCarloRuns={monteCarloRuns}
+            onChangeMonteCarloRuns={(runs) => {
+              setMonteCarloRuns(runs);
+              handleTriggerSimulation();
+            }}
+            selectedServiceZ={selectedServiceZ}
+            onSelectServiceZ={(z) => {
+              setSelectedServiceZ(z);
+              handleTriggerSimulation();
+            }}
+            promoSurgePct={promoSurgePct}
+            onChangePromoSurgePct={(pct) => {
+              setPromoSurgePct(pct);
+              handleTriggerSimulation();
+            }}
+            weatherSurgePct={weatherSurgePct}
+            onChangeWeatherSurgePct={(pct) => {
+              setWeatherSurgePct(pct);
+              handleTriggerSimulation();
+            }}
+            supplierDelayDays={supplierDelayDays}
+            onChangeSupplierDelayDays={(days) => {
+              setSupplierDelayDays(days);
+              handleTriggerSimulation();
+            }}
+            reorderPolicy={reorderPolicy}
+            onSelectReorderPolicy={handleSelectReorderPolicy}
+            onApplyPreset={handleApplyPreset}
+            pythonCode={pythonCode}
+            requirementsTxt={REQUIREMENTS_TXT}
+            readmeContent={README_MD}
+            currency={currency}
+            theme={theme}
+            currentUser={currentUser}
+            currentTenant={currentTenant}
+            onNavigateToInventory={(skuId) => {
+              if (skuId) setActiveSkuId(skuId);
+              setActivePage("inventory");
+            }}
+            onNavigateToProcurement={(tab, skuId) => {
+              if (skuId) setActiveSkuId(skuId);
+              setActivePage("procurement");
+              if (tab) setProcurementTab(tab as any);
+            }}
+            onIssueDebitNote={handleIssueDebitNote}
+            onApplyMarkdown={handleApplyMarkdown}
+            initialTab={
+              operationsTab === "datahub" || operationsTab === "ingestion" || operationsTab === "audit"
+                ? "DATA_HUB"
+                : operationsTab === "code"
+                ? "INTELLIGENCE_ENGINE"
+                : "COMMAND_CENTER"
+            }
+          />
         )}
             </main>
 
