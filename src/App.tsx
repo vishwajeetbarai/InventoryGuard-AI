@@ -1205,7 +1205,7 @@ export default function App() {
           />
 
           {/* Right Main Column: Header + Scrollable Content */}
-          <div className="flex-1 flex flex-col min-w-0 h-screen overflow-y-auto">
+          <div className="flex-1 flex flex-col min-w-0 h-screen overflow-y-auto overflow-x-hidden">
             {/* Top Navigation Header */}
             <Header
               currentWarehouse={currentWarehouse}
@@ -1486,6 +1486,10 @@ export default function App() {
             isSimulating={isSimulating}
             onDownloadCsv={handleDownloadCsv}
             initialTab={procurementTab}
+            onNavigateToInventory={(skuId) => {
+              if (skuId) setActiveSkuId(skuId);
+              setActivePage("inventory");
+            }}
           />
         )}
 
@@ -1614,11 +1618,11 @@ export default function App() {
           setActivePage("inventory");
         }}
         onNavigateTab={(tab) => {
-          if (tab === "network") {
+          if (tab === "overview" || tab === "network") {
             setActivePage("overview");
-          } else if (tab === "analytics" || tab === "table") {
+          } else if (tab === "inventory" || tab === "analytics" || tab === "table") {
             setActivePage("inventory");
-          } else if (tab === "po") {
+          } else if (tab === "procurement" || tab === "po") {
             setActivePage("procurement");
             setProcurementTab("po");
           } else if (tab === "transfer") {
@@ -1627,6 +1631,8 @@ export default function App() {
           } else if (tab === "suppliers") {
             setActivePage("procurement");
             setProcurementTab("suppliers");
+          } else if (tab === "operations") {
+            setActivePage("operations");
           } else if (tab === "code") {
             setActivePage("operations");
             setOperationsTab("code");

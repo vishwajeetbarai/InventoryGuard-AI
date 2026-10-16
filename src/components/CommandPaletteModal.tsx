@@ -101,7 +101,55 @@ export const CommandPaletteModal: React.FC<CommandPaletteModalProps> = ({
           },
         ]
       : []),
-    // 1. Navigation tabs
+    // 0. Primary Application Pages
+    {
+      id: "nav-overview",
+      category: "Navigation",
+      title: "Overview — Supply Chain Control Tower",
+      subtitle: "Multi-facility network health, KPIs, and dark store topology",
+      icon: <Navigation className="w-4 h-4 text-emerald-400" />,
+      action: () => {
+        onNavigateTab("overview");
+        onClose();
+      },
+      keywords: ["overview", "control tower", "kpi", "network", "dashboard"],
+    },
+    {
+      id: "nav-inventory",
+      category: "Navigation",
+      title: "Inventory & Forecast Intelligence",
+      subtitle: "Stock health, demand projections, confidence bounds, and depletion",
+      icon: <TrendingUp className="w-4 h-4 text-emerald-400" />,
+      action: () => {
+        onNavigateTab("inventory");
+        onClose();
+      },
+      keywords: ["inventory", "forecast", "demand", "stock", "safety stock", "rop"],
+    },
+    {
+      id: "nav-procurement",
+      category: "Navigation",
+      title: "Procurement & Routing Intelligence",
+      subtitle: "Automated PO batches, supplier scorecards, and inter-store rebalancing",
+      icon: <FileCheck2 className="w-4 h-4 text-emerald-400" />,
+      action: () => {
+        onNavigateTab("procurement");
+        onClose();
+      },
+      keywords: ["procurement", "purchase orders", "po", "transfers", "suppliers", "routing"],
+    },
+    {
+      id: "nav-operations",
+      category: "Navigation",
+      title: "Operations Command Center & Data Hub",
+      subtitle: "Live exceptions, facility throughput, WMS ingestion, and simulation engine",
+      icon: <Sparkles className="w-4 h-4 text-emerald-400" />,
+      action: () => {
+        onNavigateTab("operations");
+        onClose();
+      },
+      keywords: ["operations", "exceptions", "data hub", "wms", "ingestion", "simulation"],
+    },
     {
       id: "tab-network",
       category: "Navigation",

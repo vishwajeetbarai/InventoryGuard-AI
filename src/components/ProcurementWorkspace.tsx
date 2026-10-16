@@ -45,6 +45,7 @@ import {
   SlidersHorizontal,
   ArrowRight,
   Info,
+  TrendingUp,
 } from "lucide-react";
 
 interface ProcurementWorkspaceProps {
@@ -65,6 +66,7 @@ interface ProcurementWorkspaceProps {
   isSimulating: boolean;
   onDownloadCsv: () => void;
   initialTab?: "ALL" | "DECISIONS" | "ORDERS" | "TRANSFERS" | "SUPPLIERS" | "po" | "transfer" | "suppliers";
+  onNavigateToInventory?: (skuId?: string) => void;
 }
 
 export type ProcurementTab = "ALL" | "DECISIONS" | "ORDERS" | "TRANSFERS" | "SUPPLIERS";
@@ -87,6 +89,7 @@ export const ProcurementWorkspace: React.FC<ProcurementWorkspaceProps> = ({
   isSimulating,
   onDownloadCsv,
   initialTab,
+  onNavigateToInventory,
 }) => {
   const isDark = theme === "dark";
 
@@ -814,14 +817,27 @@ export const ProcurementWorkspace: React.FC<ProcurementWorkspaceProps> = ({
 
                   {/* Action Button */}
                   <div className="pt-4 border-t border-slate-200/60 dark:border-neutral-800/80 flex items-center justify-between gap-3 mt-3">
-                    <button
-                      type="button"
-                      onClick={() => setSelectedComparisonSkuId(dec.skuId)}
-                      className="text-xs font-semibold text-slate-500 dark:text-neutral-400 hover:text-emerald-600 dark:hover:text-emerald-400 cursor-pointer flex items-center gap-1"
-                    >
-                      <Eye className="w-3.5 h-3.5" />
-                      <span>Compare Sourcing</span>
-                    </button>
+                    <div className="flex items-center gap-3">
+                      <button
+                        type="button"
+                        onClick={() => setSelectedComparisonSkuId(dec.skuId)}
+                        className="text-xs font-semibold text-slate-500 dark:text-neutral-400 hover:text-emerald-600 dark:hover:text-emerald-400 cursor-pointer flex items-center gap-1"
+                      >
+                        <Eye className="w-3.5 h-3.5" />
+                        <span>Compare Sourcing</span>
+                      </button>
+
+                      {onNavigateToInventory && (
+                        <button
+                          type="button"
+                          onClick={() => onNavigateToInventory(dec.skuId)}
+                          className="text-xs font-semibold text-slate-500 dark:text-neutral-400 hover:text-emerald-600 dark:hover:text-emerald-400 cursor-pointer flex items-center gap-1"
+                        >
+                          <TrendingUp className="w-3.5 h-3.5" />
+                          <span>View Forecast</span>
+                        </button>
+                      )}
+                    </div>
 
                     {dec.decisionType === "TRANSFER" && dec.transferObj && (
                       <button
