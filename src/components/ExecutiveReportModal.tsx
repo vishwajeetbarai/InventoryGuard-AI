@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useEffect } from "react";
 import {
   Warehouse,
   SkuSimulationState,
@@ -43,6 +43,15 @@ export const ExecutiveReportModal: React.FC<ExecutiveReportModalProps> = ({
   theme,
 }) => {
   const isDark = theme === "dark";
+
+  useEffect(() => {
+    if (!isOpen) return;
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape") onClose();
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [isOpen, onClose]);
 
   if (!isOpen) return null;
 

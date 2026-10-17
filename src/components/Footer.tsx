@@ -77,17 +77,11 @@ export const Footer: React.FC<FooterProps> = ({
       >
         <div className="max-w-7xl mx-auto flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
           <div className="flex flex-wrap items-center gap-4 text-xs font-medium">
-            {/* System Status Pill */}
-            <div
-              className={`flex items-center gap-2 px-3 py-1.5 rounded-full border ${
-                isDark
-                  ? "bg-emerald-950/40 border-emerald-800 text-emerald-400"
-                  : "bg-emerald-50 border-emerald-200 text-emerald-800"
-              }`}
-            >
-              <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-              <span className="font-bold">InventoryGuard-AI Engine: Operational</span>
-              <span className="text-[10px] font-mono opacity-80">(14ms p99)</span>
+            {/* System Status */}
+            <div className="flex items-center gap-2 text-slate-800 dark:text-neutral-200">
+              <span className="w-2 h-2 rounded-full bg-emerald-500 inline-block" />
+              <span className="font-bold">InventoryGuard AI Engine:</span>
+              <span className="text-emerald-700 dark:text-emerald-400 font-semibold">Operational</span>
             </div>
 
             {/* Live Stats */}

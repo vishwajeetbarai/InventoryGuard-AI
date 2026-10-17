@@ -44,9 +44,17 @@ export const WmsDataIngestionModal: React.FC<WmsDataIngestionModalProps> = ({
   onDatasetIngested,
   theme = "dark",
 }) => {
-  if (!isOpen) return null;
-
   const isDark = theme === "dark";
+
+  // Escape key listener for modal accessibility
+  useEffect(() => {
+    if (!isOpen) return;
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape") onClose();
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [isOpen, onClose]);
 
   // Step state: 1: upload/select, 2: map columns, 3: preview & ingest
   const [step, setStep] = useState<1 | 2 | 3>(1);

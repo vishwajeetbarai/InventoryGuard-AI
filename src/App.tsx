@@ -295,12 +295,18 @@ export default function App() {
     setToasts((prev) => prev.filter((t) => t.id !== id));
   };
 
-  // Keyboard shortcut listener for Cmd + K / Ctrl + K
+  // Keyboard shortcut listener for Cmd + K / Ctrl + K and Escape
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "k") {
         e.preventDefault();
         setIsCommandPaletteOpen((prev) => !prev);
+      } else if (e.key === "Escape") {
+        setIsCommandPaletteOpen(false);
+        setIsWmsModalOpen(false);
+        setIsAuditModalOpen(false);
+        setIsReportModalOpen(false);
+        setIsMobileSidebarOpen(false);
       }
     };
     window.addEventListener("keydown", handleKeyDown);
@@ -363,6 +369,46 @@ export default function App() {
     };
   }, []);
 
+  const handleSelectPage = (
+    targetPage: AppPage,
+    targetTab?: string,
+    skuId?: string
+  ) => {
+    setActivePage(targetPage);
+    window.location.hash = `app/${targetPage}`;
+    if (skuId) {
+      setActiveSkuId(skuId);
+    }
+    if (targetTab) {
+      if (
+        targetPage === "procurement" &&
+        (targetTab === "po" ||
+          targetTab === "transfer" ||
+          targetTab === "suppliers" ||
+          targetTab === "DECISIONS" ||
+          targetTab === "ORDERS" ||
+          targetTab === "TRANSFERS" ||
+          targetTab === "SUPPLIERS")
+      ) {
+        setProcurementTab(targetTab as any);
+      } else if (
+        targetPage === "operations" &&
+        (targetTab === "simulation" ||
+          targetTab === "datahub" ||
+          targetTab === "code" ||
+          targetTab === "COMMAND_CENTER" ||
+          targetTab === "EXCEPTIONS" ||
+          targetTab === "WAREHOUSES" ||
+          targetTab === "DATA_HUB" ||
+          targetTab === "INTELLIGENCE_ENGINE" ||
+          targetTab === "ACTIVITY_LOG")
+      ) {
+        setOperationsTab(targetTab as any);
+      }
+    }
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  };
+
   const handleEnterApp = (targetPage: AppPage = "overview", targetTab?: string) => {
     const activeSession = StorageService.getAuthSession();
 
@@ -380,23 +426,8 @@ export default function App() {
       return;
     }
 
-    setActivePage(targetPage);
-    if (targetTab) {
-      if (
-        targetPage === "procurement" &&
-        (targetTab === "po" || targetTab === "transfer" || targetTab === "suppliers")
-      ) {
-        setProcurementTab(targetTab as any);
-      } else if (
-        targetPage === "operations" &&
-        (targetTab === "simulation" || targetTab === "datahub" || targetTab === "code")
-      ) {
-        setOperationsTab(targetTab as any);
-      }
-    }
+    handleSelectPage(targetPage, targetTab);
     setViewMode("app");
-    window.location.hash = `app/${targetPage}`;
-    window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
   const handleGoToLanding = () => {
@@ -1183,10 +1214,7 @@ export default function App() {
           {/* Persistent Left Vertical Sidebar */}
           <DashboardSidebar
             activePage={activePage}
-            onSelectPage={(page) => {
-              setActivePage(page);
-              window.location.hash = `app/${page}`;
-            }}
+            onSelectPage={handleSelectPage}
             criticalCount={criticalSkus.length}
             poCount={purchaseOrders.length}
             transferCount={interTransfers.filter((t) => !approvedTransferIds.includes(t.id)).length}
@@ -1212,7 +1240,7 @@ export default function App() {
               warehouses={effectiveWarehouses}
               onSelectWarehouse={handleSelectWarehouse}
               activePage={activePage}
-              onSelectPage={setActivePage}
+              onSelectPage={handleSelectPage}
               onRefreshData={handleTriggerSimulation}
               isSimulating={isSimulating}
               theme={theme}
@@ -1354,13 +1382,11 @@ export default function App() {
               theme={theme}
               onDrillDown={(target) => {
                 if (target === "inventory" || target === "risk") {
-                  setActivePage("inventory");
+                  handleSelectPage("inventory");
                 } else if (target === "procurement") {
-                  setActivePage("procurement");
-                  setProcurementTab("po");
+                  handleSelectPage("procurement", "po");
                 } else if (target === "controls") {
-                  setActivePage("operations");
-                  setOperationsTab("simulation");
+                  handleSelectPage("operations", "simulation");
                 }
               }}
             />
@@ -1386,25 +1412,16 @@ export default function App() {
               currency={currency}
               theme={theme}
               onNavigateToPo={(skuId) => {
-                setActivePage("procurement");
-                setProcurementTab("po");
-                if (skuId) {
-                  setActiveSkuId(skuId);
-                }
+                handleSelectPage("procurement", "po", skuId);
               }}
               onNavigateToTransfers={() => {
-                setActivePage("procurement");
-                setProcurementTab("transfer");
+                handleSelectPage("procurement", "transfer");
               }}
               onNavigateToSuppliers={() => {
-                setActivePage("procurement");
-                setProcurementTab("suppliers");
+                handleSelectPage("procurement", "suppliers");
               }}
               onNavigateToInventory={(skuId) => {
-                setActivePage("inventory");
-                if (skuId) {
-                  setActiveSkuId(skuId);
-                }
+                handleSelectPage("inventory", undefined, skuId);
               }}
               onApproveTransfer={handleApproveTransfer}
             />
@@ -1425,7 +1442,7 @@ export default function App() {
                 if (whId) {
                   handleSelectWarehouse(whId);
                 }
-                setActivePage("inventory");
+                handleSelectPage("inventory");
               }}
             />
           </div>
@@ -1456,11 +1473,7 @@ export default function App() {
             isSimulating={isSimulating}
             onDownloadCsv={handleDownloadCsv}
             onNavigateToProcurement={(skuId) => {
-              if (skuId) {
-                setActiveSkuId(skuId);
-              }
-              setActivePage("procurement");
-              setProcurementTab("po");
+              handleSelectPage("procurement", "po", skuId);
             }}
             onApplyMarkdown={handleApplyMarkdown}
           />
@@ -1487,13 +1500,11 @@ export default function App() {
             onDownloadCsv={handleDownloadCsv}
             initialTab={procurementTab}
             onNavigateToInventory={(skuId) => {
-              if (skuId) setActiveSkuId(skuId);
-              setActivePage("inventory");
+              handleSelectPage("inventory", undefined, skuId);
             }}
           />
         )}
 
-        {/* PAGE 4: OPERATIONS & DATA HUB */}
         {/* PAGE 4: OPERATIONS & DATA HUB COMMAND CENTER */}
         {activePage === "operations" && (
           <OperationsWorkspace
@@ -1563,13 +1574,10 @@ export default function App() {
             currentUser={currentUser}
             currentTenant={currentTenant}
             onNavigateToInventory={(skuId) => {
-              if (skuId) setActiveSkuId(skuId);
-              setActivePage("inventory");
+              handleSelectPage("inventory", undefined, skuId);
             }}
             onNavigateToProcurement={(tab, skuId) => {
-              if (skuId) setActiveSkuId(skuId);
-              setActivePage("procurement");
-              if (tab) setProcurementTab(tab as any);
+              handleSelectPage("procurement", tab, skuId);
             }}
             onIssueDebitNote={handleIssueDebitNote}
             onApplyMarkdown={handleApplyMarkdown}
@@ -1597,7 +1605,7 @@ export default function App() {
               onOpenWmsModal={() => setIsWmsModalOpen(true)}
               onOpenAuditModal={() => setIsAuditModalOpen(true)}
               onTriggerSimulation={handleTriggerSimulation}
-              onSelectPage={setActivePage}
+              onSelectPage={handleSelectPage}
               isSimulating={isSimulating}
               onGoToLanding={handleGoToLanding}
             />
@@ -1614,28 +1622,23 @@ export default function App() {
         onSelectWarehouse={handleSelectWarehouse}
         allSkus={effectiveSkus}
         onSelectSku={(id) => {
-          setActiveSkuId(id);
-          setActivePage("inventory");
+          handleSelectPage("inventory", undefined, id);
         }}
         onNavigateTab={(tab) => {
           if (tab === "overview" || tab === "network") {
-            setActivePage("overview");
+            handleSelectPage("overview");
           } else if (tab === "inventory" || tab === "analytics" || tab === "table") {
-            setActivePage("inventory");
+            handleSelectPage("inventory");
           } else if (tab === "procurement" || tab === "po") {
-            setActivePage("procurement");
-            setProcurementTab("po");
+            handleSelectPage("procurement", "po");
           } else if (tab === "transfer") {
-            setActivePage("procurement");
-            setProcurementTab("transfer");
+            handleSelectPage("procurement", "transfer");
           } else if (tab === "suppliers") {
-            setActivePage("procurement");
-            setProcurementTab("suppliers");
+            handleSelectPage("procurement", "suppliers");
           } else if (tab === "operations") {
-            setActivePage("operations");
+            handleSelectPage("operations");
           } else if (tab === "code") {
-            setActivePage("operations");
-            setOperationsTab("code");
+            handleSelectPage("operations", "code");
           }
         }}
         onTriggerSimulation={handleTriggerSimulation}
