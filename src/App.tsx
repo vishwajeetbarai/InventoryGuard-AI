@@ -38,6 +38,7 @@ import { ExecutiveReportModal } from "./components/ExecutiveReportModal";
 import { WmsDataIngestionModal } from "./components/WmsDataIngestionModal";
 import { AuditLedgerModal } from "./components/AuditLedgerModal";
 import { LandingPage } from "./components/LandingPage";
+import { GeminiCopilot } from "./components/GeminiCopilot";
 import { SignInPage } from "./components/auth/SignInPage";
 import { SignUpPage } from "./components/auth/SignUpPage";
 import { ForgotPasswordPage } from "./components/auth/ForgotPasswordPage";
@@ -239,6 +240,7 @@ export default function App() {
   const [isWmsModalOpen, setIsWmsModalOpen] = useState<boolean>(false);
   const [isAuditModalOpen, setIsAuditModalOpen] = useState<boolean>(false);
   const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState<boolean>(false);
+  const [isCopilotOpen, setIsCopilotOpen] = useState<boolean>(false);
   const [toasts, setToasts] = useState<ToastItem[]>([]);
 
   // Synchronize state with persistent storage
@@ -307,6 +309,7 @@ export default function App() {
         setIsAuditModalOpen(false);
         setIsReportModalOpen(false);
         setIsMobileSidebarOpen(false);
+        setIsCopilotOpen(false);
       }
     };
     window.addEventListener("keydown", handleKeyDown);
@@ -1183,6 +1186,7 @@ export default function App() {
           isAuthenticated={isAuthenticated}
           currentUser={currentUser}
           onSignOut={handleSignOut}
+          onOpenCopilot={() => setIsCopilotOpen(true)}
         />
       ) : viewMode === "login" ? (
         <SignInPage
@@ -1230,6 +1234,7 @@ export default function App() {
             isMobileOpen={isMobileSidebarOpen}
             onCloseMobile={() => setIsMobileSidebarOpen(false)}
             theme={theme}
+            onOpenCopilot={() => setIsCopilotOpen(true)}
           />
 
           {/* Right Main Column: Header + Scrollable Content */}
@@ -1260,6 +1265,7 @@ export default function App() {
               onGoToLanding={handleGoToLanding}
               onSignOut={handleSignOut}
               onToggleMobileSidebar={() => setIsMobileSidebarOpen((prev) => !prev)}
+              onOpenCopilot={() => setIsCopilotOpen(true)}
             />
 
             {/* Main Spacious Content Canvas with Generous Footer Spacing */}
@@ -1673,6 +1679,7 @@ export default function App() {
         onOpenPdfReport={() => setIsReportModalOpen(true)}
         theme={theme}
         onGoToLanding={handleGoToLanding}
+        onOpenCopilot={() => setIsCopilotOpen(true)}
       />
 
       {/* Executive Printable / PDF Audit Dossier Modal */}
@@ -1704,6 +1711,20 @@ export default function App() {
         currentTenant={currentTenant}
         currentUser={currentUser}
         theme={theme}
+      />
+
+      {/* Gemini AI Copilot Assistant & Doubt Clarification */}
+      <GeminiCopilot
+        isOpen={isCopilotOpen}
+        onToggle={() => setIsCopilotOpen((prev) => !prev)}
+        currentWarehouse={currentWarehouse}
+        activePage={activePage}
+        criticalCount={criticalSkus.length}
+        currency={currency}
+        currentUser={currentUser}
+        selectedSkuId={activeSkuId}
+        theme={theme}
+        onNavigatePage={handleSelectPage}
       />
 
       {/* Frosted Glass Floating Toast Notification Feedback System */}

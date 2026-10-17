@@ -21,6 +21,7 @@ import {
   User,
   Sliders,
   Database,
+  Sparkles,
 } from "lucide-react";
 import { AppPage } from "../types";
 import { UserProfile, TenantOrganization, UserRole } from "../types/auth";
@@ -44,6 +45,7 @@ interface DashboardSidebarProps {
   isMobileOpen: boolean;
   onCloseMobile: () => void;
   theme: "dark" | "light";
+  onOpenCopilot?: () => void;
 }
 
 export const DashboardSidebar: React.FC<DashboardSidebarProps> = ({
@@ -63,6 +65,7 @@ export const DashboardSidebar: React.FC<DashboardSidebarProps> = ({
   isMobileOpen,
   onCloseMobile,
   theme,
+  onOpenCopilot,
 }) => {
   const isDark = theme === "dark";
   const [isCollapsed, setIsCollapsed] = useState(false);
@@ -295,6 +298,29 @@ export const DashboardSidebar: React.FC<DashboardSidebarProps> = ({
                   ⌘K
                 </kbd>
               </button>
+
+              {onOpenCopilot && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    onOpenCopilot();
+                    if (isDrawer) onCloseMobile();
+                  }}
+                  className={`w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs transition-colors cursor-pointer text-left ${
+                    isDark
+                      ? "hover:bg-neutral-800/60 text-emerald-400"
+                      : "hover:bg-emerald-50 text-emerald-800 font-semibold"
+                  }`}
+                >
+                  <div className="flex items-center gap-2.5">
+                    <Sparkles className="w-4 h-4 text-emerald-500 animate-pulse" />
+                    <span className="font-semibold">Ask Copilot</span>
+                  </div>
+                  <span className="text-[10px] font-mono px-1.5 py-0.2 rounded bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 font-bold">
+                    AI
+                  </span>
+                </button>
+              )}
 
               <button
                 type="button"

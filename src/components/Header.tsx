@@ -21,6 +21,10 @@ import {
   ChevronRight,
   Database,
   RotateCcw,
+  Sparkles,
+  HelpCircle,
+  Globe,
+  Compass,
 } from "lucide-react";
 
 interface HeaderProps {
@@ -48,6 +52,8 @@ interface HeaderProps {
   onGoToLanding?: () => void;
   onSignOut?: () => void;
   onToggleMobileSidebar?: () => void;
+  onOpenCopilot?: () => void;
+  onOpenHelpGuide?: () => void;
 }
 
 export const Header: React.FC<HeaderProps> = ({
@@ -67,8 +73,11 @@ export const Header: React.FC<HeaderProps> = ({
   onSelectRole,
   currentCurrency = "USD",
   onSelectCurrency,
+  onGoToLanding,
   onSignOut,
   onToggleMobileSidebar,
+  onOpenCopilot,
+  onOpenHelpGuide,
 }) => {
   const isDark = theme === "dark";
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
@@ -247,6 +256,24 @@ export const Header: React.FC<HeaderProps> = ({
               </kbd>
             </button>
 
+            {/* Ask Gemini Copilot CTA */}
+            {onOpenCopilot && (
+              <button
+                type="button"
+                onClick={onOpenCopilot}
+                className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg border text-xs font-semibold cursor-pointer transition-colors ${
+                  isDark
+                    ? "bg-emerald-950/40 hover:bg-emerald-900/60 border-emerald-500/30 text-emerald-400"
+                    : "bg-emerald-50 hover:bg-emerald-100 border-emerald-200 text-emerald-800 shadow-2xs"
+                }`}
+                title="Ask Gemini Copilot: Clarify doubts or get supply-chain guidance"
+                aria-label="Ask Gemini Copilot"
+              >
+                <Sparkles className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400 animate-pulse" />
+                <span className="hidden sm:inline">Ask Copilot</span>
+              </button>
+            )}
+
             {/* Run Simulation Engine CTA */}
             <button
               type="button"
@@ -325,6 +352,57 @@ export const Header: React.FC<HeaderProps> = ({
                   </div>
                 )}
               </div>
+            )}
+
+            {/* Ask AI Copilot / Clarify Doubts Action Button */}
+            {onOpenCopilot && (
+              <button
+                type="button"
+                onClick={onOpenCopilot}
+                className="flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-lg bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-bold text-xs shadow-xs hover:shadow-md transition-all cursor-pointer border border-emerald-400/40"
+                title="Ask AI Copilot: Clarify any doubt or learn how the algorithms work"
+                aria-label="Clarify Doubts with AI"
+              >
+                <Sparkles className="w-3.5 h-3.5 text-white animate-pulse" />
+                <span className="hidden sm:inline">Clarify Doubts (AI)</span>
+                <span className="sm:hidden font-mono text-[10px]">AI</span>
+              </button>
+            )}
+
+            {/* Help & User Doubts Guidebook */}
+            {onOpenHelpGuide && (
+              <button
+                type="button"
+                onClick={onOpenHelpGuide}
+                className={`p-1.5 sm:px-2.5 sm:py-1.5 rounded-lg border text-xs font-medium transition-colors cursor-pointer flex items-center gap-1.5 ${
+                  isDark
+                    ? "bg-neutral-900 hover:bg-neutral-800 text-neutral-300 border-neutral-700"
+                    : "bg-white hover:bg-slate-50 text-slate-700 border-slate-200 shadow-xs"
+                }`}
+                title="Open New User Doubt Resolution Guide & FAQ"
+                aria-label="New User Doubt Guide"
+              >
+                <HelpCircle className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
+                <span className="hidden md:inline">Guide &amp; Doubts</span>
+              </button>
+            )}
+
+            {/* Landing Page Tour Link */}
+            {onGoToLanding && (
+              <button
+                type="button"
+                onClick={onGoToLanding}
+                className={`hidden xl:flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg border text-xs font-medium transition-colors cursor-pointer ${
+                  isDark
+                    ? "bg-neutral-900 hover:bg-neutral-800 text-neutral-300 border-neutral-700"
+                    : "bg-white hover:bg-slate-50 text-slate-700 border-slate-200 shadow-xs"
+                }`}
+                title="View Marketing Landing Page & Feature Overview"
+                aria-label="View Product Tour"
+              >
+                <Compass className="w-3.5 h-3.5 text-slate-400" />
+                <span>Product Tour</span>
+              </button>
             )}
 
             {/* Theme Toggle */}
@@ -434,6 +512,22 @@ export const Header: React.FC<HeaderProps> = ({
                       <FileSpreadsheet className="w-3.5 h-3.5 text-slate-500" />
                       <span>Export Executive Report</span>
                     </button>
+
+                    {onGoToLanding && (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          onGoToLanding();
+                          setIsUserMenuOpen(false);
+                        }}
+                        className={`w-full flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-xs transition-colors cursor-pointer text-left ${
+                          isDark ? "hover:bg-neutral-800 text-neutral-300" : "hover:bg-slate-50 text-slate-700"
+                        }`}
+                      >
+                        <Compass className="w-3.5 h-3.5 text-slate-500" />
+                        <span>Product Landing Page &amp; Tour</span>
+                      </button>
+                    )}
                   </div>
 
                   {/* Switch Role Persona */}

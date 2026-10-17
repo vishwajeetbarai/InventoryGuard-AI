@@ -48,6 +48,7 @@ interface CommandPaletteModalProps {
   onOpenPdfReport: () => void;
   theme: "dark" | "light";
   onGoToLanding?: () => void;
+  onOpenCopilot?: () => void;
 }
 
 export const CommandPaletteModal: React.FC<CommandPaletteModalProps> = ({
@@ -67,6 +68,7 @@ export const CommandPaletteModal: React.FC<CommandPaletteModalProps> = ({
   onOpenPdfReport,
   theme,
   onGoToLanding,
+  onOpenCopilot,
 }) => {
   const isDark = theme === "dark";
   const [query, setQuery] = useState("");
@@ -85,6 +87,33 @@ export const CommandPaletteModal: React.FC<CommandPaletteModalProps> = ({
 
   // Construct all available commands
   const commands: CommandItem[] = [
+    ...(onOpenCopilot
+      ? [
+          {
+            id: "ask-copilot",
+            category: "Navigation" as const,
+            title: "Ask Gemini Copilot — Clarify Doubts & Supply Chain Formulas",
+            subtitle: "Interactive AI assistant for platform questions, safety stock, and inventory intelligence",
+            icon: <Sparkles className="w-4 h-4 text-emerald-400 animate-pulse" />,
+            action: () => {
+              onOpenCopilot();
+              onClose();
+            },
+            keywords: [
+              "copilot",
+              "gemini",
+              "ai",
+              "chat",
+              "assistant",
+              "doubt",
+              "help",
+              "formula",
+              "safety stock",
+              "tour",
+            ],
+          },
+        ]
+      : []),
     ...(onGoToLanding
       ? [
           {

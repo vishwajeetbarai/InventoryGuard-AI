@@ -56,6 +56,7 @@ interface LandingPageProps {
   isAuthenticated?: boolean;
   currentUser?: UserProfile | null;
   onSignOut?: () => void;
+  onOpenCopilot?: () => void;
 }
 
 export const LandingPage: React.FC<LandingPageProps> = ({
@@ -69,6 +70,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({
   isAuthenticated = false,
   currentUser,
   onSignOut,
+  onOpenCopilot,
 }) => {
   const isDark = theme === "dark";
 
@@ -334,6 +336,24 @@ export const LandingPage: React.FC<LandingPageProps> = ({
               >
                 {isDark ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
               </button>
+
+              {/* Ask Gemini Copilot */}
+              {onOpenCopilot && (
+                <button
+                  type="button"
+                  onClick={onOpenCopilot}
+                  className={`flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-lg border text-xs font-semibold cursor-pointer transition-colors shrink-0 ${
+                    isDark
+                      ? "bg-emerald-950/40 hover:bg-emerald-900/60 border-emerald-500/30 text-emerald-400"
+                      : "bg-emerald-50 hover:bg-emerald-100 border-emerald-200 text-emerald-800 shadow-2xs"
+                  }`}
+                  title="Ask Gemini Copilot: Clarify doubts or get supply-chain guidance"
+                  aria-label="Ask Gemini Copilot"
+                >
+                  <Sparkles className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400 animate-pulse" />
+                  <span className="hidden sm:inline">Ask AI</span>
+                </button>
+              )}
 
               {/* If Authenticated: Direct Return to Workspace */}
               {isAuthenticated && currentUser ? (
