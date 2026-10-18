@@ -168,6 +168,8 @@ export const WmsDataIngestionModal: React.FC<WmsDataIngestionModalProps> = ({
     }, 450);
   };
 
+  if (!isOpen) return null;
+
   const bgCls = isDark
     ? "bg-neutral-950 border-neutral-800 text-neutral-100"
     : "bg-white border-slate-200 text-slate-900";

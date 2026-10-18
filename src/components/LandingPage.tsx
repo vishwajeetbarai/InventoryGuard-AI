@@ -57,6 +57,7 @@ interface LandingPageProps {
   currentUser?: UserProfile | null;
   onSignOut?: () => void;
   onOpenCopilot?: () => void;
+  onOpenHelpGuide?: () => void;
 }
 
 export const LandingPage: React.FC<LandingPageProps> = ({
@@ -71,6 +72,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({
   currentUser,
   onSignOut,
   onOpenCopilot,
+  onOpenHelpGuide,
 }) => {
   const isDark = theme === "dark";
 

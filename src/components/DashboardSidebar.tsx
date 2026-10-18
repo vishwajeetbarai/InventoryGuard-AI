@@ -20,8 +20,8 @@ import {
   Building2,
   User,
   Sliders,
-  Database,
   Sparkles,
+  HelpCircle,
 } from "lucide-react";
 import { AppPage } from "../types";
 import { UserProfile, TenantOrganization, UserRole } from "../types/auth";
@@ -46,6 +46,7 @@ interface DashboardSidebarProps {
   onCloseMobile: () => void;
   theme: "dark" | "light";
   onOpenCopilot?: () => void;
+  onOpenHelpGuide?: () => void;
 }
 
 export const DashboardSidebar: React.FC<DashboardSidebarProps> = ({
@@ -66,6 +67,7 @@ export const DashboardSidebar: React.FC<DashboardSidebarProps> = ({
   onCloseMobile,
   theme,
   onOpenCopilot,
+  onOpenHelpGuide,
 }) => {
   const isDark = theme === "dark";
   const [isCollapsed, setIsCollapsed] = useState(false);
@@ -314,10 +316,31 @@ export const DashboardSidebar: React.FC<DashboardSidebarProps> = ({
                 >
                   <div className="flex items-center gap-2.5">
                     <Sparkles className="w-4 h-4 text-emerald-500 animate-pulse" />
-                    <span className="font-semibold">Ask Copilot</span>
+                    <span className="font-semibold">Ask Copilot (AI)</span>
                   </div>
                   <span className="text-[10px] font-mono px-1.5 py-0.2 rounded bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 font-bold">
                     AI
+                  </span>
+                </button>
+              )}
+
+              {onOpenHelpGuide && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    onOpenHelpGuide();
+                    if (isDrawer) onCloseMobile();
+                  }}
+                  className={`w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs transition-colors cursor-pointer text-left ${
+                    isDark ? "hover:bg-neutral-800/60 text-neutral-300" : "hover:bg-slate-100 text-slate-700"
+                  }`}
+                >
+                  <div className="flex items-center gap-2.5">
+                    <HelpCircle className="w-4 h-4 text-teal-500" />
+                    <span className="font-medium">Guide &amp; User Doubts</span>
+                  </div>
+                  <span className="text-[10px] font-mono px-1.5 py-0.2 rounded bg-teal-500/10 text-teal-600 dark:text-teal-400 font-semibold">
+                    FAQ
                   </span>
                 </button>
               )}

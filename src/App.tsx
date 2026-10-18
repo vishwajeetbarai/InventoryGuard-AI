@@ -39,6 +39,7 @@ import { WmsDataIngestionModal } from "./components/WmsDataIngestionModal";
 import { AuditLedgerModal } from "./components/AuditLedgerModal";
 import { LandingPage } from "./components/LandingPage";
 import { GeminiCopilot } from "./components/GeminiCopilot";
+import { HelpAndDoubtsModal } from "./components/HelpAndDoubtsModal";
 import { SignInPage } from "./components/auth/SignInPage";
 import { SignUpPage } from "./components/auth/SignUpPage";
 import { ForgotPasswordPage } from "./components/auth/ForgotPasswordPage";
@@ -74,6 +75,9 @@ import {
   Sparkles,
   Sliders,
   Database,
+  BookOpen,
+  HelpCircle,
+  X,
 } from "lucide-react";
 
 const SERVICE_LEVELS = [
@@ -132,10 +136,21 @@ export default function App() {
     return "light";
   });
 
-  // Multi-Tenant Authentication & Session State
-  const [session, setSession] = useState<AuthSession | null>(() =>
-    StorageService.getAuthSession()
-  );
+  // Multi-Tenant Authentication & Session State - seeded with demo user by default so new users enter the app directly
+  const [session, setSession] = useState<AuthSession | null>(() => {
+    const existing = StorageService.getAuthSession();
+    if (existing && existing.isAuthenticated && existing.user) return existing;
+    const initialSession: AuthSession = {
+      user: DEMO_USERS.INVENTORY_MANAGER,
+      tenant: TENANT_ORGANIZATIONS[0],
+      token: "demo-jwt-token-active",
+      loginTime: new Date().toISOString(),
+      isAuthenticated: true,
+      rememberMe: true,
+    };
+    StorageService.saveAuthSession(initialSession);
+    return initialSession;
+  });
   const isAuthenticated = !!(session && session.isAuthenticated);
 
   const [currentUser, setCurrentUser] = useState<UserProfile>(() => {
@@ -192,12 +207,17 @@ export default function App() {
   const [currency, setCurrency] = useState<CurrencyCode>(() => getStoredCurrency());
 
   // View mode: 'landing' | 'login' | 'signup' | 'forgot-password' | 'app'
+  // When visiting root '/' or '#landing', the real Landing Page is displayed.
+  // When visiting '#app' or clicking 'Launch Control Tower', the live app Control Tower is displayed.
   const [viewMode, setViewMode] = useState<"landing" | "login" | "signup" | "forgot-password" | "app">(() => {
     if (typeof window !== "undefined") {
       const hash = window.location.hash.toLowerCase();
       const pathname = window.location.pathname.toLowerCase();
       const activeSession = StorageService.getAuthSession();
 
+      if (hash === "#app" || hash.startsWith("#app/") || pathname === "/app" || pathname.startsWith("/app/")) {
+        return "app";
+      }
       if (hash === "#login" || pathname === "/login") {
         return activeSession?.isAuthenticated ? "app" : "login";
       }
@@ -207,11 +227,7 @@ export default function App() {
       if (hash === "#forgot-password" || pathname === "/forgot-password") {
         return "forgot-password";
       }
-      if (hash === "#app" || hash.startsWith("#app/") || pathname === "/app" || pathname.startsWith("/app/")) {
-        // Protected route
-        if (activeSession?.isAuthenticated) return "app";
-        return "login";
-      }
+      return "landing";
     }
     return "landing";
   });
@@ -241,6 +257,13 @@ export default function App() {
   const [isAuditModalOpen, setIsAuditModalOpen] = useState<boolean>(false);
   const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState<boolean>(false);
   const [isCopilotOpen, setIsCopilotOpen] = useState<boolean>(false);
+  const [isHelpModalOpen, setIsHelpModalOpen] = useState<boolean>(false);
+  const [isWelcomeBannerDismissed, setIsWelcomeBannerDismissed] = useState<boolean>(() => {
+    if (typeof window !== "undefined") {
+      return localStorage.getItem("inventoryguard_welcome_banner_dismissed") === "true";
+    }
+    return false;
+  });
   const [toasts, setToasts] = useState<ToastItem[]>([]);
 
   // Synchronize state with persistent storage
@@ -310,6 +333,7 @@ export default function App() {
         setIsReportModalOpen(false);
         setIsMobileSidebarOpen(false);
         setIsCopilotOpen(false);
+        setIsHelpModalOpen(false);
       }
     };
     window.addEventListener("keydown", handleKeyDown);
@@ -323,45 +347,47 @@ export default function App() {
       const pathname = window.location.pathname.toLowerCase();
       const activeSession = StorageService.getAuthSession();
 
+      if (hash === "#landing" || pathname === "/landing") {
+        setViewMode("landing");
+        return;
+      }
+
       if (hash === "#login" || pathname === "/login") {
         if (activeSession?.isAuthenticated) {
           setViewMode("app");
-          window.location.hash = "app/overview";
+          window.location.hash = `app/${activePage}`;
         } else {
           setViewMode("login");
         }
-      } else if (hash === "#signup" || pathname === "/signup") {
+        return;
+      }
+
+      if (hash === "#signup" || pathname === "/signup") {
         if (activeSession?.isAuthenticated) {
           setViewMode("app");
-          window.location.hash = "app/overview";
+          window.location.hash = `app/${activePage}`;
         } else {
           setViewMode("signup");
         }
-      } else if (hash === "#forgot-password" || pathname === "/forgot-password") {
-        setViewMode("forgot-password");
-      } else if (hash === "#app" || hash.startsWith("#app/") || pathname === "/app" || pathname.startsWith("/app/")) {
-        // Protected internal route check
-        if (activeSession?.isAuthenticated) {
-          setViewMode("app");
-          if (hash === "#app/inventory" || pathname === "/app/inventory") setActivePage("inventory");
-          else if (hash === "#app/procurement" || pathname === "/app/procurement") setActivePage("procurement");
-          else if (hash === "#app/operations" || pathname === "/app/operations") setActivePage("operations");
-          else setActivePage("overview");
-        } else {
-          // Unauthenticated visitor -> Redirect to login and save destination
-          const requested = hash ? hash.replace(/^#/, "") : "app/overview";
-          setPendingRedirectUrl(requested);
-          setViewMode("login");
-          window.location.hash = "login";
-          addToast({
-            type: "warning",
-            title: "Authentication Required",
-            message: "Sign in with your corporate workspace account to access the Control Tower.",
-          });
-        }
-      } else if (hash === "" || hash === "#" || hash === "#landing" || pathname === "/") {
-        setViewMode("landing");
+        return;
       }
+
+      if (hash === "#forgot-password" || pathname === "/forgot-password") {
+        setViewMode("forgot-password");
+        return;
+      }
+
+      if (hash === "#app" || hash.startsWith("#app/") || pathname === "/app" || pathname.startsWith("/app/")) {
+        setViewMode("app");
+        if (hash === "#app/inventory" || pathname === "/app/inventory") setActivePage("inventory");
+        else if (hash === "#app/procurement" || pathname === "/app/procurement") setActivePage("procurement");
+        else if (hash === "#app/operations" || pathname === "/app/operations") setActivePage("operations");
+        else setActivePage("overview");
+        return;
+      }
+
+      // Default route for root '/' or '#landing' or empty hash: Real Landing Page
+      setViewMode("landing");
     };
 
     window.addEventListener("hashchange", handleLocationChange);
@@ -370,7 +396,7 @@ export default function App() {
       window.removeEventListener("hashchange", handleLocationChange);
       window.removeEventListener("popstate", handleLocationChange);
     };
-  }, []);
+  }, [activePage]);
 
   const handleSelectPage = (
     targetPage: AppPage,
@@ -413,29 +439,13 @@ export default function App() {
   };
 
   const handleEnterApp = (targetPage: AppPage = "overview", targetTab?: string) => {
-    const activeSession = StorageService.getAuthSession();
-
-    // If not authenticated, route to Sign In page with destination intent
-    if (!activeSession?.isAuthenticated) {
-      setPendingRedirectUrl(`app/${targetPage}`);
-      setViewMode("login");
-      window.location.hash = "login";
-      window.scrollTo({ top: 0, behavior: "smooth" });
-      addToast({
-        type: "info",
-        title: "Workspace Sign In",
-        message: "Please sign in with your corporate account or use quick demo access to enter.",
-      });
-      return;
-    }
-
     handleSelectPage(targetPage, targetTab);
     setViewMode("app");
   };
 
   const handleGoToLanding = () => {
     setViewMode("landing");
-    window.location.hash = "";
+    window.location.hash = "landing";
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
@@ -1187,6 +1197,7 @@ export default function App() {
           currentUser={currentUser}
           onSignOut={handleSignOut}
           onOpenCopilot={() => setIsCopilotOpen(true)}
+          onOpenHelpGuide={() => setIsHelpModalOpen(true)}
         />
       ) : viewMode === "login" ? (
         <SignInPage
@@ -1235,6 +1246,7 @@ export default function App() {
             onCloseMobile={() => setIsMobileSidebarOpen(false)}
             theme={theme}
             onOpenCopilot={() => setIsCopilotOpen(true)}
+            onOpenHelpGuide={() => setIsHelpModalOpen(true)}
           />
 
           {/* Right Main Column: Header + Scrollable Content */}
@@ -1266,6 +1278,7 @@ export default function App() {
               onSignOut={handleSignOut}
               onToggleMobileSidebar={() => setIsMobileSidebarOpen((prev) => !prev)}
               onOpenCopilot={() => setIsCopilotOpen(true)}
+              onOpenHelpGuide={() => setIsHelpModalOpen(true)}
             />
 
             {/* Main Spacious Content Canvas with Generous Footer Spacing */}
@@ -1378,6 +1391,98 @@ export default function App() {
                 </button>
               </div>
             </div>
+
+            {/* New User Welcome & Doubt Clarification Banner */}
+            {!isWelcomeBannerDismissed && (
+              <div
+                className={`p-4 sm:p-5 rounded-2xl border transition-all shadow-xs relative ${
+                  isDark
+                    ? "bg-gradient-to-r from-emerald-950/40 via-neutral-900 to-indigo-950/30 border-emerald-500/30 text-neutral-100"
+                    : "bg-gradient-to-r from-emerald-50/80 via-white to-teal-50/60 border-emerald-200 text-slate-900 shadow-sm"
+                }`}
+              >
+                <button
+                  type="button"
+                  onClick={() => {
+                    setIsWelcomeBannerDismissed(true);
+                    try {
+                      localStorage.setItem("inventoryguard_welcome_banner_dismissed", "true");
+                    } catch {}
+                  }}
+                  className="absolute top-3 right-3 text-slate-400 hover:text-slate-600 dark:hover:text-neutral-200 p-1 rounded-lg cursor-pointer transition-colors"
+                  title="Dismiss guide banner"
+                  aria-label="Dismiss guide banner"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+
+                <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-4 pr-6">
+                  <div className="space-y-1.5 max-w-2xl">
+                    <div className="flex items-center gap-2">
+                      <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse" />
+                      <span className="text-xs font-bold uppercase tracking-wider text-emerald-600 dark:text-emerald-400">
+                        New User Onboarding &amp; Doubt Resolution Guide
+                      </span>
+                    </div>
+                    <h3 className="text-sm sm:text-base font-extrabold text-slate-950 dark:text-white leading-snug">
+                      Welcome to InventoryGuard AI Control Tower
+                    </h3>
+                    <p className="text-xs text-slate-600 dark:text-neutral-300 leading-relaxed">
+                      Predict quick-commerce stock-outs, calculate dual-variance dynamic safety stock, and fulfill urgent shortages in 3–6 hours via green EV inter-store transfers. Have questions or doubts? Click below to clarify!
+                    </p>
+                  </div>
+
+                  <div className="flex items-center gap-2 shrink-0 flex-wrap">
+                    <button
+                      type="button"
+                      onClick={() => setIsHelpModalOpen(true)}
+                      className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs shadow-xs transition-colors cursor-pointer"
+                    >
+                      <BookOpen className="w-4 h-4" />
+                      <span>Clarify Doubts &amp; FAQ</span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setIsCopilotOpen(true)}
+                      className={`flex items-center gap-1.5 px-3.5 py-2 rounded-xl border font-bold text-xs transition-colors cursor-pointer ${
+                        isDark
+                          ? "bg-neutral-900 hover:bg-neutral-800 text-emerald-400 border-emerald-500/30"
+                          : "bg-white hover:bg-slate-50 text-emerald-700 border-emerald-300 shadow-2xs"
+                      }`}
+                    >
+                      <Sparkles className="w-4 h-4 text-emerald-500" />
+                      <span>Ask AI Copilot</span>
+                    </button>
+                  </div>
+                </div>
+
+                {/* Quick doubt question chips */}
+                <div className="mt-3.5 pt-3 border-t border-slate-200/60 dark:border-neutral-800 flex items-center gap-2 overflow-x-auto pb-1 no-scrollbar text-xs">
+                  <span className="text-[11px] font-semibold text-slate-400 shrink-0">
+                    Common doubts:
+                  </span>
+                  {[
+                    { label: "📐 How is Dynamic Safety Stock calculated?", action: () => setIsHelpModalOpen(true) },
+                    { label: "🚚 Why transfer instead of supplier PO?", action: () => setIsHelpModalOpen(true) },
+                    { label: "⚡ How does Monte Carlo simulation work?", action: () => handleSelectPage("operations", "simulation") },
+                    { label: "📁 Ingest custom WMS CSV dataset", action: () => setIsWmsModalOpen(true) },
+                  ].map((chip, idx) => (
+                    <button
+                      key={idx}
+                      type="button"
+                      onClick={chip.action}
+                      className={`shrink-0 px-2.5 py-1 rounded-lg text-[11px] font-medium transition-colors cursor-pointer border ${
+                        isDark
+                          ? "bg-neutral-900/80 hover:bg-neutral-800 border-neutral-700 text-neutral-300"
+                          : "bg-white hover:bg-emerald-50 border-slate-200 text-slate-700 shadow-2xs"
+                      }`}
+                    >
+                      {chip.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
 
             {/* B. Executive KPI Row (4 High-Density, Anti-Slop Cards) */}
             <KpiMetrics
@@ -1713,6 +1818,16 @@ export default function App() {
         theme={theme}
       />
 
+      {/* New User Doubt Resolution & Interactive Guidebook Modal */}
+      <HelpAndDoubtsModal
+        isOpen={isHelpModalOpen}
+        onClose={() => setIsHelpModalOpen(false)}
+        theme={theme}
+        onNavigatePage={handleSelectPage}
+        onOpenCopilot={() => setIsCopilotOpen(true)}
+        onOpenWmsIngestion={() => setIsWmsModalOpen(true)}
+      />
+
       {/* Gemini AI Copilot Assistant & Doubt Clarification */}
       <GeminiCopilot
         isOpen={isCopilotOpen}
@@ -1725,6 +1840,7 @@ export default function App() {
         selectedSkuId={activeSkuId}
         theme={theme}
         onNavigatePage={handleSelectPage}
+        onOpenHelpGuide={() => setIsHelpModalOpen(true)}
       />
 
       {/* Frosted Glass Floating Toast Notification Feedback System */}

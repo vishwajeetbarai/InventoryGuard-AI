@@ -1065,7 +1065,7 @@ Click any suggested question below or type your inquiry!`,
             </div>
             <div className="flex items-center justify-between text-[10px] text-slate-400 dark:text-neutral-500 px-1 mt-1.5">
               <span>Press <strong>Enter</strong> to send, <strong>Shift+Enter</strong> for newline</span>
-              <span>Context: <strong>{currentWarehouse.code}</strong></span>
+              <span>Context: <strong>{currentWarehouse.id}</strong></span>
             </div>
           </div>
         </div>
